@@ -12,22 +12,21 @@ const cliPath = resolve(__dirname, "../dist/packages/vanillin-cli/src/index.js")
 
 describe("vanillin CLI", () => {
     it("should show help message", async () => {
-        try {
-            // Example usage:
-            runCliProgram(cliPath, ['--help'])
-                .then((result: any) => {
-                    console.log('STDOUT:', result.stdout);
-                    console.log('STDERR:', result.stderr);
-                    console.log('Exit Code:', result.exitCode);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        } catch (error) {
-            assert.fail(`Failed to show help message: ${error}`);
-        }
+        const result = await runCliProgram("node", [cliPath, "--help"]);
+        assert.match(result.stdout + result.stderr, /CLI tool for Vanillin\.js/);
+        assert.strictEqual(result.exitCode, 0);
     });
 
+    it("should compile TypeScript file", async () => {
+        const result = await runCliProgram("node", [
+            cliPath,
+            "compile",
+            "--project", resolve(__dirname, "fixtures/tsconfig.json"),
+            "./test/fixtures/test.ts"
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful compilation");
+        assert.match(result.stdout, /Compilation complete/);
+    });
 });
 
 interface ChildProcessWithStreams extends ChildProcess {
@@ -35,7 +34,13 @@ interface ChildProcessWithStreams extends ChildProcess {
     stderr: Readable;
 }
 
-function runCliProgram(command: string, args: string[] = []) {
+interface CliResult {
+    stdout: string;
+    stderr: string;
+    exitCode: number | null;
+}
+
+function runCliProgram(command: string, args: string[] = []): Promise<CliResult> {
     return new Promise((resolve, reject) => {
         const process = spawn(command, args);
         let stdout = '';
