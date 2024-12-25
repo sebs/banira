@@ -9,6 +9,7 @@ clean:
 # Install all dependencies
 bootstrap:
 	npm install
+	npm install -ws
 	npm run build -ws
 
 # Run all tests
