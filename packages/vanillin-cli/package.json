@@ -1,0 +1,23 @@
+{
+  "name": "vanillin-cli",
+  "version": "0.1.0",
+  "description": "CLI tool for Vanillin.js",
+  "main": "dist/packages/vanillin-cli/src/index.js",
+  "type": "module",
+  "bin": {
+    "vanillin": "./dist/packages/vanillin-cli/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test ./test/*test.ts",
+    "start": "node ./dist/packages/vanillin-cli/src/index.js"
+  },
+  "dependencies": {
+    "commander": "^11.1.0",
+    "typescript": "^5.3.3",
+    "vanillin": "file:../vanillin"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5"
+  }
+}
