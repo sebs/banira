@@ -1,0 +1,15 @@
+{
+  "name": "@vanillin/component-my-circle",
+  "version": "0.1.0",
+  "main": "dist/my-circle/my-circle.js",
+  "types": "dist/my-circle/my-circle.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "vanillin": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.7.2"
+  }
+}
