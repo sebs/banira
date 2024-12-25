@@ -1,9 +1,13 @@
 import { describe, it, beforeEach } from "node:test";
-import { compile } from "../src";
+import { compile } from "../src/index.js";
 import * as ts from "typescript";
 import { readFileSync, existsSync, mkdirSync, rmSync } from "fs";
-import { resolve } from "path";
-import { strictEqual, ok, match } from "node:assert";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+import assert from "node:assert";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe("compile", () => {
     describe("with default output directory", () => {
@@ -29,7 +33,7 @@ describe("compile", () => {
         });
 
         it("should create JavaScript output file", () => {
-            strictEqual(
+            assert.strictEqual(
                 existsSync(jsOutputPath),
                 true,
                 "JavaScript output file should exist after compilation"
@@ -71,21 +75,21 @@ describe("compile", () => {
         });
 
         it("should create JavaScript output file", () => {
-            ok(
+            assert.ok(
                 existsSync(jsOutputPath),
                 "JavaScript output file should exist in temporary directory"
             );
         });
 
         it("should create TypeScript declaration file", () => {
-            ok(
+            assert.ok(
                 existsSync(dtsOutputPath),
                 "TypeScript declaration file should exist in temporary directory"
             );
         });
 
         it("should contain MyCircle class in output", () => {
-            match(
+            assert.match(
                 jsContent,
                 /class\s+MyCircle/,
                 "Output should contain the MyCircle class definition"

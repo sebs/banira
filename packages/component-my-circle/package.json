@@ -4,7 +4,8 @@
   "main": "dist/my-circle/my-circle.js",
   "types": "dist/my-circle/my-circle.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "echo 'No tests yet'"
   },
   "dependencies": {
     "vanillin": "^0.1.0"
