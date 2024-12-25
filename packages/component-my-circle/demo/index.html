@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyCircle Component Demo</title>
+    <script type="module" src="../dist/my-circle.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .controls {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        input {
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>MyCircle Component Demo</h1>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="color">Circle Color:</label>
+            <input type="color" id="color" value="#ff0000">
+        </div>
+        
+        <div class="control-group">
+            <label for="size">Circle Size:</label>
+            <input type="range" id="size" min="10" max="150" value="50">
+            <span id="sizeValue">50</span>px
+        </div>
+    </div>
+
+    <my-circle></my-circle>
+
+    <script>
+        const circle = document.querySelector('my-circle');
+        const colorInput = document.querySelector('#color');
+        const sizeInput = document.querySelector('#size');
+        const sizeValue = document.querySelector('#sizeValue');
+
+        colorInput.addEventListener('input', (e) => {
+            circle.setAttribute('color', e.target.value);
+        });
+
+        sizeInput.addEventListener('input', (e) => {
+            const size = e.target.value;
+            circle.setAttribute('size', size);
+            sizeValue.textContent = size;
+        });
+    </script>
+</body>
+</html>

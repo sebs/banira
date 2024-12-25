@@ -26,13 +26,15 @@ describe("compile", () => {
             );
             options = result.options;
 
-            jsOutputPath = resolve(__dirname, "../../component-my-circle/dist/my-circle/my-circle.js");
+           
             
             // Compile before each test
             compile(["./packages/component-my-circle/src/my-circle.ts"], options);
+            jsOutputPath = resolve(__dirname, "../../component-my-circle/dist/my-circle.js");
         });
 
         it("should create JavaScript output file", () => {
+            console.log(jsOutputPath)
             assert.strictEqual(
                 existsSync(jsOutputPath),
                 true,
