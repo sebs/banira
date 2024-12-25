@@ -36,7 +36,7 @@ describe('MyCircle Component', () => {
         document = window.document;
 
         // Load the component script
-        const componentPath = resolve(__dirname, '../dist/index.js');
+        const componentPath = resolve(__dirname, '../dist/my-circle.js');
         // console.log('Loading component from:', componentPath);
         const componentScript = readFileSync(componentPath, 'utf-8');
         // console.log('Component script:', componentScript);
