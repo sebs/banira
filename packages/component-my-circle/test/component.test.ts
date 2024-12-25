@@ -31,8 +31,8 @@ describe('MyCircle Component', () => {
             resources: 'usable'
         });
 
-        // Set up the global window and document
-        window = dom.window;
+        // https://github.com/cure53/DOMPurify/issues/437#issuecomment-632021941
+        window = dom.window as unknown as Window;
         document = window.document;
 
         // Load the component script
