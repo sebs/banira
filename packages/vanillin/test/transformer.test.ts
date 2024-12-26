@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { test } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import transformer from '../src/transformer.js';
 
@@ -29,37 +29,65 @@ function transform(source: string): string {
     return printed.replace(/"/g, "'");
 }
 
-test('should append .js to relative imports', (t) => {
-    const source = `import { something } from './module';`;
-    const expected = `import { something } from './module.js';`;
-    assert.strictEqual(transform(source).trim(), expected);
-});
+describe('Import Path Transformer', () => {
+    describe('relative imports', () => {
+        it('should append .js to imports without extension', () => {
+            const source = `import { something } from './module';`;
+            const expected = `import { something } from './module.js';`;
+            assert.strictEqual(
+                transform(source).trim(),
+                expected,
+                'Should add .js extension to relative import'
+            );
+        });
 
-test('should not modify imports that already have .js', (t) => {
-    const source = `import { something } from './module.js';`;
-    const expected = `import { something } from './module.js';`;
-    assert.strictEqual(transform(source).trim(), expected);
-});
+        it('should preserve existing .js extensions', () => {
+            const source = `import { something } from './module.js';`;
+            const expected = `import { something } from './module.js';`;
+            assert.strictEqual(
+                transform(source).trim(),
+                expected,
+                'Should not modify imports that already have .js extension'
+            );
+        });
+    });
 
-test('should not modify external module imports', (t) => {
-    const source = `import { something } from '@scope/package';`;
-    const expected = `import { something } from '@scope/package';`;
-    assert.strictEqual(transform(source).trim(), expected);
-});
+    describe('external imports', () => {
+        it('should not modify scoped package imports', () => {
+            const source = `import { something } from '@scope/package';`;
+            const expected = `import { something } from '@scope/package';`;
+            assert.strictEqual(
+                transform(source).trim(),
+                expected,
+                'Should not modify scoped package imports'
+            );
+        });
 
-test('should not modify node_modules imports', (t) => {
-    const source = `import { something } from 'package-name';`;
-    const expected = `import { something } from 'package-name';`;
-    assert.strictEqual(transform(source).trim(), expected);
-});
+        it('should not modify node_modules imports', () => {
+            const source = `import { something } from 'package-name';`;
+            const expected = `import { something } from 'package-name';`;
+            assert.strictEqual(
+                transform(source).trim(),
+                expected,
+                'Should not modify node_modules imports'
+            );
+        });
+    });
 
-test('should handle multiple imports correctly', (t) => {
-    const source = `
+    describe('multiple imports', () => {
+        it('should handle mixed import types correctly', () => {
+            const source = `
 import { a } from './module-a';
 import { b } from '@scope/package';
 import { c } from './module-c.js';`;
-    const expected = `import { a } from './module-a.js';
+            const expected = `import { a } from './module-a.js';
 import { b } from '@scope/package';
 import { c } from './module-c.js';`;
-    assert.strictEqual(transform(source).trim(), expected);
+            assert.strictEqual(
+                transform(source).trim(),
+                expected,
+                'Should correctly transform only relative imports without extension'
+            );
+        });
+    });
 });

@@ -13,12 +13,13 @@ describe("ResultAnalyzer", () => {
     let analyzer: ResultAnalyzer;
     let compiler: Compiler;
     const testFile = resolve(__dirname, "./fixtures/simple.ts");
+    const outDir = resolve(__dirname, "./fixtures/dist");
     
     beforeEach(() => {
         const options: ts.CompilerOptions = {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
-            outDir: resolve(__dirname, "./fixtures/dist"),
+            outDir,
             moduleResolution: ts.ModuleResolutionKind.Node10,
             esModuleInterop: true,
             skipLibCheck: true,
@@ -31,33 +32,80 @@ describe("ResultAnalyzer", () => {
         analyzer = new ResultAnalyzer(result);
     });
 
-    it("should provide access to compiler diagnostics", () => {
-        assert.ok(Array.isArray(analyzer.diagnostics), "diagnostics should be an array");
-        assert.ok(Array.isArray(analyzer.preEmitDiagnostics), "preEmitDiagnostics should be an array");
+    describe("diagnostics", () => {
+        it("should provide diagnostics as an array", () => {
+            assert.ok(
+                Array.isArray(analyzer.diagnostics),
+                "diagnostics should be an array"
+            );
+        });
+
+        it("should provide preEmitDiagnostics as an array", () => {
+            assert.ok(
+                Array.isArray(analyzer.preEmitDiagnostics),
+                "preEmitDiagnostics should be an array"
+            );
+        });
     });
 
-    it("should provide access to compiler options", () => {
-        const options = analyzer.compilerOptions;
-        assert.strictEqual(options.target, ts.ScriptTarget.ES2015);
-        assert.strictEqual(options.module, ts.ModuleKind.ES2015);
+    describe("compiler options", () => {
+        it("should have correct target", () => {
+            assert.strictEqual(
+                analyzer.compilerOptions.target,
+                ts.ScriptTarget.ES2015,
+                "should use ES2015 target"
+            );
+        });
+
+        it("should have correct module kind", () => {
+            assert.strictEqual(
+                analyzer.compilerOptions.module,
+                ts.ModuleKind.ES2015,
+                "should use ES2015 module kind"
+            );
+        });
     });
 
-    it("should provide access to source files", () => {
-        const sourceFiles = analyzer.sourceFiles;
-        assert.ok(Array.isArray(sourceFiles), "sourceFiles should be an array");
-        assert.ok(sourceFiles.length > 0, "should have at least one source file");
-        
-        const testFileSource = sourceFiles.find(file => 
-            file.fileName.endsWith("simple.ts")
-        );
-        assert.ok(testFileSource, "should find the test source file");
+    describe("source files", () => {
+        it("should provide source files as an array", () => {
+            assert.ok(
+                Array.isArray(analyzer.sourceFiles),
+                "sourceFiles should be an array"
+            );
+        });
+
+        it("should have at least one source file", () => {
+            assert.ok(
+                analyzer.sourceFiles.length > 0,
+                "should have at least one source file"
+            );
+        });
+
+        it("should include the test source file", () => {
+            const testFileSource = analyzer.sourceFiles.find(file => 
+                file.fileName.endsWith("simple.ts")
+            );
+            assert.ok(
+                testFileSource,
+                "should find the test source file"
+            );
+        });
     });
 
-    it("should provide access to output files", () => {
-        const outputFiles = analyzer.outputFiles;
-        assert.ok(Array.isArray(outputFiles), "outputFiles should be an array");
-        // Note: emittedFiles might be undefined in some TypeScript versions
-        // so we just verify that we get an array back, even if empty
-        assert.strictEqual(typeof outputFiles.length, "number");
+    describe("output files", () => {
+        it("should provide output files as an array", () => {
+            assert.ok(
+                Array.isArray(analyzer.outputFiles),
+                "outputFiles should be an array"
+            );
+        });
+
+        it("should have length property as number", () => {
+            assert.strictEqual(
+                typeof analyzer.outputFiles.length,
+                "number",
+                "outputFiles.length should be a number"
+            );
+        });
     });
 });

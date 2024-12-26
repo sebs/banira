@@ -10,13 +10,16 @@ const __dirname = dirname(__filename);
 
 describe("Compiler outDir", () => {
     let compiler: Compiler;
+    let result: { program: ts.Program | undefined; diagnostics: readonly ts.Diagnostic[] };
     const testFile = resolve(__dirname, "./fixtures/simple.ts");
+    const originalOutDir = resolve(__dirname, "./fixtures/dist");
+    const customOutDir = resolve(__dirname, "./dist/custom");
     
     beforeEach(() => {
         const options: ts.CompilerOptions = {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
-            outDir: resolve(__dirname, "./fixtures/dist"),
+            outDir: originalOutDir,
             moduleResolution: ts.ModuleResolutionKind.NodeJs,
             esModuleInterop: true,
             skipLibCheck: true,
@@ -25,35 +28,55 @@ describe("Compiler outDir", () => {
         compiler = new Compiler([testFile], options);
     });
 
-    it("should use provided outDir when emitting", () => {
-        const customOutDir = resolve(__dirname, "./dist/custom1");
-        const result = compiler.emit(customOutDir);
-        
-        assert.ok(result.program, "Program should be created");
-        assert.strictEqual(result.program.getCompilerOptions().outDir, customOutDir, 
-            "Should use custom outDir in compiler options");
+    describe("when custom outDir is provided", () => {
+        beforeEach(() => {
+            result = compiler.emit(customOutDir);
+        });
+
+        it("should create a program", () => {
+            assert.ok(result.program, "Program should be created");
+        });
+
+        it("should use the custom outDir in program options", () => {
+            assert.strictEqual(
+                result.program?.getCompilerOptions().outDir,
+                customOutDir,
+                "Should use custom outDir in compiler options"
+            );
+        });
+
+        it("should preserve original compiler options", () => {
+            assert.strictEqual(
+                compiler.options.outDir,
+                originalOutDir,
+                "Should not modify original compiler options"
+            );
+        });
     });
 
-    it("should preserve original outDir when no custom outDir provided", () => {
-        const originalOutDir = compiler.options.outDir;
-        const result = compiler.emit();
-        
-        assert.ok(result.program, "Program should be created");
-        assert.strictEqual(result.program.getCompilerOptions().outDir, originalOutDir, 
-            "Should preserve original outDir in compiler options");
-    });
+    describe("when no custom outDir is provided", () => {
+        beforeEach(() => {
+            result = compiler.emit();
+        });
 
-    it("should override original outDir when custom outDir provided", () => {
-        const originalOutDir = compiler.options.outDir;
-        const customOutDir = resolve(__dirname, "./dist/custom2");
-        const result = compiler.emit(customOutDir);
-        
-        assert.ok(result.program, "Program should be created");
-        assert.strictEqual(result.program.getCompilerOptions().outDir, customOutDir, 
-            "Should override original outDir with custom outDir");
-        
-        // Verify original options weren't modified
-        assert.strictEqual(compiler.options.outDir, originalOutDir, 
-            "Should not modify original compiler options");
+        it("should create a program", () => {
+            assert.ok(result.program, "Program should be created");
+        });
+
+        it("should use the original outDir in program options", () => {
+            assert.strictEqual(
+                result.program?.getCompilerOptions().outDir,
+                originalOutDir,
+                "Should preserve original outDir in compiler options"
+            );
+        });
+
+        it("should preserve original compiler options", () => {
+            assert.strictEqual(
+                compiler.options.outDir,
+                originalOutDir,
+                "Should not modify original compiler options"
+            );
+        });
     });
 });

@@ -9,10 +9,15 @@ export interface VirtualFileSystemOptions {
     cwd?: string
 }
 
-export function createVirtualCompilerHost(options: VirtualFileSystemOptions): ts.CompilerHost {
+export interface VirtualCompilerHost extends ts.CompilerHost {
+    volume: Volume;
+}
+
+export function createVirtualCompilerHost(options: VirtualFileSystemOptions): VirtualCompilerHost {
     const volume = Volume.fromJSON(options.files);
 
     return {
+        volume,
         getSourceFile: (fileName: string, languageVersion: ts.ScriptTarget) => {
             try {
                 const sourceText = volume.readFileSync(fileName, 'utf8');
