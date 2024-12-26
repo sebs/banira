@@ -18,7 +18,7 @@ export async function compile(fileNames: string[], options: VanillinCompilerOpti
     
     let emitResult: ts.EmitResult;
     if (options.useTransformer) {
-        const { default: transformer } = await import('./transformer.js');
+        const { default: transformer } = await import('./transformer');
         emitResult = program.emit(undefined, undefined, undefined, undefined, { before: [transformer()] });
     } else {
         emitResult = program.emit();
