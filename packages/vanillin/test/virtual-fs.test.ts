@@ -5,7 +5,7 @@ import { Compiler } from "../src/compiler.js";
 import * as ts from "typescript";
 import { createVirtualCompilerHost, VirtualCompilerHost } from "../src/virtual-fs";
 
-describe("Compiler with Virtual FileSystem", () => {
+describe("Virtual FileSystem", () => {
     let compiler: Compiler;
     let host: VirtualCompilerHost;
     let result: { program: ts.Program | undefined; diagnostics: readonly ts.Diagnostic[] };

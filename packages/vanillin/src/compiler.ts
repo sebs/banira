@@ -1,5 +1,7 @@
 import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult, CompilerHost }  from "typescript";
 import transformer from './transformer.js';
+import { readFileSync } from "fs";
+import { createVirtualCompilerHost } from "./virtual-fs.js";
 
 export interface CompilerResult {
     program: Program;
@@ -23,6 +25,16 @@ export class Compiler {
         this.defaultTransformers = {
             after: [transformer()]
         }
+    }
+
+    static withVirtualFs(fileNames: string[], options: CompilerOptions): Compiler {
+        const files = fileNames.reduce((acc, fileName) => {
+            acc[fileName] = readFileSync(fileName, 'utf-8');
+            return acc;
+        }, {} as { [path: string]: string });
+
+        const host = createVirtualCompilerHost({ files, cwd: "/" });
+        return new Compiler(fileNames, options, host);
     }
 
     emit(outDir?: string): CompilerResult {
