@@ -23,9 +23,11 @@ export class Compiler {
         }
     }
 
-    emit(): CompilerResult {
-        const program: Program = createProgram(this.fileNames, this.options);
+    emit(outDir?: string): CompilerResult {
+        const options = outDir ? { ...this.options, outDir } : this.options;
+        const program: Program = createProgram(this.fileNames, options);
         const emitResult = program.emit(undefined, undefined, undefined, undefined, this.defaultTransformers);
+
         const { diagnostics } = emitResult;
         const preEmitDiagnostics = getPreEmitDiagnostics(program);
 

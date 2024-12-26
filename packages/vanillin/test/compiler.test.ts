@@ -14,9 +14,9 @@ describe("Compiler", () => {
     
     beforeEach(() => {
         const options: ts.CompilerOptions = {
+            outDir: resolve(__dirname, "./dist"),
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
-            outDir: resolve(__dirname, "./fixtures/dist"),
             moduleResolution: ts.ModuleResolutionKind.NodeJs,
             esModuleInterop: true,
             skipLibCheck: true,
