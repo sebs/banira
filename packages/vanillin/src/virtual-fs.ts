@@ -1,4 +1,5 @@
-import { Dirent } from 'fs';
+import { Dirent } from 'memfs/lib/Dirent';
+import { Dirent as FsDirent } from 'fs';
 import { Volume } from 'memfs';
 import * as ts from 'typescript';
 import { dirname } from 'path';
@@ -31,24 +32,15 @@ export function createVirtualCompilerHost(options: VirtualFileSystemOptions): ts
         fileExists: (fileName: string) => {
             return volume.existsSync(fileName);
         },
-        readFile: (fileName: string) => {
+        readFile: (fileName: string): string | undefined => {
             try {
-                return volume.readFileSync(fileName, 'utf8');
+                return volume.readFileSync(fileName, 'utf8').toString();
             } catch {
                 return undefined;
             }
         },
         directoryExists: (directoryName: string) => {
             return volume.existsSync(directoryName);
-        },
-        getDirectories: (path: string): Dirent[] => {
-            try {
-                return volume.readdirSync(path, { withFileTypes: true })
-                    .filter((file: Dirent) => file.isDirectory())
-                    .map((file) => file as Dirent);
-            } catch (e) {
-                return [];
-            }
         },
         getCurrentDirectory: () => options.cwd || process.cwd(),
         getCanonicalFileName: fileName => fileName,
