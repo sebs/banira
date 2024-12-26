@@ -49,7 +49,7 @@ program
         compilerOptions.outDir = resolve(options.outDir);
       }
 
-      compile(files, compilerOptions);
+      await compile(files, compilerOptions);
       console.log('Compilation complete');
     } catch (error) {
       console.error(error);

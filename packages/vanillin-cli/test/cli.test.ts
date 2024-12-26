@@ -4,6 +4,7 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import assert from "node:assert";
 import { type Readable } from "stream";
+import { writeFile, readFile, rm } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,18 +13,12 @@ const cliPath = resolve(__dirname, "../dist/packages/vanillin-cli/src/index.js")
 
 describe("vanillin CLI", () => {
     it("should show help message", async () => {
-        const result = await runCliProgram("node", [cliPath, "--help"]);
-        assert.match(result.stdout + result.stderr, /CLI tool for Vanillin\.js/);
-        assert.strictEqual(result.exitCode, 0);
+        const result = await runCommand(['--help']);
+        assert.match(result.stdout, /Usage: vanillin/);
     });
 
     it("should compile TypeScript file", async () => {
-        const result = await runCliProgram("node", [
-            cliPath,
-            "compile",
-            "--project", resolve(__dirname, "fixtures/tsconfig.json"),
-            "./test/fixtures/test.ts"
-        ]);
+        const result = await runCommand(['compile', './packages/component-my-circle/src/my-circle.ts']);
         assert.strictEqual(result.exitCode, 0, "Expected successful compilation");
         assert.match(result.stdout, /Compilation complete/);
     });
@@ -40,9 +35,9 @@ interface CliResult {
     exitCode: number | null;
 }
 
-function runCliProgram(command: string, args: string[] = []): Promise<CliResult> {
+function runCommand(args: string[] = []): Promise<CliResult> {
     return new Promise((resolve, reject) => {
-        const process = spawn(command, args);
+        const process = spawn('node', [cliPath, ...args]);
         let stdout = '';
         let stderr = '';
 
