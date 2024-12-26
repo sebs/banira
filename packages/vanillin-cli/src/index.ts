@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { compile } from 'vanillin';
+import { Compiler, ResultAnalyzer } from 'vanillin';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -49,8 +49,30 @@ program
         compilerOptions.outDir = resolve(options.outDir);
       }
 
-      await compile(files, compilerOptions);
+      const compiler = new Compiler(files, compilerOptions);
+      const result = compiler.emit();
+      const analyzer = new ResultAnalyzer(result);
+
+      // Check for compilation errors
+      if (analyzer.diagnostics.length > 0 || analyzer.preEmitDiagnostics.length > 0) {
+        console.error('Compilation errors:');
+        [...analyzer.preEmitDiagnostics, ...analyzer.diagnostics].forEach(diagnostic => {
+          if (diagnostic.file) {
+            const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start!);
+            const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+            console.error(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
+          } else {
+            console.error(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+          }
+        });
+        process.exit(1);
+      }
+
       console.log('Compilation complete');
+      if (analyzer.outputFiles.length > 0) {
+        console.log('Generated files:');
+        analyzer.outputFiles.forEach(file => console.log(`  ${file}`));
+      }
     } catch (error) {
       console.error(error);
       process.exit(1);

@@ -1,5 +1,5 @@
 import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult }  from "typescript";
-import transformer from './transformer';
+import transformer from './transformer.js';
 
 export interface CompilerResult {
     program: Program;

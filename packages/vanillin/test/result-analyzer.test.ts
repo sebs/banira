@@ -19,7 +19,7 @@ describe("ResultAnalyzer", () => {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
             outDir: resolve(__dirname, "./fixtures/dist"),
-            moduleResolution: ts.ModuleResolutionKind.NodeJs,
+            moduleResolution: ts.ModuleResolutionKind.Node10,
             esModuleInterop: true,
             skipLibCheck: true,
             strict: false,
