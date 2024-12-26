@@ -10,7 +10,7 @@ export interface VanillinCompilerOptions extends ts.CompilerOptions {
     useTransformer?: boolean;
 }
 
-export async function compile(fileNames: string[], options: VanillinCompilerOptions = {}): CompilationResult {
+export async function compile(fileNames: string[], options: VanillinCompilerOptions = {}): Promise<CompilationResult> {
     // Merge provided options with defaults, ensuring outDir is set
     const mergedOptions =  options;
     
