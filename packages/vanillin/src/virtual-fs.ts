@@ -10,7 +10,7 @@ export interface VirtualFileSystemOptions {
 }
 
 export interface VirtualCompilerHost extends ts.CompilerHost {
-    volume: Volume;
+    volume: InstanceType<typeof Volume>;
 }
 
 export function createVirtualCompilerHost(options: VirtualFileSystemOptions): VirtualCompilerHost {
