@@ -18,7 +18,12 @@ describe("vanillin CLI", () => {
     });
 
     it("should compile TypeScript file", async () => {
-        const result = await runCommand(['compile', '../component-my-circle/src/my-circle.ts']);
+        const result = await runCommand([
+            'compile',
+            '-p',
+            '../component-my-circle/tsconfig.json',
+            '../component-my-circle/src/my-circle.ts'
+        ]);
         assert.strictEqual(result.exitCode, 0, "Expected successful compilation");
         assert.match(result.stdout, /Compilation complete/);
     });
