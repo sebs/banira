@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "vanillin": "^0.1.0"
+    "vanillin": "file:../vanillin"
   },
   "devDependencies": {
     "typescript": "5.7.2",
