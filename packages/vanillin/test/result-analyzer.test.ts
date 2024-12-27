@@ -3,7 +3,7 @@ import assert from "node:assert";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { Compiler } from "../src/compiler.js";
-import { ResultAnalyzer } from "../src/result-analyzer.js";
+import { ResultAnalyzer, DiagResult } from "../src/result-analyzer.js";
 import * as ts from "typescript";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +30,38 @@ describe("ResultAnalyzer", () => {
         compiler = new Compiler([testFile], options);
         const result = compiler.emit();
         analyzer = new ResultAnalyzer(result);
+    });
+
+    describe("analyzer.diag", ()=>{
+        let diag: DiagResult
+        beforeEach(() => { 
+            diag = analyzer.diag();
+        });
+
+        it("returns diagnostics", () => {
+            assert.ok(diag);
+        });
+
+        it("hasErrors false", () => {
+            assert.equal(diag.hasErrors, false);
+        });
+
+        it("has no errors", () => {
+            assert.equal(diag.errors.length, 0);
+        });
+
+
+        it("hasWarnings false", () => {
+            assert.equal(diag.hasWarnings, false);
+        });
+
+        it("has no warnings", () => {
+            assert.equal(diag.warnings.length, 0);
+        });
+
+        it("has no formatted result", () => {
+            assert.equal(diag.formatted, "");
+        });
     });
 
     describe("diagnostics", () => {

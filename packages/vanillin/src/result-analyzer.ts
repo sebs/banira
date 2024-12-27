@@ -1,8 +1,15 @@
-import { Program, EmitResult, Diagnostic, SourceFile, CompilerOptions } from 'typescript';
+import { Program, EmitResult, Diagnostic, SourceFile, CompilerOptions, DiagnosticCategory, formatDiagnosticsWithColorAndContext, sys } from 'typescript';
 import  { CompilerResult } from './compiler';
 
+export interface DiagResult {
+    hasErrors: boolean;
+    hasWarnings: boolean;
+    errors: Diagnostic[];
+    warnings: Diagnostic[];
+    formatted: string;
+}
+
 export class ResultAnalyzer {
-    
     private program: Program;
     private emitResult: EmitResult;
     public readonly diagnostics: readonly Diagnostic[];
@@ -29,5 +36,26 @@ export class ResultAnalyzer {
             return [];
         }
         return this.emitResult.emittedFiles;
+    }
+
+    diag(): DiagResult {
+        const diagnostics = this.preEmitDiagnostics;
+        const hasErrors = diagnostics.some(d => d.category === DiagnosticCategory.Error);
+        const hasWarnings = diagnostics.some(d => d.category === DiagnosticCategory.Warning);
+        const errors = diagnostics.filter(d => d.category === DiagnosticCategory.Error);
+        const warnings = diagnostics.filter(d => d.category === DiagnosticCategory.Warning);
+        const formatted = formatDiagnosticsWithColorAndContext(diagnostics, {
+            getCurrentDirectory: () => process.cwd(),
+            getCanonicalFileName: fileName => fileName,
+            getNewLine: () => sys.newLine
+        });
+
+        return {
+            hasErrors,
+            hasWarnings,
+            errors,
+            warnings,
+            formatted
+        }
     }
 }
