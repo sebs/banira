@@ -9,7 +9,7 @@
     "tsx": "4.19.2"
   },
   "scripts": {
-    "reset": "make clean && make bootstrap && make test",
+    "reset": "make clean && make bootstrap && make test && make docs",
     "clean": "make clean",
     "bootstrap": "make bootstrap",
     "test": "make test"
