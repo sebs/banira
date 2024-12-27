@@ -5,6 +5,11 @@ import { createVirtualCompilerHost } from "./virtual-fs.js";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
+/**
+ * Loads TypeScript lib files
+ * 
+ * @returns An object containing the contents of the lib files
+ */
 const loadTypeScriptLibFiles = async () => {
     const tsPath = await import.meta.resolve('typescript');
     const tsLibPath = resolve(dirname(fileURLToPath(tsPath)), '');
@@ -16,6 +21,25 @@ const loadTypeScriptLibFiles = async () => {
     return libFiles;
 };
 
+/**
+ * Result of a TypeScript compilation process
+ * 
+ * @interface CompilerResult
+ * @property {Program} program - The TypeScript Program instance used for compilation
+ * @property {EmitResult} emitResult - The result of the emit process, including any diagnostics
+ * @property {readonly Diagnostic[]} diagnostics - Array of diagnostics from the compilation process
+ * @property {readonly Diagnostic[]} preEmitDiagnostics - Array of diagnostics collected before emit
+ * 
+ * @example
+ * ```typescript
+ * const compiler = new Compiler(['src/file.ts'], options);
+ * const result = compiler.emit();
+ * 
+ * if (result.diagnostics.length > 0) {
+ *   console.log('Compilation had diagnostics:', result.diagnostics);
+ * }
+ * ```
+ */
 export interface CompilerResult {
     program: Program;
     emitResult: EmitResult;
@@ -23,13 +47,48 @@ export interface CompilerResult {
     preEmitDiagnostics: readonly Diagnostic[];
 }
 
+/**
+ * Compiler class for compiling TypeScript files
+ * 
+ * @remarks
+ * This class provides functionality to compile TypeScript files using either
+ * the standard filesystem or a virtual filesystem (memfs).
+ * 
+ * @example
+ * ```typescript
+ * // Using standard filesystem
+ * const compiler = new Compiler(['src/file.ts'], { outDir: 'dist' });
+ * compiler.emit();
+ * 
+ * // Using virtual filesystem
+ * const compiler = await Compiler.withVirtualFs(['src/file.ts'], { outDir: 'dist' });
+ * compiler.emit();
+ * ```
+ */
 export class Compiler {
+    /**
+     * Array of file paths to compile
+     */
     public readonly fileNames: string[];
+
+    /**
+     * TypeScript compiler options
+     */
     public readonly options: CompilerOptions;
+
+    /**
+     * Default transformers for the compiler
+     */
     public readonly defaultTransformers: CustomTransformers;
+
+    /**
+     * Compiler host
+     */
     public readonly host?: CompilerHost;
 
-
+    /**
+     * Default compiler options for the TypeScript compiler
+     */
     public static DEFAULT_COMPILER_OPTIONS: CompilerOptions = {
         target: ScriptTarget.ES2015,
         module: ModuleKind.ES2015,
@@ -46,6 +105,13 @@ export class Compiler {
         ]
     };
 
+    /**
+     * Creates a new Compiler instance
+     * 
+     * @param fileNames - Array of file paths to compile
+     * @param options - TypeScript compiler options
+     * @param host - Compiler host
+     */
     constructor(fileNames: string[], options: CompilerOptions, host?: CompilerHost) {
         this.fileNames = fileNames;
         this.options = options;
@@ -55,6 +121,13 @@ export class Compiler {
         }
     }
 
+    /**
+     * Creates a Compiler instance that uses a virtual filesystem
+     * 
+     * @param fileNames - Array of file paths to compile
+     * @param options - TypeScript compiler options
+     * @returns A Promise that resolves to a new Compiler instance
+     */
     static async withVirtualFs(fileNames: string[], options: CompilerOptions): Promise<Compiler> {
         // Load source files
         const sourceFiles = fileNames.reduce((acc, fileName) => {
@@ -75,6 +148,12 @@ export class Compiler {
         return new Compiler(fileNames, options, host);
     }
 
+    /**
+     * Emits the compiled output
+     * 
+     * @param outDir - Output directory
+     * @returns An object containing the emit result and any diagnostics
+     */
     emit(outDir?: string): CompilerResult {
         const options = outDir ? { ...this.options, outDir } : this.options;
         const program: Program = createProgram(this.fileNames, options, this.host);
