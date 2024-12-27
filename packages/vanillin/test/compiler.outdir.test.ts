@@ -16,15 +16,8 @@ describe("Compiler outDir", () => {
     const customOutDir = resolve(__dirname, "./dist/custom");
     
     beforeEach(() => {
-        const options: ts.CompilerOptions = {
-            target: ts.ScriptTarget.ES2015,
-            module: ts.ModuleKind.ES2015,
-            outDir: originalOutDir,
-            moduleResolution: ts.ModuleResolutionKind.NodeJs,
-            esModuleInterop: true,
-            skipLibCheck: true,
-            strict: false
-        };
+        const options = Compiler.DEFAULT_COMPILER_OPTIONS;
+        options.outDir = originalOutDir;
         compiler = new Compiler([testFile], options);
     });
 

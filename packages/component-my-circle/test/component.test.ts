@@ -2,7 +2,6 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync } from 'fs';
 import { TestHelper, MountContext, Compiler, VirtualCompilerHost } from 'vanillin';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,7 +19,7 @@ describe('MyCircle Component', () => {
         // with memfs 
         const compiler = await Compiler.withVirtualFs([componentPath], Compiler.DEFAULT_COMPILER_OPTIONS);
         // compile the component (.emit)
-        const emited = await compiler.emit();
+        await compiler.emit();
         host = (compiler as any).host as VirtualCompilerHost;
         
         // extract the files from the compiler result

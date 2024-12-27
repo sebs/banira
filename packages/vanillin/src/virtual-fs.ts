@@ -1,5 +1,3 @@
-import { Dirent } from 'memfs/lib/Dirent';
-import { Dirent as FsDirent } from 'fs';
 import { Volume } from 'memfs';
 import { CompilerHost, ScriptTarget, createSourceFile } from 'typescript';
 import { dirname } from 'path';
