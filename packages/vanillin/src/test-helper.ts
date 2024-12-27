@@ -24,7 +24,7 @@ export class TestHelper {
     }
 
     async compileAndMountAsScript(tagName: string, fileName: string, compilerOptions: CompilerOptions): Promise<MountContext> {
-        const compiler = Compiler.withVirtualFs([fileName], compilerOptions);
+        const compiler = await Compiler.withVirtualFs([fileName], compilerOptions);
         compiler.emit();
         const { host } = compiler as any;
         if (!host) {

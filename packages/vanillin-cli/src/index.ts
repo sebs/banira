@@ -54,9 +54,10 @@ program
       const analyzer = new ResultAnalyzer(result);
 
       // Check for compilation errors
-      if (analyzer.diagnostics.length > 0 || analyzer.preEmitDiagnostics.length > 0) {
+      const diagnostics = analyzer.diag();
+      if (diagnostics.hasErrors) {
         console.error('Compilation errors:');
-        [...analyzer.preEmitDiagnostics, ...analyzer.diagnostics].forEach(diagnostic => {
+        diagnostics.errors.forEach(diagnostic => {
           if (diagnostic.file) {
             const { line, character } = ts.getLineAndCharacterOfPosition(diagnostic.file, diagnostic.start!);
             const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');

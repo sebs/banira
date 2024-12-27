@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -6,6 +6,7 @@ import { Compiler, CompilerResult } from "../src/compiler.js";
 import * as ts from "typescript";
 import { ResultAnalyzer } from "../src/result-analyzer.js";
 import { VirtualCompilerHost } from "../src/virtual-fs.js";
+import { DiagResult } from "../dist/result-analyzer.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,7 +19,7 @@ describe("Compiler.withVirtualFs", () => {
     const customOutDir = "/dist";
     const expectedOutputFile = `${customOutDir}/simple.js`;
 
-    beforeEach(() => {
+    before(async () => {
         const options: ts.CompilerOptions = {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
@@ -26,55 +27,105 @@ describe("Compiler.withVirtualFs", () => {
             moduleResolution: ts.ModuleResolutionKind.NodeJs,
             esModuleInterop: true,
             skipLibCheck: true,
-            strict: false
+            strict: false,
+            noEmitOnError: false,
+            lib: [
+                "lib.es2015.d.ts",
+                "lib.dom.d.ts",
+                "lib.es5.d.ts"
+            ]
         };
 
-        compiler = Compiler.withVirtualFs([fixturePath], options);
+        compiler = await Compiler.withVirtualFs([fixturePath], options);
         result = compiler.emit();
         analyzer = new ResultAnalyzer(result);
     });
 
-    it("should create a program", () => {
-        assert.ok(result.program, "Program should be created");
+    describe("program creation", () => {
+        it("creates a program", () => {
+            assert.ok(result.program);
+        });
+
+        it("uses specified output directory", () => {
+            assert.strictEqual(
+                result.program?.getCompilerOptions().outDir, 
+                customOutDir
+            );
+        });
     });
 
-    it("should use the specified output directory", () => {
-        assert.strictEqual(
-            result.program?.getCompilerOptions().outDir, 
-            customOutDir,
-            "Should use custom outDir in compiler options"
-        );
+    describe("analyzer", () => {
+        describe("diagnostics", () => {
+            let diagnostics: DiagResult;
+            
+            before(() => {
+                diagnostics = analyzer.diag();
+            });
+
+            it("hasErrors false", () => {
+                assert.equal(diagnostics.hasErrors, false);
+            });
+
+            it("errors empty", () => {
+                assert.equal(diagnostics.errors.length, 0);
+            });
+
+            it("formatted empty", () => {
+                assert.equal(diagnostics.formatted, "");
+            });
+        });
     });
 
-    it("should compile without errors", () => {
-        assert.strictEqual(result.diagnostics.length, 0, 
-            "Should compile without errors"
-        );
+    describe("SimpleTest class", () => {
+        let simpleFile: ts.SourceFile | undefined;
+
+        before(() => {
+            const sourceFiles = result.program?.getSourceFiles() || [];
+            simpleFile = sourceFiles.find(file => file.fileName === fixturePath);
+        });
+
+        it("finds source file", () => {
+            assert.ok(simpleFile);
+        });
+
+        it("has one class declaration", () => {
+            const classDeclarations = simpleFile?.statements.filter(
+                statement => ts.isClassDeclaration(statement)
+            );
+            assert.strictEqual(classDeclarations?.length, 1);
+        });
+
+        it("has correct class name", () => {
+            const classDeclarations = simpleFile?.statements.filter(
+                statement => ts.isClassDeclaration(statement)
+            );
+            const className = (classDeclarations?.[0] as ts.ClassDeclaration).name?.text;
+            assert.strictEqual(className, "SimpleTest");
+        });
     });
 
-    it("should compile SimpleTest class correctly", () => {
-        const sourceFiles = result.program?.getSourceFiles() || [];
-        const simpleFile = sourceFiles.find(file => file.fileName === fixturePath);
-        assert.ok(simpleFile, "Should find the simple.ts source file");
+    describe("generated JavaScript", () => {
+        let jsContent: string;
 
-        const classDeclarations = simpleFile?.statements.filter(
-            statement => ts.isClassDeclaration(statement)
-        );
-        assert.strictEqual(classDeclarations?.length, 1, "Should have one class declaration");
-        
-        const className = (classDeclarations?.[0] as ts.ClassDeclaration).name?.text;
-        assert.strictEqual(className, "SimpleTest", "Class should be named SimpleTest");
-    });
+        before(() => {
+            const host = (compiler as any).host as VirtualCompilerHost;
+            jsContent = host.volume.readFileSync(expectedOutputFile, 'utf8').toString();
+        });
 
-    it("should generate correct JavaScript output", () => {
-        // Get the file contents from the virtual filesystem
-        const host = (compiler as any).host as VirtualCompilerHost;
-        const jsContent = host.volume.readFileSync(expectedOutputFile, 'utf8');
-        assert.ok(jsContent, "Should be able to read the generated JavaScript file");
+        it("generates JavaScript file", () => {
+            assert.ok(jsContent);
+        });
 
-        // Verify the content
-        assert.ok(jsContent.includes("class SimpleTest"), "Should contain SimpleTest class");
-        assert.ok(jsContent.includes("sayHello()"), "Should contain sayHello method");
-        assert.ok(jsContent.includes("return \"Hello from SimpleTest\""), "Should contain the return statement");
+        it("contains SimpleTest class", () => {
+            assert.ok(jsContent.includes("class SimpleTest"));
+        });
+
+        it("contains sayHello method", () => {
+            assert.ok(jsContent.includes("sayHello()"));
+        });
+
+        it("contains correct return statement", () => {
+            assert.ok(jsContent.includes('return "Hello from SimpleTest"'));
+        });
     });
 });

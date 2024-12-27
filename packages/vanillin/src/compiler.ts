@@ -2,6 +2,19 @@ import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmit
 import transformer from './transformer.js';
 import { readFileSync } from "fs";
 import { createVirtualCompilerHost } from "./virtual-fs.js";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const loadTypeScriptLibFiles = async () => {
+    const tsPath = await import.meta.resolve('typescript');
+    const tsLibPath = resolve(dirname(fileURLToPath(tsPath)), '');
+    const libFiles = {
+        'lib.es2015.d.ts': readFileSync(resolve(tsLibPath, 'lib.es2015.d.ts'), 'utf-8'),
+        'lib.dom.d.ts': readFileSync(resolve(tsLibPath, 'lib.dom.d.ts'), 'utf-8'),
+        'lib.es5.d.ts': readFileSync(resolve(tsLibPath, 'lib.es5.d.ts'), 'utf-8'),
+    };
+    return libFiles;
+};
 
 export interface CompilerResult {
     program: Program;
@@ -11,7 +24,6 @@ export interface CompilerResult {
 }
 
 export class Compiler {
-
     public readonly fileNames: string[];
     public readonly options: CompilerOptions;
     public readonly defaultTransformers: CustomTransformers;
@@ -21,19 +33,28 @@ export class Compiler {
         this.fileNames = fileNames;
         this.options = options;
         this.host = host;
-        // append .js to all imports
         this.defaultTransformers = {
             after: [transformer()]
         }
     }
 
-    static withVirtualFs(fileNames: string[], options: CompilerOptions): Compiler {
-        const files = fileNames.reduce((acc, fileName) => {
+    static async withVirtualFs(fileNames: string[], options: CompilerOptions): Promise<Compiler> {
+        // Load source files
+        const sourceFiles = fileNames.reduce((acc, fileName) => {
             acc[fileName] = readFileSync(fileName, 'utf-8');
             return acc;
         }, {} as { [path: string]: string });
 
-        const host = createVirtualCompilerHost({ files, cwd: "/" });
+        // Load TypeScript lib files
+        const libFiles = await loadTypeScriptLibFiles();
+
+        // Combine source files and lib files
+        const files = { ...sourceFiles, ...libFiles };
+
+        const host = createVirtualCompilerHost({ 
+            files, 
+            cwd: process.cwd()
+        });
         return new Compiler(fileNames, options, host);
     }
 
