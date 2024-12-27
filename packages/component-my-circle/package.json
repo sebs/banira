@@ -1,12 +1,21 @@
 {
   "name": "@vanillin/component-my-circle",
   "version": "0.1.0",
+  "description": "Example web component built with Vanillin.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "test": "node --import tsx --test ./test/component.test.ts",
     "build": "tsc"
   },
+  "keywords": [
+    "web-components",
+    "vanillin",
+    "example"
+  ],
+  "author": "Sebastian Schürmann",
+  "license": "MIT",
   "dependencies": {
     "vanillin": "file:../vanillin"
   },

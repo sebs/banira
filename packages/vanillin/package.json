@@ -1,7 +1,7 @@
 {
   "name": "vanillin",
   "version": "0.1.0",
-  "description": "",
+  "description": "A toolchain for developing web components using vanilla JavaScript",
   "main": "dist/index.js",
   "type": "module",
   "exports": {
@@ -11,15 +11,20 @@
     "build": "tsc",
     "test": "node --import tsx --test ./test/*test.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "web-components",
+    "vanilla-js",
+    "typescript",
+    "testing"
+  ],
+  "author": "Sebastian Schürmann",
+  "license": "MIT",
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.10.5"
   },
   "dependencies": {
-    "jsdom": "^25.0.1",
+    "jsdom": "^23.0.1",
     "memfs": "^4.6.0",
     "typescript": "^5.3.3"
   }
