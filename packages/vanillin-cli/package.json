@@ -13,11 +13,11 @@
     "start": "node ./dist/packages/vanillin-cli/src/index.js"
   },
   "dependencies": {
-    "commander": "11.1.0",
+    "commander": "12.1.0",
     "vanillin": "file:../vanillin"
   },
   "devDependencies": {
     "typescript": "5.7.2",
-    "@types/node": "20.10.5"
+    "@types/node": "22.10.2"
   }
 }

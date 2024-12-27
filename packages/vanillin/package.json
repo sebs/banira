@@ -21,11 +21,11 @@
   "license": "MIT",
   "devDependencies": {
     "@types/jsdom": "21.1.7",
-    "@types/node": "20.10.5"
+    "@types/node": "22.10.2"
   },
   "dependencies": {
-    "jsdom": "23.0.1",
-    "memfs": "4.6.0",
+    "jsdom": "25.0.1",
+    "memfs": "4.15.1",
     "typescript": "5.7.2"
   }
 }

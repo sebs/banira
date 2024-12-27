@@ -6,9 +6,7 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@types/node": "20.10.5",
-    "tsx": "4.7.0",
-    "typescript": "5.7.2"
+    "tsx": "4.19.2"
   },
   "scripts": {
     "reset": "make clean && make bootstrap && make test",
