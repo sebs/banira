@@ -3,3 +3,4 @@ dist/
 dist-my-circle/
 etc
 docs
+.DS_Store

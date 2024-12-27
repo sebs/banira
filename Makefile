@@ -17,4 +17,4 @@ test:
 	npm test -ws
 
 docs:
-	typedoc --options ./packages/vanillin/typedoc.json --tsconfig ./packages/vanillin/tsconfig.json
+	npx typedoc --options ./packages/vanillin/typedoc.json --tsconfig ./packages/vanillin/tsconfig.json
