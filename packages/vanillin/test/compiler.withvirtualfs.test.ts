@@ -108,6 +108,7 @@ describe("Compiler.withVirtualFs", () => {
         let jsContent: string;
 
         before(() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const host = (compiler as any).host as VirtualCompilerHost;
             jsContent = host.volume.readFileSync(expectedOutputFile, 'utf8').toString();
         });

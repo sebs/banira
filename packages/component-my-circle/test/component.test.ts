@@ -20,7 +20,7 @@ describe('MyCircle Component', () => {
         const compiler = await Compiler.withVirtualFs([componentPath], Compiler.DEFAULT_COMPILER_OPTIONS);
         // compile the component (.emit)
         await compiler.emit();
-        host = (compiler as any).host as VirtualCompilerHost;
+        host = (compiler).host as VirtualCompilerHost;
         
         // extract the files from the compiler result
         const helper = new TestHelper();

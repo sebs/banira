@@ -1,10 +1,8 @@
 import { describe, it } from "node:test";
-import { spawn, type ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import assert from "node:assert";
-import { type Readable } from "stream";
-import { writeFile, readFile, rm } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,11 +26,6 @@ describe("vanillin CLI", () => {
         assert.match(result.stdout, /Compilation complete/);
     });
 });
-
-interface ChildProcessWithStreams extends ChildProcess {
-    stdout: Readable;
-    stderr: Readable;
-}
 
 interface CliResult {
     stdout: string;

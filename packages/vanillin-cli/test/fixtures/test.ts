@@ -1,4 +1,2 @@
-
-            import { something } from './other-module';
-            export const test = 'test';
-        
+import { something } from './other-module';
+export const test = 'test' + something.toString();

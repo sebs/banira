@@ -1,6 +1,5 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert";
-import { resolve } from "path";
 import { Compiler } from "../src/compiler.js";
 import * as ts from "typescript";
 import { createVirtualCompilerHost, VirtualCompilerHost } from "../src/virtual-fs";

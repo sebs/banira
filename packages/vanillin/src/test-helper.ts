@@ -1,7 +1,5 @@
 import { JSDOM, ConstructorOptions } from 'jsdom';
-import { Volume } from 'memfs';
 import { CompilerOptions} from 'typescript';
-import { createVirtualCompilerHost } from './virtual-fs.js';
 import { DOMWindow } from 'jsdom';
 import { Compiler } from './compiler.js';
 import { basename } from 'path';
@@ -81,6 +79,7 @@ export class TestHelper {
     async compileAndMountAsScript(tagName: string, fileName: string, compilerOptions: CompilerOptions): Promise<MountContext> {
         const compiler = await Compiler.withVirtualFs([fileName], compilerOptions);
         compiler.emit();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { host } = compiler as any;
         if (!host) {
             throw new Error('Host is undefined');
