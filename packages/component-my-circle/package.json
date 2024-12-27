@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "typescript": "5.7.2",
-    "jsdom": "^23.0.1",
-    "tsx": "^4.7.0"
+    "tsx": "4.7.0"
   }
 }
