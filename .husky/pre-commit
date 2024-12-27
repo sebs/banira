@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint
+npm run lint || exit 1
+
+# Run clean, bootstrap, and test
+make clean || exit 1
+make bootstrap || exit 1
+make test || exit 1
