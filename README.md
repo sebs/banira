@@ -1,5 +1,7 @@
 # Vanillin.js
 
+!!! WARNING: This is a work in progress. Please use at your own risk.
+
 Vanillin.js is an open-source toolchain designed for the development of web components using vanilla JavaScript. It simplifies the process by eliminating the need for bundlers and frameworks, focusing instead on modern CSS and web standards.
 
 ## Features
