@@ -1,8 +1,10 @@
 import { JSDOM, ConstructorOptions } from 'jsdom';
 import { Volume } from 'memfs';
-import * as ts from 'typescript';
+import { CompilerOptions} from 'typescript';
 import { createVirtualCompilerHost } from './virtual-fs.js';
 import { DOMWindow } from 'jsdom';
+import { Compiler } from './compiler.js';
+import { basename } from 'path';
 
 export interface MountContext {
     document: Document;
@@ -19,6 +21,18 @@ export class TestHelper {
 
     constructor(options?: ConstructorOptions) {
         this.jsdomOptions = { ...this.jsdomOptions, ...options }
+    }
+
+    async compileAndMountAsScript(tagName: string, fileName: string, compilerOptions: CompilerOptions): Promise<MountContext> {
+        const compiler = Compiler.withVirtualFs([fileName], compilerOptions);
+        compiler.emit();
+        const { host } = compiler as any;
+        if (!host) {
+            throw new Error('Host is undefined');
+        }
+        const outFile = `/dist/${basename(fileName).replace('.ts', '.js')}`;
+        const compiledCode = host.volume.readFileSync(outFile, 'utf8');
+        return this.mountAsScript(tagName, compiledCode);
     }
 
     async mountAsScript(tagName: string, code: string): Promise<MountContext> {

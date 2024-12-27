@@ -15,7 +15,7 @@ export class Compiler {
     public readonly fileNames: string[];
     public readonly options: CompilerOptions;
     public readonly defaultTransformers: CustomTransformers;
-    private readonly host?: CompilerHost;
+    public readonly host?: CompilerHost;
 
     constructor(fileNames: string[], options: CompilerOptions, host?: CompilerHost) {
         this.fileNames = fileNames;

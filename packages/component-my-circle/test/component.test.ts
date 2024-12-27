@@ -1,14 +1,15 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 import { TestHelper, MountContext } from 'vanillin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const componentPath = resolve(__dirname, '../dist/my-circle.js');
 const componentCode = readFileSync(componentPath, 'utf-8');
+
 describe('MyCircle Component', () => {
     let mountContext: MountContext;
 
@@ -75,24 +76,24 @@ describe('MyCircle Component', () => {
         const { document } = mountContext;
         const circle = document.querySelector('my-circle');
         const shadowRoot = circle?.shadowRoot;
-        const svgCircle = shadowRoot?.querySelector('circle');
+        const svg = shadowRoot?.querySelector('svg');
 
         // Default size
         assert.strictEqual(
-            svgCircle?.getAttribute('r'),
-            '50',
-            'Default radius should be 50'
+            svg?.getAttribute('width'),
+            '100',
+            'Default width should be 100'
         );
 
         // Change size
         circle?.setAttribute('size', '75');
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        const svgCircle2 = shadowRoot?.querySelector('circle');
+        const svg2 = shadowRoot?.querySelector('svg');
         assert.strictEqual(
-            svgCircle2?.getAttribute('r'),
-            '75',
-            'Radius should update to 75'
+            svg2?.getAttribute('width'),
+            '150',
+            'Width should update to 150'
         );
     });
 });
