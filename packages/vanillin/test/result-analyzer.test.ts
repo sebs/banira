@@ -63,23 +63,6 @@ describe("ResultAnalyzer", () => {
             assert.equal(diag.formatted, "");
         });
     });
-
-    describe("diagnostics", () => {
-        it("should provide diagnostics as an array", () => {
-            assert.ok(
-                Array.isArray(analyzer.diagnostics),
-                "diagnostics should be an array"
-            );
-        });
-
-        it("should provide preEmitDiagnostics as an array", () => {
-            assert.ok(
-                Array.isArray(analyzer.preEmitDiagnostics),
-                "preEmitDiagnostics should be an array"
-            );
-        });
-    });
-
     describe("compiler options", () => {
         it("should have correct target", () => {
             assert.strictEqual(

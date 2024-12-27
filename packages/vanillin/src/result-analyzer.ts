@@ -1,4 +1,4 @@
-import { Program, EmitResult, Diagnostic, SourceFile, CompilerOptions, DiagnosticCategory, formatDiagnosticsWithColorAndContext, sys } from 'typescript';
+import { Program, EmitResult, Diagnostic, SourceFile, CompilerOptions, DiagnosticCategory, formatDiagnosticsWithColorAndContext, sys, getPreEmitDiagnostics } from 'typescript';
 import  { CompilerResult } from './compiler';
 
 export interface DiagResult {
@@ -12,15 +12,11 @@ export interface DiagResult {
 export class ResultAnalyzer {
     private program: Program;
     private emitResult: EmitResult;
-    public readonly diagnostics: readonly Diagnostic[];
-    public readonly preEmitDiagnostics: readonly Diagnostic[];
 
     constructor(result: CompilerResult) {
-        const { program, emitResult, diagnostics, preEmitDiagnostics } = result;
+        const { program, emitResult } = result;
         this.program = program;
         this.emitResult = emitResult;
-        this.diagnostics = diagnostics;
-        this.preEmitDiagnostics = preEmitDiagnostics;
     }
 
     get compilerOptions(): CompilerOptions {
@@ -39,7 +35,10 @@ export class ResultAnalyzer {
     }
 
     diag(): DiagResult {
-        const diagnostics = this.preEmitDiagnostics;
+        const diagnostics = [
+            ...this.emitResult.diagnostics, 
+            ...getPreEmitDiagnostics(this.program)
+        ];
         const hasErrors = diagnostics.some(d => d.category === DiagnosticCategory.Error);
         const hasWarnings = diagnostics.some(d => d.category === DiagnosticCategory.Warning);
         const errors = diagnostics.filter(d => d.category === DiagnosticCategory.Error);
