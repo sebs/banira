@@ -1,4 +1,4 @@
-import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult, CompilerHost }  from "typescript";
+import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult, CompilerHost, ModuleKind, ModuleResolutionKind, ScriptTarget }  from "typescript";
 import transformer from './transformer.js';
 import { readFileSync } from "fs";
 import { createVirtualCompilerHost } from "./virtual-fs.js";
@@ -28,6 +28,23 @@ export class Compiler {
     public readonly options: CompilerOptions;
     public readonly defaultTransformers: CustomTransformers;
     public readonly host?: CompilerHost;
+
+
+    public static DEFAULT_COMPILER_OPTIONS: CompilerOptions = {
+        target: ScriptTarget.ES2015,
+        module: ModuleKind.ES2015,
+        outDir: './dist',
+        moduleResolution: ModuleResolutionKind.NodeJs,
+        esModuleInterop: true,
+        skipLibCheck: true,
+        strict: false,
+        noEmitOnError: false,
+        lib: [
+            "lib.es2015.d.ts",
+            "lib.dom.d.ts",
+            "lib.es5.d.ts"
+        ]
+    };
 
     constructor(fileNames: string[], options: CompilerOptions, host?: CompilerHost) {
         this.fileNames = fileNames;

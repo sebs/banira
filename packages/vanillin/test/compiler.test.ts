@@ -53,6 +53,80 @@ describe("Compiler", () => {
         });
     });
 
+    describe("DEFAULT_COMPILER_OPTIONS", () => {
+        it("should have correct target", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.target,
+                ts.ScriptTarget.ES2015,
+                "Should have ES2015 target"
+            );
+        });
+
+        it("should have correct module kind", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.module,
+                ts.ModuleKind.ES2015,
+                "Should have ES2015 module kind"
+            );
+        });
+
+        it("should have correct module resolution", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.moduleResolution,
+                ts.ModuleResolutionKind.NodeJs,
+                "Should have NodeJs module resolution"
+            );
+        });
+
+        it("should have correct lib files", () => {
+            assert.deepStrictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.lib,
+                ["lib.es2015.d.ts", "lib.dom.d.ts", "lib.es5.d.ts"],
+                "Should have correct lib files"
+            );
+        });
+
+        it("should have correct outDir", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.outDir,
+                './dist',
+                "Should have ./dist as outDir"
+            );
+        });
+
+        it("should have correct esModuleInterop setting", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.esModuleInterop,
+                true,
+                "Should have esModuleInterop enabled"
+            );
+        });
+
+        it("should have correct skipLibCheck setting", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.skipLibCheck,
+                true,
+                "Should have skipLibCheck enabled"
+            );
+        });
+
+        it("should have correct strict setting", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.strict,
+                false,
+                "Should have strict disabled"
+            );
+        });
+
+        it("should have correct noEmitOnError setting", () => {
+            assert.strictEqual(
+                Compiler.DEFAULT_COMPILER_OPTIONS.noEmitOnError,
+                false,
+                "Should have noEmitOnError disabled"
+            );
+        });
+    });
+
     describe("emission", () => {
         beforeEach(() => {
             result = compiler.emit();

@@ -3,18 +3,29 @@ import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
-import { TestHelper, MountContext } from 'vanillin';
+import { TestHelper, MountContext, Compiler, VirtualCompilerHost } from 'vanillin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const componentPath = resolve(__dirname, '../dist/my-circle.js');
-const componentCode = readFileSync(componentPath, 'utf-8');
+
+const componentPath = resolve(__dirname, '../src/my-circle.ts');
+const expectedOutputPath = resolve(__dirname, '../dist/my-circle.js');
 
 describe('MyCircle Component', () => {
     let mountContext: MountContext;
+    let host: VirtualCompilerHost
 
     beforeEach(async () => {
+        // use the compiler 
+        // with memfs 
+        const compiler = await Compiler.withVirtualFs([componentPath], Compiler.DEFAULT_COMPILER_OPTIONS);
+        // compile the component (.emit)
+        const emited = await compiler.emit();
+        host = (compiler as any).host as VirtualCompilerHost;
+        
+        // extract the files from the compiler result
         const helper = new TestHelper();
+        const componentCode = host.volume.readFileSync(expectedOutputPath, 'utf8').toString();
         mountContext = await helper.mountAsScript('my-circle', componentCode);
     });
 
