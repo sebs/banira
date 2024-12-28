@@ -73,10 +73,16 @@ export class TestHelper {
      * @param tagName - The custom element tag name
      * @param fileName - Path to the TypeScript source file
      * @param compilerOptions - TypeScript compiler options
+     * @param attributes - Optional key-value pairs of attributes to set on the mounted component
      * @returns Promise resolving to a {@link MountContext}
      * @throws Error if the compiler host is undefined
      */
-    async compileAndMountAsScript(tagName: string, fileName: string, compilerOptions: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS): Promise<MountContext> {
+    async compileAndMountAsScript(
+        tagName: string, 
+        fileName: string, 
+        compilerOptions: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS,
+        attributes?: Record<string, string>
+    ): Promise<MountContext> {
         const compiler = await Compiler.withVirtualFs([fileName], compilerOptions);
         compiler.emit();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,7 +92,7 @@ export class TestHelper {
         }
         const outFile = `${compilerOptions.outDir}/${basename(fileName).replace('.ts', '.js')}`;
         const compiledCode = host.volume.readFileSync(outFile, 'utf8');
-        return this.mountAsScript(tagName, compiledCode);
+        return this.mountAsScript(tagName, compiledCode, attributes);
     }
 
     /**
@@ -99,9 +105,17 @@ export class TestHelper {
      * 
      * @param tagName - The custom element tag name
      * @param code - The compiled JavaScript code for the component
+     * @param attributes - Optional key-value pairs of attributes to set on the mounted component
      * @returns Promise resolving to a {@link MountContext}
      */
-    async mountAsScript(tagName: string, code: string): Promise<MountContext> {
+    async mountAsScript(tagName: string, code: string, attributes?: Record<string, string>): Promise<MountContext> {
+        const defaultAttributes = {};
+
+        const mergedAttributes = { ...defaultAttributes, ...attributes };
+        const attributeString = Object.entries(mergedAttributes)
+            .map(([key, value]) => `${key}="${value}"`)
+            .join(' ');
+
         const dom = new JSDOM(`
             <!DOCTYPE html>
             <html>
@@ -109,7 +123,7 @@ export class TestHelper {
                     <title>Test Page</title>
                 </head>
                 <body>
-                    <${tagName}></${tagName}>
+                    <${tagName} ${attributeString}></${tagName}>
                 </body>
             </html>
         `, this.jsdomOptions);

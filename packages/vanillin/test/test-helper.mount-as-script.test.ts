@@ -35,3 +35,32 @@ describe('TestHelper', () => {
         });
     
 });
+
+
+
+
+describe('TestHelper with attributes', () => {
+    
+    var buildResult: MountContext;
+    beforeEach(async () => {
+        const helper = new TestHelper();
+        buildResult = await helper.mountAsScript('my-circle', myCircleJs, {'size': '20'}); 
+    });
+
+    afterEach(async () => {
+        const { jsdom } = buildResult;
+        jsdom.window.close();
+    });
+
+    it('returns a document', async() => {
+        const { document } = buildResult;
+        assert.ok(document);
+    });
+
+    it('should have 20 set as size', () => {
+        const { document } = buildResult;
+        const circle = document.querySelector('my-circle');
+        assert.strictEqual(circle?.getAttribute('size'), '20');
+    });
+
+});
