@@ -1,0 +1,27 @@
+{
+  "name": "@vanillin/component-webaudio",
+  "version": "0.1.0",
+  "description": "WebAudio control components built with Vanillin.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "node --import tsx --test ./test/*",
+    "build": "tsc"
+  },
+  "keywords": [
+    "web-components",
+    "vanillin",
+    "webaudio",
+    "audio-controls"
+  ],
+  "author": "Sebastian Schürmann",
+  "license": "MIT",
+  "dependencies": {
+    "vanillin": "file:../vanillin"
+  },
+  "devDependencies": {
+    "typescript": "5.7.2",
+    "tsx": "4.7.0"
+  }
+}
