@@ -12,9 +12,19 @@ const componentPath = resolve(__dirname, '../src/my-circle.ts');
 describe('MyCircle Component', () => {
     let mountContext: MountContext;
 
+    let circleTag: Element;
+    let shadowRoot: ShadowRoot;
+    let svg: SVGSVGElement;
+    let circleElement: SVGCircleElement;
+
     beforeEach(async () => {
         const helper = new TestHelper();
         mountContext = await helper.compileAndMountAsScript('my-circle', componentPath);
+        const { document } = mountContext;
+        circleTag = document.querySelector('my-circle')!;
+        shadowRoot = circleTag?.shadowRoot as ShadowRoot;
+        svg = shadowRoot?.querySelector('svg') as SVGSVGElement;
+        circleElement = svg?.querySelector('circle') as SVGCircleElement;
     });
 
     afterEach(() => {
@@ -22,45 +32,30 @@ describe('MyCircle Component', () => {
     });
 
     it('should create a circle element', () => {
-        const { document } = mountContext;
-        const circle = document.querySelector('my-circle');
-        assert.ok(circle, 'Circle element should exist');
-        assert.strictEqual(circle?.tagName.toLowerCase(), 'my-circle');
+        assert.ok(circleTag, 'Circle element should exist');
+        assert.strictEqual(circleTag?.tagName.toLowerCase(), 'my-circle');
     });
 
     it('should create a shadow root', () => {
-        const { document } = mountContext;
-        const circle = document.querySelector('my-circle');
-        const shadowRoot = circle?.shadowRoot;
         assert.ok(shadowRoot, 'Shadow root should exist');
     });
 
     it('should render an SVG circle', () => {
-        const { document } = mountContext;
-        const circle = document.querySelector('my-circle');
-        const shadowRoot = circle?.shadowRoot;
-        const svg = shadowRoot?.querySelector('svg');
-        const circleElement = svg?.querySelector('circle');
-        
         assert.ok(svg, 'SVG element should exist');
         assert.ok(circleElement, 'Circle element should exist in SVG');
     });
 
     it('should update circle color when attribute changes', async () => {
-        const { document } = mountContext;
-        const circle = document.querySelector('my-circle');
-        const shadowRoot = circle?.shadowRoot;
-        const svgCircle = shadowRoot?.querySelector('circle');
 
         // Default color
         assert.strictEqual(
-            svgCircle?.getAttribute('fill'),
+            circleElement?.getAttribute('fill'),
             'red',
             'Default color should be red'
         );
 
         // Change color
-        circle?.setAttribute('color', 'blue');
+        circleTag?.setAttribute('color', 'blue');
         await new Promise(resolve => setTimeout(resolve, 200));
 
         const svgCircle2 = shadowRoot?.querySelector('circle');

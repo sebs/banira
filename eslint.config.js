@@ -24,7 +24,11 @@ module.exports = [
         document: 'readonly',
         process: 'readonly',
         console: 'readonly',
-        Document: 'readonly'
+        Document: 'readonly',
+        ShadowRoot: 'readonly',
+        SVGSVGElement: 'readonly',
+        SVGCircleElement: 'readonly',
+        Element: 'readonly'
       }
     },
     plugins: {
