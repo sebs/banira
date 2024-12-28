@@ -14,7 +14,7 @@
     "tsx": "4.19.2"
   },
   "scripts": {
-    "prepare": "husky",
+    "prepare": "npx husky",
     "reset": "make clean && make bootstrap && make test && make docs",
     "clean": "make clean",
     "bootstrap": "make bootstrap",
