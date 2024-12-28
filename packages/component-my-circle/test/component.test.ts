@@ -2,30 +2,19 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { TestHelper, MountContext, Compiler, VirtualCompilerHost } from 'vanillin';
+import { TestHelper, MountContext } from 'vanillin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const componentPath = resolve(__dirname, '../src/my-circle.ts');
-const expectedOutputPath = resolve(__dirname, '../dist/my-circle.js');
 
 describe('MyCircle Component', () => {
     let mountContext: MountContext;
-    let host: VirtualCompilerHost
 
     beforeEach(async () => {
-        // use the compiler 
-        // with memfs 
-        const compiler = await Compiler.withVirtualFs([componentPath], Compiler.DEFAULT_COMPILER_OPTIONS);
-        // compile the component (.emit)
-        await compiler.emit();
-        host = (compiler).host as VirtualCompilerHost;
-        
-        // extract the files from the compiler result
         const helper = new TestHelper();
-        const componentCode = host.volume.readFileSync(expectedOutputPath, 'utf8').toString();
-        mountContext = await helper.mountAsScript('my-circle', componentCode);
+        mountContext = await helper.compileAndMountAsScript('my-circle', componentPath);
     });
 
     afterEach(() => {
