@@ -1,4 +1,4 @@
-.PHONY: clean bootstrap test
+.PHONY: clean bootstrap test lint docs
 
 # Clean all dependencies and build artifacts
 clean:
@@ -18,3 +18,6 @@ test:
 
 docs:
 	npx typedoc --options ./packages/vanillin/typedoc.json --tsconfig ./packages/vanillin/tsconfig.json
+
+lint:
+	npx eslint "packages/**/*.ts"
