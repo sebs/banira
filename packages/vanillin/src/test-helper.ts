@@ -76,7 +76,7 @@ export class TestHelper {
      * @returns Promise resolving to a {@link MountContext}
      * @throws Error if the compiler host is undefined
      */
-    async compileAndMountAsScript(tagName: string, fileName: string, compilerOptions: CompilerOptions): Promise<MountContext> {
+    async compileAndMountAsScript(tagName: string, fileName: string, compilerOptions: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS): Promise<MountContext> {
         const compiler = await Compiler.withVirtualFs([fileName], compilerOptions);
         compiler.emit();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,7 +84,7 @@ export class TestHelper {
         if (!host) {
             throw new Error('Host is undefined');
         }
-        const outFile = `/dist/${basename(fileName).replace('.ts', '.js')}`;
+        const outFile = `${compilerOptions.outDir}/${basename(fileName).replace('.ts', '.js')}`;
         const compiledCode = host.volume.readFileSync(outFile, 'utf8');
         return this.mountAsScript(tagName, compiledCode);
     }
