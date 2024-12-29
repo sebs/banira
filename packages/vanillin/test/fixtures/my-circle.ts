@@ -6,6 +6,14 @@
  * <my-circle size="100" color="blue"></my-circle>
  * ```
  */
+/**
+ * A demo of a custom web component that renders a circle using SVG.
+ * 
+ * @demo
+ * ```html
+ * <my-circle size="100" color="blue"></my-circle>
+ * ```
+ */
 class MyCircle extends HTMLElement {
     /** The diameter of the circle in pixels. Default is 50. */
     private _size: number = 50;
