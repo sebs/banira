@@ -7,6 +7,5 @@ describe('DocGen', () => {
         const docGen = new DocGen();
         const result = docGen.parseDoc('./test/fixtures/my-circle.ts');
         assert.ok(result, 'ParserContext should be returned');
-        console.log(docGen.render(result));
     });
 });
