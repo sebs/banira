@@ -24,6 +24,7 @@
     "@types/node": "22.10.2"
   },
   "dependencies": {
+    "@microsoft/tsdoc": "0.15.1",
     "jsdom": "25.0.1",
     "memfs": "4.15.1",
     "typescript": "5.7.2"
