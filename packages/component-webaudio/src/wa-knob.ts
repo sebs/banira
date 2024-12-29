@@ -66,6 +66,12 @@ class WAKnob extends HTMLElement {
     private render() {
         if (!this.shadowRoot) return;
         this.shadowRoot.innerHTML = `
+            <div class='webaudio-knob-body' tabindex='1' touch-action='none'>
+                <div class='webaudioctrl-tooltip'></div>
+                <div part="label" class="webaudioctrl-label">
+                    <slot></slot>
+                </div>
+            </div>
             <div>Value: ${this._value} (Min: ${this._min}, Max: ${this._max})</div>
         `;
     }
