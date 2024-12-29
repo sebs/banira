@@ -65,14 +65,54 @@ class WAKnob extends HTMLElement {
 
     private render() {
         if (!this.shadowRoot) return;
+
+        // Calculate rotation angle based on value
+        const range = this._max - this._min;
+        const normalizedValue = (this._value - this._min) / range;
+        const angle = normalizedValue * 270 - 135; // -135 to +135 degrees range
+
         this.shadowRoot.innerHTML = `
-            <div class='webaudio-knob-body' tabindex='1' touch-action='none'>
-                <div class='webaudioctrl-tooltip'></div>
-                <div part="label" class="webaudioctrl-label">
+            <style>
+                .knob-body {
+                    width: 60px;
+                    height: 60px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                }
+                .knob-svg {
+                    width: 100%;
+                    height: 100%;
+                }
+                .knob-base {
+                    fill: #444;
+                    stroke: #666;
+                    stroke-width: 2;
+                }
+                .knob-indicator {
+                    stroke: #fff;
+                    stroke-width: 2;
+                    stroke-linecap: round;
+                }
+                .ctrl-label {
+                    margin-top: 5px;
+                    text-align: center;
+                }
+            </style>
+            <div class='knob-body'>
+                <svg class="knob-svg" viewBox="0 0 60 60">
+                    <circle class="knob-base" cx="30" cy="30" r="25"/>
+                    <line class="knob-indicator" 
+                          x1="30" 
+                          y1="30" 
+                          x2="30" 
+                          y2="10" 
+                          transform="rotate(${angle}, 30, 30)"/>
+                </svg>
+                <div part="label" class="ctrl-label">
                     <slot></slot>
                 </div>
             </div>
-            <div>Value: ${this._value} (Min: ${this._min}, Max: ${this._max})</div>
         `;
     }
 
