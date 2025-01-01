@@ -10,6 +10,10 @@ import { Formatter } from './formatter';
  */
 export class DocGen {
 
+    public customConfiguration = new TSDocConfiguration();
+    
+    public tsdocParser: TSDocParser;
+
     /**
      * TSDoc tag definition for demo blocks.
      * This custom block tag allows marking code sections as demos in the documentation.
@@ -18,6 +22,13 @@ export class DocGen {
         tagName: '@demo',
         syntaxKind: TSDocTagSyntaxKind.BlockTag
     });
+
+    constructor() {
+        this.customConfiguration.addTagDefinitions([
+            DocGen.CUSTOM_BLOCK_DEFINITION_DEMO
+        ]);
+        this.tsdocParser = new TSDocParser(this.customConfiguration);
+    }
 
     /**
      * Parses a TypeScript source file to extract its documentation.
@@ -28,15 +39,17 @@ export class DocGen {
     async parseDoc(doc: string): Promise<ParserContext> {
         const inputFilename: string = path.resolve(doc);
         const inputBuffer: string = await readFile(inputFilename, 'utf-8');
-        
-        const customConfiguration: TSDocConfiguration = new TSDocConfiguration();
-        
-        customConfiguration.addTagDefinitions([
-            DocGen.CUSTOM_BLOCK_DEFINITION_DEMO
-        ]);
-        
-        const tsdocParser: TSDocParser = new TSDocParser(customConfiguration);
-        const parserContext: ParserContext = tsdocParser.parseString(inputBuffer);
+        return this.parseString(inputBuffer);
+    }
+
+    /**
+     * Parses a TypeScript source file to extract its documentation.
+     * 
+     * @param sourceCode - The path to the TypeScript source file to parse
+     * @returns A Promise that resolves to a ParserContext containing the parsed documentation
+     */
+    private parseString(sourceCode: string): ParserContext {
+        const parserContext: ParserContext = this.tsdocParser.parseString(sourceCode);
         return parserContext;
     }
 
