@@ -1,6 +1,6 @@
 import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult, CompilerHost, ModuleKind, ModuleResolutionKind, ScriptTarget }  from "typescript";
 import transformer from './transformer.js';
-import { readFileSync } from "fs";
+import { readFile } from "fs/promises";
 import { createVirtualCompilerHost } from "./virtual-fs.js";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -13,12 +13,21 @@ import { fileURLToPath } from "url";
 const loadTypeScriptLibFiles = async () => {
     const tsPath = await import.meta.resolve('typescript');
     const tsLibPath = resolve(dirname(fileURLToPath(tsPath)), '');
-    const libFiles = {
-        'lib.es2015.d.ts': readFileSync(resolve(tsLibPath, 'lib.es2015.d.ts'), 'utf-8'),
-        'lib.dom.d.ts': readFileSync(resolve(tsLibPath, 'lib.dom.d.ts'), 'utf-8'),
-        'lib.es5.d.ts': readFileSync(resolve(tsLibPath, 'lib.es5.d.ts'), 'utf-8'),
+    
+    const libFilePaths = {
+        'lib.es2015.d.ts': resolve(tsLibPath, 'lib.es2015.d.ts'),
+        'lib.dom.d.ts': resolve(tsLibPath, 'lib.dom.d.ts'),
+        'lib.es5.d.ts': resolve(tsLibPath, 'lib.es5.d.ts'),
     };
-    return libFiles;
+
+    const fileContents = await Promise.all(
+        Object.entries(libFilePaths).map(async ([fileName, filePath]) => {
+            const content = await readFile(filePath, 'utf-8');
+            return [fileName, content] as const;
+        })
+    );
+
+    return Object.fromEntries(fileContents);
 };
 
 /**
@@ -130,16 +139,18 @@ export class Compiler {
      */
     static async withVirtualFs(fileNames: string[], options: CompilerOptions): Promise<Compiler> {
         // Load source files
-        const sourceFiles = fileNames.reduce((acc, fileName) => {
-            acc[fileName] = readFileSync(fileName, 'utf-8');
-            return acc;
-        }, {} as { [path: string]: string });
+        const sourceFiles = await Promise.all(
+            fileNames.map(async (fileName) => {
+                const content = await readFile(fileName, 'utf-8');
+                return [fileName, content] as const;
+            })
+        );
 
         // Load TypeScript lib files
         const libFiles = await loadTypeScriptLibFiles();
 
         // Combine source files and lib files
-        const files = { ...sourceFiles, ...libFiles };
+        const files = { ...Object.fromEntries(sourceFiles), ...libFiles };
 
         const host = createVirtualCompilerHost({ 
             files, 

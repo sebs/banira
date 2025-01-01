@@ -1,6 +1,6 @@
 import { TSDocParser, type ParserContext, type DocComment, TSDocConfiguration, TSDocTagDefinition, TSDocTagSyntaxKind } from '@microsoft/tsdoc';
 import * as path from 'path';
-import * as fs from 'fs';
+import { readFile } from 'fs/promises';
 import { Formatter } from './formatter';
 
 /**
@@ -23,11 +23,11 @@ export class DocGen {
      * Parses a TypeScript source file to extract its documentation.
      * 
      * @param doc - The path to the TypeScript source file to parse
-     * @returns A ParserContext containing the parsed documentation
+     * @returns A Promise that resolves to a ParserContext containing the parsed documentation
      */
-    parseDoc(doc: string): ParserContext {
+    async parseDoc(doc: string): Promise<ParserContext> {
         const inputFilename: string = path.resolve(doc);
-        const inputBuffer: string = fs.readFileSync(inputFilename).toString();
+        const inputBuffer: string = await readFile(inputFilename, 'utf-8');
         
         const customConfiguration: TSDocConfiguration = new TSDocConfiguration();
         
@@ -58,8 +58,12 @@ export class DocGen {
      * 
      * @param context - The parsed documentation context to render
      * @returns A formatted string containing only the custom documentation blocks
+     * @throws Error if the context or docComment is undefined
      */
-    renderDocs(context: ParserContext) {
+    renderDocs(context: ParserContext): string {
+        if (!context || !context.docComment) {
+            throw new Error('Invalid parser context: docComment is undefined');
+        }
         const docComment: DocComment = context.docComment;
         const result = Formatter.renderDocNodes(docComment.customBlocks);
         return result;
