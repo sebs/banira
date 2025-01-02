@@ -9,14 +9,21 @@ import { FormatterDefault } from './formatter/default';
  * as well as render the documentation in a formatted way.
  */
 export class DocGen {
-
+    /**
+     * The TSDoc configuration used for parsing and rendering documentation.
+     * @link https://tsdoc.org/pages/packages/tsdoc-config/#api-usage
+     */
     public customConfiguration = new TSDocConfiguration();
-    
+    /**
+     * The TSDoc parser used for parsing documentation comments.
+     * @link https://tsdoc.org/pages/packages/tsdoc/#invoking-the-tsdoc-parser
+     */
     public tsdocParser: TSDocParser;
 
     /**
      * TSDoc tag definition for demo blocks.
      * This custom block tag allows marking code sections as demos in the documentation.
+     * @link https://github.com/microsoft/tsdoc/blob/main/tsdoc/src/configuration/TSDocTagDefinition.ts
      */
     public static CUSTOM_BLOCK_DEFINITION_DEMO = new TSDocTagDefinition({
         tagName: '@demo',
@@ -24,6 +31,7 @@ export class DocGen {
     });
 
     constructor() {
+        // Add custom tag definitions to detect demo blocks
         this.customConfiguration.addTagDefinitions([
             DocGen.CUSTOM_BLOCK_DEFINITION_DEMO
         ]);
