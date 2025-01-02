@@ -51,6 +51,7 @@ export interface VirtualCompilerHost extends CompilerHost {
  * 
  * @param options - Configuration options for the virtual filesystem
  * @returns A compiler host that uses a virtual filesystem
+ * @link https://www.typescriptlang.org/dev/typescript-vfs/
  * 
  * @example
  * ```typescript
