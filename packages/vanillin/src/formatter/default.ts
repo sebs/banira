@@ -6,7 +6,7 @@ import { type DocNode, DocExcerpt } from '@microsoft/tsdoc';
 /**
  * This is a simplistic solution until we implement proper DocNode rendering APIs.
  */
-export class Formatter {
+export class FormatterDefault {
   public static renderDocNode(docNode: DocNode): string {
     let result: string = '';
     if (docNode) {
@@ -14,7 +14,7 @@ export class Formatter {
         result += docNode.content.toString();
       }
       for (const childNode of docNode.getChildNodes()) {
-        result += Formatter.renderDocNode(childNode);
+        result += FormatterDefault.renderDocNode(childNode);
       }
     }
     return result;
@@ -23,7 +23,7 @@ export class Formatter {
   public static renderDocNodes(docNodes: ReadonlyArray<DocNode>): string {
     let result: string = '';
     for (const docNode of docNodes) {
-      result += Formatter.renderDocNode(docNode);
+      result += FormatterDefault.renderDocNode(docNode);
     }
     return result;
   }

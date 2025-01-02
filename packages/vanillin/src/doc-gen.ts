@@ -1,7 +1,7 @@
 import { TSDocParser, type ParserContext, type DocComment, TSDocConfiguration, TSDocTagDefinition, TSDocTagSyntaxKind } from '@microsoft/tsdoc';
 import * as path from 'path';
 import { readFile } from 'fs/promises';
-import { Formatter } from './formatter';
+import { FormatterDefault } from './formatter/default';
 
 /**
  * A class for parsing and rendering TSDoc documentation comments.
@@ -61,7 +61,7 @@ export class DocGen {
      */
     render(context: ParserContext): string { 
         const docComment: DocComment = context.docComment;
-        const result = Formatter.renderDocNodes(docComment.getChildNodes());
+        const result = FormatterDefault.renderDocNodes(docComment.getChildNodes());
         return result;
     }
 
@@ -78,7 +78,7 @@ export class DocGen {
             throw new Error('Invalid parser context: docComment is undefined');
         }
         const docComment: DocComment = context.docComment;
-        const result = Formatter.renderDocNodes(docComment.customBlocks);
+        const result = FormatterDefault.renderDocNodes(docComment.customBlocks);
         return result;
     }
 }
