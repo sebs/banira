@@ -1,6 +1,8 @@
 # banira.js
 
-!!! WARNING: This is a work in progress. Please use at your own risk.
+> !!! WARNING: This is a work in progress. Please use at your own risk.
+
+Rationale and background in a [blog post](https://dev.to/sebs/taking-llms-to-code-town-part-ii-creating-a-vanillajs-web-component-toolchain-from-ground-up-mi9)
 
 banira.js is an open-source toolchain designed for the development of web components using vanilla JavaScript. It simplifies the process by eliminating the need for bundlers and frameworks, focusing instead on modern CSS and web standards.
 
@@ -11,7 +13,7 @@ banira.js is an open-source toolchain designed for the development of web compon
 
 ## Getting Started
 
-This softwawer is a development build and work in progress. Your best shot will be to build it using a unix or linux machine. 
+This software is a development build and work in progress. Your best shot will be to build it using a unix or linux machine. 
 
 * make clean - remove all dependencies and build artifacts
 * make bootstrap - install all dependencies
