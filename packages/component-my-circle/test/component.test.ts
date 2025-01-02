@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { TestHelper, MountContext } from 'vanillin';
+import { TestHelper, MountContext } from 'banira';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

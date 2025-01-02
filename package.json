@@ -1,5 +1,5 @@
 {
-  "name": "vanillin-monorepo",
+  "name": "banira-monorepo",
   "private": true,
   "license": "MIT",
   "workspaces": [

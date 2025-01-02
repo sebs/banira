@@ -10,6 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node"
   },
-  "include": ["src/**/*", "../vanillin/src/**/*"],
+  "include": ["src/**/*", "../banira/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

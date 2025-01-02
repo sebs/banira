@@ -1,8 +1,8 @@
-# Vanillin.js
+# banira.js
 
 !!! WARNING: This is a work in progress. Please use at your own risk.
 
-Vanillin.js is an open-source toolchain designed for the development of web components using vanilla JavaScript. It simplifies the process by eliminating the need for bundlers and frameworks, focusing instead on modern CSS and web standards.
+banira.js is an open-source toolchain designed for the development of web components using vanilla JavaScript. It simplifies the process by eliminating the need for bundlers and frameworks, focusing instead on modern CSS and web standards.
 
 ## Features
 
@@ -17,9 +17,9 @@ Vanillin.js is an open-source toolchain designed for the development of web comp
 
 ```bash
 # Install the CLI globally
-npm install -g @vanillin/cli
+npm install -g @banira/cli
 
-vanillin build
+banira build
 ```
 
 ## Component Development
@@ -49,10 +49,10 @@ customElements.define('my-circle', MyCircle);
 
 ## Testing
 
-Vanillin provides powerful testing utilities:
+banira provides powerful testing utilities:
 
 ```typescript
-import { TestHelper } from 'vanillin';
+import { TestHelper } from 'banira';
 
 describe('MyComponent', () => {
     let context;
@@ -74,19 +74,19 @@ describe('MyComponent', () => {
 ### Component Commands
 ```bash
 # Create a new component
-vanillin create <name>
+banira create <name>
 
 # Build components
-vanillin build [options] <files...>
+banira build [options] <files...>
 
 # Start development server
-vanillin serve [options]
+banira serve [options]
 ```
 
 ### Compiler Options
 ```bash
 # Compile TypeScript files
-vanillin compile [options] <files...>
+banira compile [options] <files...>
 
 Options:
   -p, --project <path>  Path to tsconfig.json
@@ -101,7 +101,7 @@ Options:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/Vanillin.js.git
+git clone https://github.com/yourusername/banira.js.git
 
 # Install dependencies
 make bootstrap
@@ -115,8 +115,8 @@ make clean
 
 ### Project Structure
 
-- `packages/vanillin`: Core library with compiler and testing utilities
-- `packages/vanillin-cli`: Command-line interface
+- `packages/banira`: Core library with compiler and testing utilities
+- `packages/banira-cli`: Command-line interface
 - `packages/component-my-circle`: Example component implementation
 
 ### Development Workflow

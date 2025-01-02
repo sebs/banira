@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { Compiler, ResultAnalyzer } from 'vanillin';
+import { Compiler, ResultAnalyzer } from 'banira';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -9,13 +9,13 @@ import { resolve, dirname } from 'path';
 const program = new Command();
 
 program
-  .name('vanillin')
-  .description('CLI tool for Vanillin.js')
+  .name('banira')
+  .description('CLI tool for banira.js')
   .version('0.1.0');
 
 program
   .command('compile')
-  .description('Compile TypeScript files using Vanillin')
+  .description('Compile TypeScript files using banira')
   .argument('<files...>', 'TypeScript files to compile')
   .option('-p, --project <path>', 'Path to tsconfig.json')
   .option('-o, --outDir <path>', 'Output directory')

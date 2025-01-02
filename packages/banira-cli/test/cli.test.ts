@@ -7,12 +7,12 @@ import assert from "node:assert";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const cliPath = resolve(__dirname, "../dist/packages/vanillin-cli/src/index.js");
+const cliPath = resolve(__dirname, "../dist/packages/banira-cli/src/index.js");
 
-describe("vanillin CLI", () => {
+describe("banira CLI", () => {
     it("should show help message", async () => {
         const result = await runCommand(['--help']);
-        assert.match(result.stdout, /Usage: vanillin/);
+        assert.match(result.stdout, /Usage: banira/);
     });
 
     it("should compile TypeScript file", async () => {

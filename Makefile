@@ -15,7 +15,7 @@ test:
 	npm test -ws
 
 docs:
-	npx typedoc --options ./packages/vanillin/typedoc.json --tsconfig ./packages/vanillin/tsconfig.json
+	npx typedoc --options ./packages/banira/typedoc.json --tsconfig ./packages/banira/tsconfig.json
 
 lint:
 	npx eslint "packages/**/*.ts"

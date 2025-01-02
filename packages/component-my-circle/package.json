@@ -1,7 +1,7 @@
 {
-  "name": "@vanillin/component-my-circle",
+  "name": "@banira/component-my-circle",
   "version": "0.1.0",
-  "description": "Example web component built with Vanillin.js",
+  "description": "Example web component built with banira.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -11,13 +11,13 @@
   },
   "keywords": [
     "web-components",
-    "vanillin",
+    "banira",
     "example"
   ],
   "author": "Sebastian Schürmann",
   "license": "MIT",
   "dependencies": {
-    "vanillin": "file:../vanillin"
+    "banira": "file:../banira"
   },
   "devDependencies": {
     "typescript": "5.7.2"

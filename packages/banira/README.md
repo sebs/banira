@@ -1,6 +1,6 @@
-# vanillin
+# banira
 
-The core library of the Vanillin.js toolchain, providing essential utilities and runtime support for developing web components using vanilla JavaScript.
+The core library of the banira.js toolchain, providing essential utilities and runtime support for developing web components using vanilla JavaScript.
 
 ## Classes
 
@@ -37,7 +37,7 @@ A TypeScript compiler host implementation using a virtual filesystem:
 ### Testing Components
 
 ```typescript
-import { TestHelper } from 'vanillin';
+import { TestHelper } from 'banira';
 
 const helper = new TestHelper();
 const context = await helper.mountAsScript('my-component', componentCode);
@@ -49,7 +49,7 @@ const component = context.querySelector('my-component');
 ### Virtual Filesystem
 
 ```typescript
-import { createVirtualFs } from 'vanillin';
+import { createVirtualFs } from 'banira';
 
 const fs = createVirtualFs({
   '/src/component.ts': `
@@ -72,7 +72,7 @@ For detailed API documentation, please refer to the generated API documentation 
 
 ## Contributing
 
-This package is part of the Vanillin.js monorepo. Please refer to the main project's README for contribution guidelines.
+This package is part of the banira.js monorepo. Please refer to the main project's README for contribution guidelines.
 
 ## License
 

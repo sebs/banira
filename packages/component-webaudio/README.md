@@ -1,4 +1,4 @@
-# @vanillin/component-webaudio
+# @banira/component-webaudio
 
 A collection of Web Components for creating audio control interfaces. Based on the webaudio-controls project but reimplemented in TypeScript with modern web standards.
 
@@ -12,7 +12,7 @@ A collection of Web Components for creating audio control interfaces. Based on t
 ## Installation
 
 ```bash
-npm install @vanillin/component-webaudio
+npm install @banira/component-webaudio
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ npm install @vanillin/component-webaudio
 ```html
 <script type="module">
   import { WebAudioKnob, WebAudioSlider, WebAudioSwitch, WebAudioParam } 
-    from '@vanillin/component-webaudio';
+    from '@banira/component-webaudio';
 </script>
 
 <webaudio-knob value="50" min="0" max="100"></webaudio-knob>

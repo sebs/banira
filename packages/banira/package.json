@@ -1,5 +1,5 @@
 {
-  "name": "vanillin",
+  "name": "banira",
   "version": "0.1.0",
   "description": "A toolchain for developing web components using vanilla JavaScript",
   "main": "dist/index.js",

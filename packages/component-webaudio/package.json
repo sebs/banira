@@ -1,7 +1,7 @@
 {
-  "name": "@vanillin/component-webaudio",
+  "name": "@banira/component-webaudio",
   "version": "0.1.0",
-  "description": "WebAudio control components built with Vanillin.js",
+  "description": "WebAudio control components built with banira.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -11,14 +11,14 @@
   },
   "keywords": [
     "web-components",
-    "vanillin",
+    "banira",
     "webaudio",
     "audio-controls"
   ],
   "author": "Sebastian Schürmann",
   "license": "MIT",
   "dependencies": {
-    "vanillin": "file:../vanillin"
+    "banira": "file:../banira"
   },
   "devDependencies": {
     "typescript": "5.7.2",

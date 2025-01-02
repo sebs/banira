@@ -1,20 +1,20 @@
 {
-  "name": "vanillin-cli",
+  "name": "banira-cli",
   "version": "0.1.0",
-  "description": "CLI tool for Vanillin.js",
-  "main": "dist/packages/vanillin-cli/src/index.js",
+  "description": "CLI tool for banira.js",
+  "main": "dist/packages/banira-cli/src/index.js",
   "type": "module",
   "bin": {
-    "vanillin": "./dist/packages/vanillin-cli/src/index.js"
+    "banira": "./dist/packages/banira-cli/src/index.js"
   },
   "scripts": {
     "build": "tsc",
     "test": "node --import tsx --test ./test/*test.ts",
-    "start": "node ./dist/packages/vanillin-cli/src/index.js"
+    "start": "node ./dist/packages/banira-cli/src/index.js"
   },
   "dependencies": {
     "commander": "12.1.0",
-    "vanillin": "file:../vanillin"
+    "banira": "file:../banira"
   },
   "devDependencies": {
     "typescript": "5.7.2",
