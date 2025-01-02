@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 /**
  * Loads TypeScript lib files
  * 
+ * @link https://stackoverflow.com/questions/63145054/how-to-import-a-typescript-file-as-a-library
  * @returns An object containing the contents of the lib files
  */
 const loadTypeScriptLibFiles = async () => {

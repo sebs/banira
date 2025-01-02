@@ -55,7 +55,7 @@ export class ResultAnalyzer {
 
     /**
      * Gets the compiler options used in the compilation
-     * 
+     * @link https://stackoverflow.com/questions/53804566/how-to-get-compileroptions-from-tsconfig-json
      * @returns The TypeScript compiler options
      */
     get compilerOptions(): CompilerOptions {
@@ -64,7 +64,7 @@ export class ResultAnalyzer {
 
     /**
      * Gets all source files included in the compilation
-     * 
+     * @link https://stackoverflow.com/questions/45796878/how-to-get-all-sources-for-imported-files-with-typescript-compiler-api
      * @returns Array of TypeScript source files
      */
     get sourceFiles(): readonly SourceFile[] {
@@ -90,7 +90,7 @@ export class ResultAnalyzer {
      * This method processes both emit diagnostics and pre-emit diagnostics,
      * categorizing them into errors and warnings. It also provides a formatted
      * string representation of all diagnostics with color and context.
-     * 
+     * @link https://github.com/microsoft/TypeScript-wiki/blob/main/Using-the-Compiler-API.md
      * @returns A {@link DiagResult} object containing diagnostic information
      */
     diag(): DiagResult {
