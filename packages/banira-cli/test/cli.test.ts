@@ -25,6 +25,16 @@ describe("banira CLI", () => {
         // assert.strictEqual(result.exitCode, 0, "Expected successful compilation");
         assert.match(result.stdout, /Compilation complete/);
     });
+
+    it("should generate documentation for TypeScript file", async () => {
+        const result = await runCommand([
+            'doc',
+            '../component-my-circle/src/my-circle.ts'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful documentation generation");
+        assert.ok(result.stdout.length > 0, "Expected documentation output");
+        assert.ok(!result.stderr, "Expected no errors");
+    });
 });
 
 interface CliResult {

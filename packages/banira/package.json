@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "postinstall": "npm run build",
     "test": "node --import tsx --test ./test/*test.ts"
   },
   "keywords": [

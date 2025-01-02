@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { compile } from './actions/compile.js';
+import { doc } from './actions/doc.js';
 
 const program = new Command();
 
@@ -17,5 +18,11 @@ program
   .option('-p, --project <path>', 'Path to tsconfig.json')
   .option('-o, --outDir <path>', 'Output directory')
   .action(compile);
+
+program
+  .command('doc')
+  .description('Generate documentation for a TypeScript file')
+  .argument('<file>', 'TypeScript file to document')
+  .action(doc);
 
 program.parse();

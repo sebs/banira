@@ -1,7 +1,7 @@
 import { TSDocParser, type ParserContext, type DocComment, TSDocConfiguration, TSDocTagDefinition, TSDocTagSyntaxKind } from '@microsoft/tsdoc';
 import * as path from 'path';
 import { readFile } from 'fs/promises';
-import { FormatterDefault } from './formatter/default';
+import { FormatterDefault } from './formatter/default.js';
 
 /**
  * A class for parsing and rendering TSDoc documentation comments.
