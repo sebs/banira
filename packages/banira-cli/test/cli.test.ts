@@ -34,6 +34,7 @@ describe("banira CLI", () => {
         assert.strictEqual(result.exitCode, 0, "Expected successful documentation generation");
         assert.ok(result.stdout.length > 0, "Expected documentation output");
         assert.ok(!result.stderr, "Expected no errors");
+        console.log(result.stdout);
     });
 });
 

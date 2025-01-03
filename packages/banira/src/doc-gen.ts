@@ -89,6 +89,6 @@ export class DocGen {
             throw new Error('Invalid parser context: docComment is undefined');
         }
         const formatter = new FormatterDocPage(context);
-        return formatter.createDocPage();
+        return formatter.createDocPage(this.tagName, this.src, this.title);
     }
 }
