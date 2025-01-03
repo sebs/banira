@@ -9,9 +9,10 @@ const __dirname = dirname(__filename);
 
 const widgetPath = resolve(__dirname, '../src/wa-knob.ts');
 
-describe('set value', () => {
+describe('wa-knob attributes', () => {
     let mountContext: MountContext;
-    let widget: HTMLElement;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let widget: any;
 
     before(async () => {
         const helper = new TestHelper();
@@ -28,15 +29,31 @@ describe('set value', () => {
         mountContext.jsdom.window.close();
     });
 
-    it('gets the right value', () => {
+    it('value attribute', () => {
         assert.strictEqual(widget.getAttribute('value'), '20');
     });
 
-    it('gets the right min', () => {
+    it('value property', () => {
+        assert.strictEqual(widget.value, 20);
+    })
+
+    it('min attribute', () => {
         assert.strictEqual(widget.getAttribute('min'), '10');
     });
 
-    it('gets the right max', () => {
+    it('min property', () => {
+        assert.equal(widget.min, 10);
+    });
+
+    it('max attribute', () => {
         assert.strictEqual(widget.getAttribute('max'), '30');
+    });
+
+    it('max property', () => {
+        assert.strictEqual(widget.max, 30);
+    });
+
+    it('default adheres to min and max', () => {
+        assert.strictEqual(widget.getAttribute('default'), '10');
     });
 });

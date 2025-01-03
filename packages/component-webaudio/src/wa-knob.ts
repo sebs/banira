@@ -6,6 +6,7 @@ class WAKnob extends HTMLElement {
     private _min: number = 0;
     private _max: number = 127;
     private _default: number = 0;
+    private _defaultExplicitlySet: boolean = false;
 
     static get observedAttributes() {
         return ['value', 'min', 'max', 'default'];
@@ -22,10 +23,9 @@ class WAKnob extends HTMLElement {
     }
 
     set value(val: number) {
-        const newValue = this.constrainValue(val);
+        const newValue = this._constrainValue(val);
         if (newValue !== this._value) {
             this._value = newValue;
-            this.setAttribute('value', newValue.toString());
             this.render();
         }
     }
@@ -35,8 +35,17 @@ class WAKnob extends HTMLElement {
     }
 
     set min(val: number) {
-        this._min = val;
-        this.value = this._value; // Recheck constraints
+        // only set if there is a change
+        if (val !== this._min) {
+            this._min = val;
+            // Update default if it wasn't explicitly set
+            if (!this._defaultExplicitlySet) {
+                this._default = val;
+            }
+            // Recheck value constraints
+            this.value = this._value;
+            this.render();
+        }
     }
 
     get max() {
@@ -44,8 +53,11 @@ class WAKnob extends HTMLElement {
     }
 
     set max(val: number) {
-        this._max = val;
-        this.value = this._value; // Recheck constraints
+        if (val !== this._max) {
+            this._max = val;
+            // Recheck value constraints
+            this.value = this._value;
+        }
     }
 
     get default() {
@@ -53,14 +65,71 @@ class WAKnob extends HTMLElement {
     }
 
     set default(val: number) {
-        this._default = val;
-        if (this._value === 0) {
-            this.value = val;
+        const newValue = this._constrainValue(val);
+        if (newValue !== this._default) {
+            this._default = newValue;
+            this._defaultExplicitlySet = true;
+            this.render();
         }
     }
 
-    private constrainValue(val: number): number {
+    private _constrainValue(val: number): number {
         return Math.min(this._max, Math.max(this._min, val));
+    }
+
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+        if (oldValue === newValue) return;
+
+        const numValue = parseFloat(newValue || '0');
+        const constrainedValue = this._constrainValue(numValue);
+
+        switch (name) {
+            case 'value':
+                if (constrainedValue !== numValue) {
+                    // If the value was constrained, update the attribute
+                    this.setAttribute('value', constrainedValue.toString());
+                } else {
+                    this.value = numValue;
+                }
+                break;
+            case 'min':
+                this.min = numValue;
+                break;
+            case 'max':
+                this.max = numValue;
+                break;
+            case 'default':
+                this.default = numValue;
+                break;
+        }
+    }
+
+    connectedCallback() {
+        // Initialize from attributes if present
+        if (this.hasAttribute('min')) {
+            this.min = parseFloat(this.getAttribute('min') || '0');
+        }
+        if (this.hasAttribute('max')) {
+            this.max = parseFloat(this.getAttribute('max') || '127');
+        }
+        if (this.hasAttribute('default')) {
+            this.default = parseFloat(this.getAttribute('default') || this._min.toString());
+        } else {
+            // If no default attribute, use min
+            this._default = this._min;
+        }
+        if (this.hasAttribute('value')) {
+            this.value = parseFloat(this.getAttribute('value') || this._default.toString());
+        } else {
+            // If no value attribute, use default
+            this.value = this._default;
+        }
+        
+        // Set initial attributes for HTML use
+        this.setAttribute('value', this._value.toString());
+        this.setAttribute('min', this._min.toString());
+        this.setAttribute('max', this._max.toString());
+        this.setAttribute('default', this._default.toString());
     }
 
     private render() {
@@ -70,7 +139,7 @@ class WAKnob extends HTMLElement {
         const range = this._max - this._min;
         const normalizedValue = (this._value - this._min) / range;
         const angle = normalizedValue * 270 - 135; // -135 to +135 degrees range
-
+        
         this.shadowRoot.innerHTML = `
             <style>
                 .knob-body {
@@ -114,42 +183,6 @@ class WAKnob extends HTMLElement {
                 </div>
             </div>
         `;
-    }
-
-    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
-        if (oldValue === newValue) return;
-
-        switch (name) {
-            case 'value': {
-                const val = parseFloat(newValue || '0');
-                const constrained = this.constrainValue(val);
-                this._value = constrained;
-                this.setAttribute('value', constrained.toString());
-                this.render();
-                break;
-            }
-            case 'min':
-                this.min = parseFloat(newValue || '0');
-                break;
-            case 'max':
-                this.max = parseFloat(newValue || '127');
-                break;
-            case 'default':
-                this.default = parseFloat(newValue || '0');
-                break;
-        }
-    }
-
-    connectedCallback() {
-        // Set to default value if no value was specified
-        if (this._value === 0 && this._default !== 0) {
-            this.value = this._default;
-        }
-        this.setAttribute('value', this._value.toString());
-        this.setAttribute('default', this._default.toString());
-        this.setAttribute('min', this._min.toString());
-        this.setAttribute('max', this._max.toString());
-        this.render();
     }
 }
 
