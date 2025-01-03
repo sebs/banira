@@ -7,7 +7,10 @@
   "type": "module",
   "scripts": {
     "test": "node --import tsx --test ./test/*",
-    "build": "tsc"
+    "build": "tsc",
+    "build:banira": "banira compile --project ./tsconfig.json --outDir ./dist ./src/wa-knob.ts",
+    "predemo": "rm -rf ./demo && mkdir ./demo && cp -r ./dist/ ./demo/dist/",
+    "demo": "banira doc ./src/wa-knob.ts > ./demo/index.html"
   },
   "keywords": [
     "web-components",

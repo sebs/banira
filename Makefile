@@ -9,6 +9,7 @@ clean:
 bootstrap:
 	npm install -ws
 	npm run build -ws
+	cd packages/banira-cli && npm install && npm run build && npm link && cd ../..
 
 # Run all tests
 test:
