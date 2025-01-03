@@ -19,10 +19,7 @@ export class FormatterDocPage {
         return this.context.docComment.summarySection
     }
 
-    createDocPage(): string {
-        const title = "MyCircle Component Demo";
-        const src  = "../dist/my-circle.js"
-        const tagName = "my-circle"
+    createDocPage(tagName: string = "my-circle", src: string = "../dist/my-circle.js", title: string = "MyCircle Component Demo"): string {
         return `<!DOCTYPE html>
 <html lang="en">
 <head>

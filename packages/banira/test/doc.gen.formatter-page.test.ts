@@ -10,7 +10,7 @@ describe('DocGen Formatter', () => {
     let formatter: FormatterDocPage;
 
     before(async () => {
-        docGen = new DocGen();
+        docGen = new DocGen("my-circle");
         parsed = await docGen.parseDoc('./test/fixtures/my-circle.ts');
         formatter = new FormatterDocPage(parsed);
     })
@@ -19,12 +19,12 @@ describe('DocGen Formatter', () => {
     });
 
     it('should create a doc page', async () => {
-        const result = formatter.createDocPage();
+        const result = formatter.createDocPage(docGen.tagName, docGen.src, docGen.title);
         assert.ok(result, 'Doc page should be created');
     });
 
     it('contains the demo tag', async () => {
-        const result = formatter.createDocPage();
+        const result = formatter.createDocPage(docGen.tagName, docGen.src, docGen.title);
         assert.match(result, /<my-circle><\/my-circle>/);
     });
 });

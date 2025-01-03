@@ -30,12 +30,27 @@ export class DocGen {
         syntaxKind: TSDocTagSyntaxKind.BlockTag
     });
 
-    constructor() {
+    public readonly tagName: string;
+
+    get src(): string { 
+        return `./dist/${this.tagName}.js`;
+    }
+
+    get title(): string {
+        return `<${this.tagName}> Component Demo`;
+    }
+
+    constructor(tagName: string = "my-circle") {
+        this.tagName = tagName;
         // Add custom tag definitions to detect demo blocks
         this.customConfiguration.addTagDefinitions([
             DocGen.CUSTOM_BLOCK_DEFINITION_DEMO
         ]);
         this.tsdocParser = new TSDocParser(this.customConfiguration);
+    }
+
+    fromString(sourceCode: string): ParserContext { 
+        return this.tsdocParser.parseString(sourceCode);
     }
 
     /**
