@@ -1,7 +1,7 @@
-import { TSDocParser, type ParserContext, type DocComment, TSDocConfiguration, TSDocTagDefinition, TSDocTagSyntaxKind } from '@microsoft/tsdoc';
+import { TSDocParser, type ParserContext, TSDocConfiguration, TSDocTagDefinition, TSDocTagSyntaxKind } from '@microsoft/tsdoc';
 import * as path from 'path';
 import { readFile } from 'fs/promises';
-import { FormatterDefault } from './formatter/default.js';
+import { FormatterDocPage } from './formatter/doc-page.js';
 
 /**
  * A class for parsing and rendering TSDoc documentation comments.
@@ -62,18 +62,6 @@ export class DocGen {
     }
 
     /**
-     * Renders all documentation nodes from a parsed documentation context.
-     * 
-     * @param context - The parsed documentation context to render
-     * @returns A formatted string containing the rendered documentation
-     */
-    render(context: ParserContext): string { 
-        const docComment: DocComment = context.docComment;
-        const result = FormatterDefault.renderDocNodes(docComment.getChildNodes());
-        return result;
-    }
-
-    /**
      * Renders only the custom documentation blocks from a parsed documentation context.
      * This specifically focuses on rendering blocks marked with custom tags like @demo.
      * 
@@ -85,8 +73,7 @@ export class DocGen {
         if (!context || !context.docComment) {
             throw new Error('Invalid parser context: docComment is undefined');
         }
-        const docComment: DocComment = context.docComment;
-        const result = FormatterDefault.renderDocNodes(docComment.customBlocks);
-        return result;
+        const formatter = new FormatterDocPage(context);
+        return formatter.createDocPage();
     }
 }
