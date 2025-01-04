@@ -34,15 +34,22 @@ export class FormatterDocPage {
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-    >
+    />
 </head>
 <body>
-    <header>
+    <header class="container">
+        <hgroup>
         <h1>${title}</h1>
+        </hgroup>
     </header>
-    <main>
+    <main class="container">
+        <section id="preview">
         <${tagName}></${tagName}>
+        </section>
     </main>
+    <footer class="container">
+      <small>Built with banira</small>
+    </footer>
 </body>
 </html>`
     }

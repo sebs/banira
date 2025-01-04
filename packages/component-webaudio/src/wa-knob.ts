@@ -14,8 +14,6 @@ class WAKnob extends HTMLElement {
 
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
-        this.render();
     }
 
     get value() {
@@ -105,6 +103,8 @@ class WAKnob extends HTMLElement {
     }
 
     connectedCallback() {
+        this.attachShadow({ mode: 'open' });
+ 
         // Initialize from attributes if present
         if (this.hasAttribute('min')) {
             this.min = parseFloat(this.getAttribute('min') || '0');
@@ -130,6 +130,7 @@ class WAKnob extends HTMLElement {
         this.setAttribute('min', this._min.toString());
         this.setAttribute('max', this._max.toString());
         this.setAttribute('default', this._default.toString());
+        this.render();
     }
 
     private render() {
@@ -168,7 +169,7 @@ class WAKnob extends HTMLElement {
                     text-align: center;
                 }
             </style>
-            <div class='knob-body'>
+            <div class="knob-body">
                 <svg class="knob-svg" viewBox="0 0 60 60">
                     <circle class="knob-base" cx="30" cy="30" r="25"/>
                     <line class="knob-indicator" 
