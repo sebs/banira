@@ -36,12 +36,12 @@ describe('DocGen', () => {
             assert.equal(customDocGen.src, './dist/custom-element.js');
         });
         it('returns formatted title for default tag', () => {
-            assert.equal(docGen.title, '<my-circle> Component Demo');
+            assert.equal(docGen.title, 'my-circle Component Demo');
         });
 
         it('returns formatted title for custom tag', () => {
             const customDocGen = new DocGen('custom-element');
-            assert.equal(customDocGen.title, '<custom-element> Component Demo');
+            assert.equal(customDocGen.title, 'custom-element Component Demo');
         });
     });
 });

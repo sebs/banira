@@ -37,7 +37,7 @@ export class DocGen {
     }
 
     get title(): string {
-        return `<${this.tagName}> Component Demo`;
+        return `${this.tagName} Component Demo`;
     }
 
     constructor(tagName: string = "my-circle") {
