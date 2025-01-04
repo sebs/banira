@@ -14,17 +14,30 @@ describe('DocGen Formatter', () => {
         parsed = await docGen.parseDoc('./test/fixtures/my-circle.ts');
         formatter = new FormatterDocPage(parsed);
     })
-    it('should parse a typescript file and return a ParserContext', async () => {
-        assert.ok(parsed, 'ParserContext should be returned');
-    });
 
-    it('should create a doc page', async () => {
-        const result = formatter.createDocPage(docGen.tagName, docGen.src, docGen.title);
-        assert.ok(result, 'Doc page should be created');
-    });
+    it('customBlocks', async () => {   
+        assert.equal(formatter.custom.length, 1);
+    })
 
-    it('contains the demo tag', async () => {
-        const result = formatter.createDocPage(docGen.tagName, docGen.src, docGen.title);
-        assert.match(result, /<my-circle><\/my-circle>/);
+    it('logs', async () => {   
+        assert.equal(formatter.logs.length, 0);
+    })
+
+    it('params', async () => {   
+        assert.ok(formatter.params);
+    })
+
+    describe('createDocPage', () => {
+        let result: string;
+        before(async () => {
+            result = formatter.createDocPage(docGen.tagName, docGen.src, docGen.title);
+        });
+    
+        it('should create a doc page', async () => {
+            assert.ok(result, 'Doc page should be created');
+        });
+        it('contains the demo tag', async () => {
+            assert.match(result, /<my-circle><\/my-circle>/);
+        });
     });
 });

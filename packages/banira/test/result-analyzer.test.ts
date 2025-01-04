@@ -107,6 +107,17 @@ describe("ResultAnalyzer", () => {
         });
     });
 
+    describe("comments", () => {
+        it("extracts them", () => {
+            assert.ok(analyzer.comments);
+        });
+
+        it("gets > 10K comments", () => {
+            assert.ok(analyzer.comments.length>1000);
+        });
+    }); 
+
+
     describe("output files", () => {
         it("should provide output files as an array", () => {
             assert.ok(

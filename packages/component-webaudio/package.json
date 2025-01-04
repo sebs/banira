@@ -10,7 +10,8 @@
     "build": "tsc",
     "build:banira": "banira compile --project ./tsconfig.json --outDir ./dist ./src/wa-knob.ts",
     "predemo": "rm -rf ./demo && mkdir ./demo && cp -r ./dist/ ./demo/dist/",
-    "demo": "banira doc ./src/wa-knob.ts > ./demo/index.html"
+    "demo": "banira doc ./src/wa-knob.ts > ./demo/index.html",
+    "server": "npx -y http-server ./demo"
   },
   "keywords": [
     "web-components",

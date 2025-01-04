@@ -1,5 +1,16 @@
-import { Program, EmitResult, Diagnostic, SourceFile, CompilerOptions, DiagnosticCategory, formatDiagnosticsWithColorAndContext, sys, getPreEmitDiagnostics } from 'typescript';
+import { 
+    Program, 
+    EmitResult, 
+    Diagnostic, 
+    SourceFile, 
+    CompilerOptions, 
+    DiagnosticCategory, 
+    formatDiagnosticsWithColorAndContext, 
+    sys, 
+    getPreEmitDiagnostics
+} from 'typescript';
 import  { CompilerResult } from './compiler';
+import { discoverComments, IFoundComment } from './discover-comments.js';
 
 /**
  * Interface representing the result of diagnostic analysis
@@ -71,6 +82,14 @@ export class ResultAnalyzer {
         return this.program.getSourceFiles();
     }
 
+    get comments(): IFoundComment[] {
+        const foundComments: IFoundComment[] = [];
+        for (const sourceFile of this.program.getSourceFiles()) {
+            discoverComments(sourceFile, foundComments);
+        }
+        return foundComments;
+    }
+
     /**
      * Gets the paths of all emitted (output) files
      * 
@@ -105,7 +124,7 @@ export class ResultAnalyzer {
         const formatted = formatDiagnosticsWithColorAndContext(diagnostics, {
             getCurrentDirectory: () => process.cwd(),
             getCanonicalFileName: fileName => fileName,
-            getNewLine: () => sys.newLine
+            getNewLine:() => sys.newLine
         });
 
         return {

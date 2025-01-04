@@ -1,4 +1,4 @@
-import { DocBlock, DocParamCollection, DocSection, ParserContext } from "@microsoft/tsdoc";
+import { DocBlock, DocParamCollection, DocSection, ParserContext, ParserMessage } from "@microsoft/tsdoc";
 
 export class FormatterDocPage { 
     private context: ParserContext;
@@ -9,6 +9,10 @@ export class FormatterDocPage {
 
     get custom(): readonly DocBlock[] {
         return this.context.docComment.customBlocks;
+    }
+
+    get logs(): readonly ParserMessage[] {
+        return this.context.log.messages;
     }
 
     get params(): DocParamCollection {
@@ -33,8 +37,12 @@ export class FormatterDocPage {
     >
 </head>
 <body>
-    <h1>${title}</h1>
-    <${tagName}></${tagName}>
+    <header>
+        <h1>${title}</h1>
+    </header>
+    <main>
+        <${tagName}></${tagName}>
+    </main>
 </body>
 </html>`
     }
