@@ -3,8 +3,12 @@ import {
     forEachChild,
     getCombinedModifierFlags,
     getJSDocTags,
+    isArrayLiteralExpression,
+    isArrowFunction,
     isCallExpression,
     isClassDeclaration,
+    isFunctionDeclaration,
+    isFunctionExpression,
     isGetAccessorDeclaration,
     isIdentifier,
     isMethodDeclaration,
@@ -13,16 +17,22 @@ import {
     isPropertyAccessExpression,
     isPropertyDeclaration,
     isSetAccessorDeclaration,
+    isSpreadElement,
     isStringLiteralLike,
+    isVariableDeclaration,
     displayPartsToString,
     getTextOfJSDocComment,
     ModifierFlags,
     SymbolFlags,
+    SyntaxKind,
+    type ArrayLiteralExpression,
     type ClassDeclaration,
     type CompilerOptions,
+    type GetAccessorDeclaration,
     type Identifier,
     type Node,
     type Program,
+    type SignatureDeclaration,
     type SourceFile,
     type TypeChecker,
 } from 'typescript';
@@ -84,6 +94,7 @@ export interface ClassField {
     static?: boolean;
     type?: { text: string };
     default?: string;
+    inheritedFrom?: { name: string };
 }
 
 export interface ClassMethod {
@@ -93,6 +104,7 @@ export interface ClassMethod {
     privacy: 'public' | 'private' | 'protected';
     static?: boolean;
     return?: { type?: { text: string } };
+    inheritedFrom?: { name: string };
 }
 
 export type ClassMember = ClassField | ClassMethod;
@@ -262,6 +274,20 @@ export class ManifestGenerator {
         return symbol?.declarations?.find((d): d is ClassDeclaration => isClassDeclaration(d));
     }
 
+    /** The `extends` clause expression as written, e.g. `AuxValueElement` or `HTMLElement`. */
+    private superclassNameOf(node: ClassDeclaration): string {
+        const ext = node.heritageClauses?.find((c) => c.token === SyntaxKind.ExtendsKeyword);
+        const type = ext?.types[0];
+        return type ? type.expression.getText() : 'HTMLElement';
+    }
+
+    /** The immediate base class declaration this class extends, if it resolves in the program. */
+    private resolveBaseClass(node: ClassDeclaration): ClassDeclaration | undefined {
+        const ext = node.heritageClauses?.find((c) => c.token === SyntaxKind.ExtendsKeyword);
+        const type = ext?.types[0];
+        return type ? this.resolveClassDeclaration(type.expression) : undefined;
+    }
+
     /** Whether an identifier resolves to a class that is (transitively) a custom element. */
     private identifierIsCustomElementClass(id: Identifier): boolean {
         const decl = this.resolveClassDeclaration(id);
@@ -282,7 +308,7 @@ export class ManifestGenerator {
         const description = this.descriptionOf(node);
         if (description) decl.description = description;
 
-        decl.superclass = { name: 'HTMLElement' };
+        decl.superclass = { name: this.superclassNameOf(node) };
 
         // Class-level jsdoc tags: @slot, @csspart, @cssprop/@cssproperty, @fires/@event, @summary.
         const slots: NamedDoc[] = [];
@@ -316,8 +342,32 @@ export class ManifestGenerator {
         return decl;
     }
 
-    /** Public fields, accessors (as fields), and public non-lifecycle methods. */
+    /**
+     * Public API surface of the class, flattening members inherited from custom
+     * intermediate base classes into the subclass entry (CEM convention). Inherited
+     * members are annotated with `inheritedFrom`; an override in the subclass wins.
+     * The walk stops at `HTMLElement` (which does not resolve to a ClassDeclaration).
+     */
     private collectMembers(node: ClassDeclaration): ClassMember[] {
+        const byName = new Map<string, ClassMember>();
+        for (const member of this.collectOwnMembers(node)) byName.set(member.name, member);
+
+        const seen = new Set<ClassDeclaration>([node]);
+        let base = this.resolveBaseClass(node);
+        while (base && !seen.has(base)) {
+            seen.add(base);
+            const baseName = base.name?.text;
+            for (const member of this.collectOwnMembers(base)) {
+                if (byName.has(member.name)) continue; // subclass override wins
+                byName.set(member.name, baseName ? { ...member, inheritedFrom: { name: baseName } } : member);
+            }
+            base = this.resolveBaseClass(base);
+        }
+        return [...byName.values()];
+    }
+
+    /** Public fields, accessors (as fields), and public non-lifecycle methods declared on this class. */
+    private collectOwnMembers(node: ClassDeclaration): ClassMember[] {
         const fields = new Map<string, ClassField>();
         const methods: ClassMethod[] = [];
 
@@ -371,15 +421,25 @@ export class ManifestGenerator {
 
     /** Attribute names from `static get observedAttributes()`, linked to matching properties. */
     private collectAttributes(node: ClassDeclaration, members: ClassMember[]): Attribute[] {
-        const observed = node.members.find(
-            (m) => isGetAccessorDeclaration(m) && m.name.getText() === 'observedAttributes'
-        );
-        if (!observed || !isGetAccessorDeclaration(observed) || !observed.body) return [];
+        const observed = this.findObservedAttributes(node);
+        if (!observed || !observed.body) return [];
 
         const names: string[] = [];
         const visit = (n: Node): void => {
-            if (isStringLiteralLike(n)) names.push(n.text);
-            else forEachChild(n, visit);
+            if (isStringLiteralLike(n)) {
+                names.push(n.text);
+                return;
+            }
+            // `static get observedAttributes() { return [...Base.attrs, 'c']; }` — expand a
+            // spread of a static (or module-level) string array declared on a base class.
+            if (isSpreadElement(n)) {
+                const expanded = this.resolveStringArray(n.expression);
+                if (expanded) {
+                    names.push(...expanded);
+                    return;
+                }
+            }
+            forEachChild(n, visit);
         };
         for (const statement of observed.body.statements) visit(statement);
 
@@ -396,7 +456,58 @@ export class ManifestGenerator {
         });
     }
 
-    /** Events from `new CustomEvent('name')` / `new Event('name')` anywhere in the class. */
+    /**
+     * The `static get observedAttributes()` getter, searched up the base-class chain.
+     * A subclass that does not re-declare it inherits the nearest base's getter (static
+     * accessors are inherited through the constructor prototype chain at runtime).
+     */
+    private findObservedAttributes(node: ClassDeclaration): GetAccessorDeclaration | undefined {
+        const seen = new Set<ClassDeclaration>();
+        let current: ClassDeclaration | undefined = node;
+        while (current && !seen.has(current)) {
+            seen.add(current);
+            const observed = current.members.find(
+                (m) => isGetAccessorDeclaration(m) && m.name.getText() === 'observedAttributes'
+            );
+            if (observed && isGetAccessorDeclaration(observed)) return observed;
+            current = this.resolveBaseClass(current);
+        }
+        return undefined;
+    }
+
+    /** Resolves an identifier / property-access referring to a (static or const) string array literal. */
+    private resolveStringArray(expr: Node, seen: Set<Node> = new Set()): string[] | undefined {
+        if (seen.has(expr)) return undefined;
+        seen.add(expr);
+        let symbol = this.checker.getSymbolAtLocation(expr);
+        if (symbol && symbol.flags & SymbolFlags.Alias) symbol = this.checker.getAliasedSymbol(symbol);
+        for (const decl of symbol?.declarations ?? []) {
+            const init =
+                isPropertyDeclaration(decl) || isVariableDeclaration(decl) ? decl.initializer : undefined;
+            if (init && isArrayLiteralExpression(init)) return this.stringLiteralsFrom(init, seen);
+        }
+        return undefined;
+    }
+
+    /** String literals from an array literal, recursively expanding nested spreads of string arrays. */
+    private stringLiteralsFrom(arr: ArrayLiteralExpression, seen: Set<Node>): string[] {
+        const out: string[] = [];
+        for (const el of arr.elements) {
+            if (isStringLiteralLike(el)) out.push(el.text);
+            else if (isSpreadElement(el)) {
+                const nested = this.resolveStringArray(el.expression, seen);
+                if (nested) out.push(...nested);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Events from `new CustomEvent('name')` / `new Event('name')` anywhere in the class, plus
+     * events dispatched through a one-hop helper such as `emit(this, 'input', ...)`: the helper
+     * is resolved and the parameter it forwards as the event type is matched back to the
+     * string literal at the call site.
+     */
     private collectDispatchedEvents(node: ClassDeclaration): CemEvent[] {
         const events = new Map<string, CemEvent>();
         const visit = (n: Node): void => {
@@ -408,11 +519,76 @@ export class ManifestGenerator {
                         events.set(first.text, { name: first.text, type: { text: ctor } });
                     }
                 }
+            } else if (isCallExpression(n)) {
+                const event = this.eventFromHelperCall(n);
+                if (event) events.set(event.name, event);
             }
             forEachChild(n, visit);
         };
         visit(node);
         return [...events.values()];
+    }
+
+    /** Cache of `helper symbol declaration -> { typeParamIndex, ctor }` (or null if not a dispatch helper). */
+    private helperDispatchCache = new Map<Node, { index: number; ctor: string } | null>();
+
+    /** If `call` invokes a one-hop event-dispatch helper with a literal type argument, the event. */
+    private eventFromHelperCall(call: Node): CemEvent | undefined {
+        if (!isCallExpression(call) || !isIdentifier(call.expression)) return undefined;
+        const fn = this.resolveFunctionLike(call.expression);
+        if (!fn) return undefined;
+        const info = this.dispatchHelperInfo(fn);
+        if (!info) return undefined;
+        const arg = call.arguments[info.index];
+        if (arg && isStringLiteralLike(arg)) {
+            return { name: arg.text, type: { text: info.ctor } };
+        }
+        return undefined;
+    }
+
+    /** Resolves a called identifier to its function declaration or function-valued variable. */
+    private resolveFunctionLike(expr: Node): SignatureDeclaration | undefined {
+        let symbol = this.checker.getSymbolAtLocation(expr);
+        if (symbol && symbol.flags & SymbolFlags.Alias) symbol = this.checker.getAliasedSymbol(symbol);
+        for (const decl of symbol?.declarations ?? []) {
+            if (isFunctionDeclaration(decl)) return decl;
+            if (isVariableDeclaration(decl) && decl.initializer) {
+                if (isArrowFunction(decl.initializer) || isFunctionExpression(decl.initializer)) {
+                    return decl.initializer;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /** Which parameter a helper forwards as a CustomEvent/Event type, and the constructor used. */
+    private dispatchHelperInfo(fn: SignatureDeclaration): { index: number; ctor: string } | null {
+        const cached = this.helperDispatchCache.get(fn);
+        if (cached !== undefined) return cached;
+        let result: { index: number; ctor: string } | null = null;
+        const body = (fn as { body?: Node }).body;
+        if (body) {
+            const visit = (n: Node): void => {
+                if (result) return;
+                if (isNewExpression(n)) {
+                    const ctor = n.expression.getText();
+                    const first = n.arguments?.[0];
+                    if ((ctor === 'CustomEvent' || ctor === 'Event') && first && isIdentifier(first)) {
+                        const index = fn.parameters.findIndex(
+                            (p) => isIdentifier(p.name) && p.name.text === (first as Identifier).text
+                        );
+                        if (index >= 0) {
+                            result = { index, ctor };
+                            return;
+                        }
+                    }
+                }
+                forEachChild(n, visit);
+            };
+            visit(body);
+        }
+        this.helperDispatchCache.set(fn, result);
+        return result;
     }
 
     private mergeEvents(detected: CemEvent[], tagged: CemEvent[]): CemEvent[] {
