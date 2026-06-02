@@ -3,6 +3,7 @@
 [![CI](https://github.com/sebs/banira/actions/workflows/ci.yml/badge.svg)](https://github.com/sebs/banira/actions/workflows/ci.yml)
 [![Release](https://github.com/sebs/banira/actions/workflows/release.yml/badge.svg)](https://github.com/sebs/banira/actions/workflows/release.yml)
 [![GitHub release](https://img.shields.io/github/v/release/sebs/banira)](https://github.com/sebs/banira/releases/latest)
+[![npm](https://img.shields.io/npm/v/banira)](https://www.npmjs.com/package/banira)
 
 > !!! WARNING: This is a work in progress. Please use at your own risk.
 
