@@ -1,7 +1,7 @@
 name: Release
 
 # Fires when a version tag is pushed, e.g. created by `npm version <patch|minor|major>`
-# in the repo root (which bumps the root package.json and creates the matching tag).
+# (which bumps package.json and creates the matching tag).
 on:
   push:
     tags:
@@ -24,42 +24,30 @@ jobs:
           node-version: 22.x
           cache: 'npm'
 
-      - name: Read shared version from root package.json
+      - name: Read version from package.json
         id: ver
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Verify tag matches root package.json version
+      - name: Verify tag matches package.json version
         run: |
           tag="${GITHUB_REF_NAME#v}"
-          root="${{ steps.ver.outputs.version }}"
-          if [ "$tag" != "$root" ]; then
-            echo "::error::Tag '$GITHUB_REF_NAME' does not match root package.json version '$root'."
+          pkg="${{ steps.ver.outputs.version }}"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match package.json version '$pkg'."
             exit 1
           fi
 
       - name: Install
         run: npm install
 
-      # Fail loudly if the committed versions drifted, rather than letting the
-      # ephemeral sync below mask it.
-      - name: Check version sync
-        run: npm run check-versions
-
       - name: Build
-        run: npm run build -ws
+        run: npm run build
 
-      # banira and banira-cli share the single root version number.
-      - name: Sync package versions
-        run: >
-          npm version "${{ steps.ver.outputs.version }}"
-          --no-git-tag-version --allow-same-version
-          -w banira -w banira-cli
-
-      # `npm pack` produces the npm-native package tarballs (.tgz), ready to upload.
-      - name: Pack npm tarballs
+      # `npm pack` produces the npm-native package tarball (.tgz), ready to upload.
+      - name: Pack npm tarball
         run: |
           mkdir -p dist-artifacts
-          npm pack -w banira -w banira-cli --pack-destination dist-artifacts
+          npm pack --pack-destination dist-artifacts
           ls -la dist-artifacts
 
       - name: Create GitHub Release

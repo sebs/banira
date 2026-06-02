@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "noEmit": true
-  },
-  "include": ["src/**/*", "../banira/src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist", "test/fixtures"]
-}

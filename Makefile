@@ -1,28 +1,25 @@
 .PHONY: clean bootstrap test lint docs
 
-# Locally installed dev tools (root node_modules), invoked directly instead of via npx.
+# Locally installed dev tools, invoked directly instead of via npx.
 BIN := ./node_modules/.bin
 
-# Clean all dependencies and build artifacts
+# Remove build artifacts and dependencies
 clean:
-	rm -rf packages/*/node_modules
-	rm -rf packages/*/dist
+	rm -rf dist docs node_modules
 
-# Install all dependencies
+# Install dependencies and build
 bootstrap:
-	npm install -ws
-	npm run build -ws
-	cd packages/banira-cli && npm install && npm run build && npm link && cd ../..
+	npm install
+	npm run build
 
-# Run all tests
+# Run the test suite
 test:
-	npm test -ws
+	npm test
 
+# Generate API documentation
 docs:
-	$(BIN)/typedoc --options ./packages/banira/typedoc.json --tsconfig ./packages/banira/tsconfig.json
+	$(BIN)/typedoc
 
-# Type-check every package (incl. tests) with strict settings; emits nothing.
+# Type-check src and tests with strict settings; emits nothing.
 lint:
-	$(BIN)/tsc -p packages/banira/tsconfig.lint.json
-	$(BIN)/tsc -p packages/banira-cli/tsconfig.lint.json
-	$(BIN)/tsc -p packages/component-my-circle/tsconfig.lint.json
+	$(BIN)/tsc -p tsconfig.lint.json

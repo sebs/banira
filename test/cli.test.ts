@@ -7,7 +7,7 @@ import assert from "node:assert";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const cliPath = resolve(__dirname, "../dist/packages/banira-cli/src/index.js");
+const cliPath = resolve(__dirname, "../dist/cli/index.js");
 
 describe("banira CLI", () => {
     it("should show help message", async () => {
@@ -18,9 +18,9 @@ describe("banira CLI", () => {
     it("should compile TypeScript file", async () => {
         const result = await runCommand([
             'compile',
-            '-p',
-            '../component-my-circle/tsconfig.json',
-            '../component-my-circle/src/my-circle.ts'
+            'examples/my-circle/my-circle.ts',
+            '-o',
+            'dist/.cli-test-out'
         ]);
         // assert.strictEqual(result.exitCode, 0, "Expected successful compilation");
         assert.match(result.stdout, /Compilation complete/);
@@ -29,7 +29,7 @@ describe("banira CLI", () => {
     it("should generate documentation for TypeScript file", async () => {
         const result = await runCommand([
             'doc',
-            '../component-my-circle/src/my-circle.ts'
+            'examples/my-circle/my-circle.ts'
         ]);
         assert.strictEqual(result.exitCode, 0, "Expected successful documentation generation");
         assert.ok(result.stdout.length > 0, "Expected documentation output");

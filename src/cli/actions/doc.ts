@@ -1,4 +1,4 @@
-import { DocGen } from 'banira';
+import { DocGen } from '../../index.js';
 import { resolve, basename, dirname } from 'path';
 import { writeFile, mkdir } from 'fs/promises';
 

@@ -2,12 +2,12 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { TestHelper, MountContext } from 'banira';
+import { TestHelper, MountContext } from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const componentPath = resolve(__dirname, '../src/my-circle.ts');
+const componentPath = resolve(__dirname, '../examples/my-circle/my-circle.ts');
 
 describe('MyCircle Component', () => {
     let mountContext: MountContext;

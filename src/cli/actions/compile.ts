@@ -1,4 +1,4 @@
-import { Compiler, ResultAnalyzer } from 'banira';
+import { Compiler, ResultAnalyzer } from '../../index.js';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';

@@ -13,27 +13,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
-    - name: Install
-      run: npm install
-
-    - name: Check version sync
-      run: npm run check-versions
-
-    - name: Clean
-      run: make clean
-      
     - name: Bootstrap
       run: make bootstrap
-      
+
     - name: Test
       run: make test
-      
+
     - name: Type-check (strict)
       run: make lint
