@@ -26,6 +26,14 @@
   ],
   "author": "Sebastian Schürmann",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sebs/banira.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sebs/banira/issues"
+  },
+  "homepage": "https://github.com/sebs/banira#readme",
   "engines": {
     "node": ">=18.19.0"
   },
