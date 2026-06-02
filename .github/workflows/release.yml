@@ -1,0 +1,64 @@
+name: Release
+
+# Fires when a version tag is pushed, e.g. created by `npm version <patch|minor|major>`
+# in the repo root (which bumps the root package.json and creates the matching tag).
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Needed for softprops/action-gh-release to create the GitHub release.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Read shared version from root package.json
+        id: ver
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag matches root package.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          root="${{ steps.ver.outputs.version }}"
+          if [ "$tag" != "$root" ]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match root package.json version '$root'."
+            exit 1
+          fi
+
+      - name: Install
+        run: npm install
+
+      - name: Build
+        run: npm run build -ws
+
+      # banira and banira-cli share the single root version number.
+      - name: Sync package versions
+        run: >
+          npm version "${{ steps.ver.outputs.version }}"
+          --no-git-tag-version --allow-same-version
+          -w banira -w banira-cli
+
+      # `npm pack` produces the npm-native package tarballs (.tgz), ready to upload.
+      - name: Pack npm tarballs
+        run: |
+          mkdir -p dist-artifacts
+          npm pack -w banira -w banira-cli --pack-destination dist-artifacts
+          ls -la dist-artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-artifacts/*.tgz
+          generate_release_notes: true
