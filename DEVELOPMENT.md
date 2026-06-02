@@ -17,6 +17,13 @@ linux machine.
 make bootstrap   # install dependencies and build
 ```
 
+## Git hooks
+
+A `pre-commit` hook runs `make lint` and `make test`. It lives in
+[`.githooks/`](./.githooks) (plain shell, no dependency) and is wired up by the
+`prepare` script on `npm install` via `git config core.hooksPath .githooks`.
+Bypass it for a single commit with `git commit --no-verify`.
+
 ## Common tasks
 
 | Command | Description |

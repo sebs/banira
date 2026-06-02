@@ -35,7 +35,7 @@
     "lint": "tsc -p tsconfig.lint.json",
     "docs": "typedoc",
     "clean": "make clean",
-    "prepare": "husky"
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@microsoft/tsdoc": "0.15.1",
@@ -47,7 +47,6 @@
   "devDependencies": {
     "@types/jsdom": "21.1.7",
     "@types/node": "22.10.2",
-    "husky": "9.1.7",
     "tsx": "4.19.2",
     "typedoc": "0.27.6"
   }
