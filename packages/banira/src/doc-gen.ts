@@ -77,11 +77,12 @@ export class DocGen {
     }
 
     /**
-     * Renders only the custom documentation blocks from a parsed documentation context.
-     * This specifically focuses on rendering blocks marked with custom tags like @demo.
-     * 
+     * Renders a parsed documentation context to a standalone HTML doc page.
+     * The page includes the summary description, any `@demo` blocks (shown both
+     * live and as source), and documented `@param` attributes.
+     *
      * @param context - The parsed documentation context to render
-     * @returns A formatted string containing only the custom documentation blocks
+     * @returns A complete HTML document as a string
      * @throws Error if the context or docComment is undefined
      */
     renderDocs(context: ParserContext): string {

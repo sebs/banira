@@ -9,7 +9,7 @@ import {
     sys, 
     getPreEmitDiagnostics
 } from 'typescript';
-import  { CompilerResult } from './compiler';
+import { CompilerResult } from './compiler.js';
 import { discoverComments, IFoundComment } from './discover-comments.js';
 
 /**

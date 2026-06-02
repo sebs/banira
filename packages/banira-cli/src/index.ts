@@ -23,6 +23,7 @@ program
   .command('doc')
   .description('Generate documentation for a TypeScript file')
   .argument('<file>', 'TypeScript file to document')
+  .option('-o, --output <path>', 'Write the doc page to a file instead of stdout')
   .action(doc);
 
 program.parse();

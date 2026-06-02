@@ -6,7 +6,9 @@ import { resolve, dirname } from 'path';
 
 export const compile = async (files: string[], options: { project?: string; outDir?: string }) => {
   try {
-    let compilerOptions: ts.CompilerOptions = {};
+    // Start from the library defaults so that, without --project, output still
+    // has a defined module/target/lib/outDir instead of bare tsc defaults.
+    let compilerOptions: ts.CompilerOptions = { ...Compiler.DEFAULT_COMPILER_OPTIONS };
 
     if (options.project) {
       const configPath = resolve(options.project);
@@ -27,7 +29,8 @@ export const compile = async (files: string[], options: { project?: string; outD
         process.exit(1);
       }
 
-      compilerOptions = result.options;
+      // Project options override the defaults.
+      compilerOptions = { ...compilerOptions, ...result.options };
     }
 
     if (options.outDir) {

@@ -90,4 +90,56 @@ import { c } from './module-c.js';`;
             );
         });
     });
+
+    describe('re-exports', () => {
+        it('should append .js to named re-exports', () => {
+            assert.strictEqual(
+                transform(`export { x } from './y';`).trim(),
+                `export { x } from './y.js';`,
+                'Should add .js to named re-export'
+            );
+        });
+
+        it('should append .js to star re-exports', () => {
+            assert.strictEqual(
+                transform(`export * from './y';`).trim(),
+                `export * from './y.js';`,
+                'Should add .js to star re-export'
+            );
+        });
+
+        it('should not modify external re-exports', () => {
+            assert.strictEqual(
+                transform(`export { x } from '@scope/package';`).trim(),
+                `export { x } from '@scope/package';`,
+                'Should not modify external re-export'
+            );
+        });
+
+        it('should not double-append to re-exports that already end with .js', () => {
+            assert.strictEqual(
+                transform(`export * from './y.js';`).trim(),
+                `export * from './y.js';`,
+                'Should preserve existing .js on re-export'
+            );
+        });
+    });
+
+    describe('dynamic imports', () => {
+        it('should append .js to relative dynamic imports', () => {
+            assert.strictEqual(
+                transform(`const m = import('./lazy');`).trim(),
+                `const m = import('./lazy.js');`,
+                'Should add .js to dynamic import'
+            );
+        });
+
+        it('should not modify external dynamic imports', () => {
+            assert.strictEqual(
+                transform(`const m = import('some-package');`).trim(),
+                `const m = import('some-package');`,
+                'Should not modify external dynamic import'
+            );
+        });
+    });
 });

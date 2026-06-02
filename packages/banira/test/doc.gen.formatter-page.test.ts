@@ -39,5 +39,14 @@ describe('DocGen Formatter', () => {
         it('contains the demo tag', async () => {
             assert.match(result, /<my-circle><\/my-circle>/);
         });
+        it('renders the parsed summary description', async () => {
+            assert.match(result, /A custom web component that renders a circle using SVG/);
+        });
+        it('renders the @demo block live and as source', async () => {
+            // live preview (raw, unescaped) of the demo markup
+            assert.match(result, /<my-circle size="100" color="blue"><\/my-circle>/);
+            // and the same markup shown as escaped source
+            assert.match(result, /&lt;my-circle size=&quot;100&quot; color=&quot;blue&quot;&gt;/);
+        });
     });
 });

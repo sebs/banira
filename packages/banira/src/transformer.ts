@@ -16,38 +16,91 @@ import * as ts from 'typescript';
  * @param context - The TypeScript transformation context
  * @returns A transformer function for TypeScript source files
  * 
+ * It also covers re-exports (`export { x } from './y'`, `export * from './y'`)
+ * and dynamic imports (`import('./y')`), since those break in the browser for
+ * the same reason static imports do.
+ *
  * @example
  * ```typescript
  * // Input:
  * import { foo } from './bar'
+ * export { qux } from './qux'
+ * const mod = await import('./lazy')
  * import { baz } from '@external/pkg'
- * 
+ *
  * // Output:
  * import { foo } from './bar.js'
+ * export { qux } from './qux.js'
+ * const mod = await import('./lazy.js')
  * import { baz } from '@external/pkg'
  * ```
  */
 function appendJsToImports(context: ts.TransformationContext): ts.Transformer<ts.SourceFile> {
     /**
-     * Node visitor that processes import declarations
-     * 
+     * Determines whether a module specifier should have '.js' appended:
+     * relative paths that don't already carry the extension.
+     */
+    const needsJsExtension = (specifier: string): boolean =>
+        specifier.startsWith('.') && !specifier.startsWith('@') && !specifier.endsWith('.js');
+
+    /**
+     * Returns true for the `import(...)` form of a call expression
+     * (dynamic import), as opposed to a regular function call.
+     */
+    const isDynamicImport = (node: ts.CallExpression): boolean =>
+        node.expression.kind === ts.SyntaxKind.ImportKeyword;
+
+    /**
+     * Node visitor that processes import, re-export, and dynamic-import nodes
+     *
      * @param node - The TypeScript AST node to process
-     * @returns The processed node, possibly with modified import path
+     * @returns The processed node, possibly with modified module path
      */
     const visitor = (node: ts.Node): ts.Node => {
-        if (ts.isImportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-            const importPath = node.moduleSpecifier.text;
-            // Skip if it already ends with .js or if it's an external module
-            if (importPath.endsWith('.js') || importPath.startsWith('@') || !importPath.startsWith('.')) {
-                return node;
+        // import ... from './x'
+        if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+            const path = node.moduleSpecifier.text;
+            if (needsJsExtension(path)) {
+                return ts.factory.updateImportDeclaration(
+                    node,
+                    node.modifiers,
+                    node.importClause,
+                    ts.factory.createStringLiteral(`${path}.js`),
+                    node.attributes
+                );
             }
-            const newModuleSpecifier = ts.factory.createStringLiteral(`${importPath}.js`);
-            return ts.factory.createImportDeclaration(
-                node.modifiers,
-                node.importClause,
-                newModuleSpecifier
-            );
+            return node;
         }
+
+        // export { x } from './x'  /  export * from './x'
+        if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+            const path = node.moduleSpecifier.text;
+            if (needsJsExtension(path)) {
+                return ts.factory.updateExportDeclaration(
+                    node,
+                    node.modifiers,
+                    node.isTypeOnly,
+                    node.exportClause,
+                    ts.factory.createStringLiteral(`${path}.js`),
+                    node.attributes
+                );
+            }
+            return node;
+        }
+
+        // import('./x')
+        if (ts.isCallExpression(node) && isDynamicImport(node) && node.arguments.length > 0) {
+            const [specifier, ...rest] = node.arguments;
+            if (ts.isStringLiteral(specifier) && needsJsExtension(specifier.text)) {
+                return ts.factory.updateCallExpression(
+                    node,
+                    node.expression,
+                    node.typeArguments,
+                    [ts.factory.createStringLiteral(`${specifier.text}.js`), ...rest]
+                );
+            }
+        }
+
         return ts.visitEachChild(node, visitor, context);
     };
 
@@ -63,15 +116,13 @@ function appendJsToImports(context: ts.TransformationContext): ts.Transformer<ts
  * declarations in source files.
  * 
  * @returns A TypeScript transformer factory
- * 
+ *
  * @example
  * ```typescript
- * import { Compiler } from 'typescript';
- * 
- * const compiler = new Compiler({
- *   transformers: {
- *     before: [appendJsImportsTransformer()]
- *   }
+ * import appendJsImports from './transformer.js';
+ *
+ * program.emit(undefined, undefined, undefined, undefined, {
+ *   after: [appendJsImports()]
  * });
  * ```
  */

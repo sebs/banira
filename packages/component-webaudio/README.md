@@ -4,10 +4,13 @@ A collection of Web Components for creating audio control interfaces. Based on t
 
 ## Components
 
-- `webaudio-knob`: Rotary control for parameters
-- `webaudio-slider`: Linear slider control
-- `webaudio-switch`: Toggle or momentary switch
-- `webaudio-param`: Parameter display
+- `wa-knob` (`WAKnob`): Rotary control for parameters — **available**
+
+Planned (not yet implemented):
+
+- `wa-slider`: Linear slider control
+- `wa-switch`: Toggle or momentary switch
+- `wa-param`: Parameter display
 
 ## Installation
 
@@ -19,14 +22,11 @@ npm install @banira/component-webaudio
 
 ```html
 <script type="module">
-  import { WebAudioKnob, WebAudioSlider, WebAudioSwitch, WebAudioParam } 
-    from '@banira/component-webaudio';
+  // Importing the package registers the <wa-knob> custom element.
+  import '@banira/component-webaudio';
 </script>
 
-<webaudio-knob value="50" min="0" max="100"></webaudio-knob>
-<webaudio-slider value="50" min="0" max="100"></webaudio-slider>
-<webaudio-switch value="0"></webaudio-switch>
-<webaudio-param value="50"></webaudio-param>
+<wa-knob value="50" min="0" max="127"></wa-knob>
 ```
 
 ## Development

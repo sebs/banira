@@ -1,10 +1,7 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run lint
+# Fast, incremental checks against the already-installed tree.
+# Full clean/bootstrap is reserved for CI and `npm run reset`.
 npm run lint || exit 1
-
-# Run clean, bootstrap, and test
-make clean || exit 1
-make bootstrap || exit 1
 make test || exit 1

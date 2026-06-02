@@ -113,7 +113,13 @@ describe("ResultAnalyzer", () => {
         });
 
         it("gets > 10K comments", () => {
-            assert.ok(analyzer.comments.length>1000);
+            // The program pulls in TypeScript's lib.*.d.ts files, whose exact
+            // comment count drifts with the TS version, so assert a threshold
+            // rather than a brittle exact count.
+            assert.ok(
+                analyzer.comments.length > 10000,
+                `expected > 10000 comments, got ${analyzer.comments.length}`
+            );
         });
     }); 
 
