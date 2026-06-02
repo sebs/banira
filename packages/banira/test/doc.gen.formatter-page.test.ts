@@ -1,8 +1,8 @@
 import { describe, it, before } from "node:test";
 import assert from "node:assert";
-import { DocGen } from '../src/doc-gen';
+import { DocGen } from '../src/doc-gen.js';
 import { ParserContext } from "@microsoft/tsdoc";
-import { FormatterDocPage } from '../src/formatter/doc-page';
+import { FormatterDocPage } from '../src/formatter/doc-page.js';
 
 describe('DocGen Formatter', () => {
     let docGen: DocGen;

@@ -14,7 +14,7 @@ function transform(source: string): string {
 
     // Create a transformer
     const result = ts.transform(sourceFile, [transformer()]);
-    const transformedSourceFile = result.transformed[0];
+    const transformedSourceFile = result.transformed[0]!;
     
     // Create a printer with single quotes
     const printer = ts.createPrinter({

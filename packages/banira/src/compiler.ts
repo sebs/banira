@@ -94,7 +94,7 @@ export class Compiler {
     /**
      * Compiler host
      */
-    public readonly host?: CompilerHost;
+    public readonly host?: CompilerHost | undefined;
 
     /**
      * Default compiler options for the TypeScript compiler

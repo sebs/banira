@@ -18,5 +18,8 @@ test:
 docs:
 	npx typedoc --options ./packages/banira/typedoc.json --tsconfig ./packages/banira/tsconfig.json
 
+# Type-check every package (incl. tests) with strict settings; emits nothing.
 lint:
-	npx eslint "packages/**/*.ts"
+	npx tsc -p packages/banira/tsconfig.lint.json
+	npx tsc -p packages/banira-cli/tsconfig.lint.json
+	npx tsc -p packages/component-my-circle/tsconfig.lint.json

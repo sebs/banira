@@ -1,14 +1,9 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2020",
-    "module": "NodeNext",
     "outDir": "./dist",
-    "rootDir": "../../",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "NodeNext"
+    "rootDir": "../../"
   },
   "include": ["src/**/*", "../banira/src/**/*"],
   "exclude": ["node_modules", "dist"]

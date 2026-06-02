@@ -91,7 +91,7 @@ function appendJsToImports(context: ts.TransformationContext): ts.Transformer<ts
         // import('./x')
         if (ts.isCallExpression(node) && isDynamicImport(node) && node.arguments.length > 0) {
             const [specifier, ...rest] = node.arguments;
-            if (ts.isStringLiteral(specifier) && needsJsExtension(specifier.text)) {
+            if (specifier && ts.isStringLiteral(specifier) && needsJsExtension(specifier.text)) {
                 return ts.factory.updateCallExpression(
                     node,
                     node.expression,
