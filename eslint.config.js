@@ -17,18 +17,34 @@ module.exports = [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        queueMicrotask: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
         HTMLElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLUListElement: 'readonly',
         CustomElementRegistry: 'readonly',
         customElements: 'readonly',
         window: 'readonly',
         document: 'readonly',
+        navigator: 'readonly',
         process: 'readonly',
         console: 'readonly',
         Document: 'readonly',
         ShadowRoot: 'readonly',
+        Node: 'readonly',
+        Element: 'readonly',
+        Event: 'readonly',
+        EventListener: 'readonly',
+        CustomEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        MouseEvent: 'readonly',
+        PointerEvent: 'readonly',
+        WheelEvent: 'readonly',
         SVGSVGElement: 'readonly',
         SVGCircleElement: 'readonly',
-        Element: 'readonly'
+        SVGElement: 'readonly'
       }
     },
     plugins: {
@@ -37,6 +53,7 @@ module.exports = [
     rules: {
       ...typescript.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
 ];
