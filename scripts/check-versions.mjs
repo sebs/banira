@@ -28,4 +28,23 @@ if (unique.size > 1) {
   process.exit(1);
 }
 
-console.log(`Version check OK — all in sync at ${[...unique][0]}.`);
+const shared = [...unique][0];
+
+// These workspaces pin banira to the exact shared version (kept in lockstep by
+// the root `version` script). A drifted pin would resolve the wrong banira — or
+// publish a broken dependency — so guard each pin here too.
+const dependents = [
+  { label: 'banira-cli', path: 'packages/banira-cli/package.json' },
+  { label: 'component-my-circle', path: 'packages/component-my-circle/package.json' },
+];
+
+for (const d of dependents) {
+  const pin = JSON.parse(readFileSync(join(repoRoot, d.path), 'utf8')).dependencies?.banira;
+  if (pin !== shared) {
+    console.error(`Dependency pin mismatch — ${d.label} depends on banira "${pin}", expected "${shared}".`);
+    console.error('Bump the root version with `npm version <patch|minor|major>` to keep the pin in sync.');
+    process.exit(1);
+  }
+}
+
+console.log(`Version check OK — all in sync at ${shared}; banira-cli and component-my-circle pin banira@${shared}.`);

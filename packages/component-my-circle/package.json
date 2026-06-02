@@ -17,7 +17,7 @@
   "author": "Sebastian Schürmann",
   "license": "MIT",
   "dependencies": {
-    "banira": "file:../banira"
+    "banira": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "22.10.2",

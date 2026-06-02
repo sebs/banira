@@ -13,11 +13,11 @@
     "start": "node ./dist/packages/banira-cli/src/index.js"
   },
   "dependencies": {
-    "commander": "12.1.0",
-    "banira": "file:../banira"
+    "banira": "0.1.0",
+    "commander": "12.1.0"
   },
   "devDependencies": {
-    "typescript": "5.7.2",
-    "@types/node": "22.10.2"
+    "@types/node": "22.10.2",
+    "typescript": "5.7.2"
   }
 }

@@ -19,7 +19,7 @@
     "prepare": "npx husky",
     "check-versions": "node scripts/check-versions.mjs",
     "preversion": "node scripts/check-versions.mjs",
-    "version": "npm version $npm_package_version --no-git-tag-version --allow-same-version -w banira -w banira-cli && git add packages/banira/package.json packages/banira-cli/package.json package-lock.json",
+    "version": "npm version $npm_package_version --no-git-tag-version --allow-same-version -w banira -w banira-cli && npm pkg set dependencies.banira=$npm_package_version -w banira-cli -w @banira/component-my-circle && git add packages/banira/package.json packages/banira-cli/package.json packages/component-my-circle/package.json package-lock.json",
     "reset": "make clean && make bootstrap && make test && make docs",
     "clean": "make clean",
     "bootstrap": "make bootstrap",
