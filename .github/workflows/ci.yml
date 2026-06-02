@@ -22,7 +22,10 @@ jobs:
 
     - name: Install
       run: npm install
-    
+
+    - name: Check version sync
+      run: npm run check-versions
+
     - name: Clean
       run: make clean
       

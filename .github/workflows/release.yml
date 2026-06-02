@@ -40,6 +40,11 @@ jobs:
       - name: Install
         run: npm install
 
+      # Fail loudly if the committed versions drifted, rather than letting the
+      # ephemeral sync below mask it.
+      - name: Check version sync
+        run: npm run check-versions
+
       - name: Build
         run: npm run build -ws
 
