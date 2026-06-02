@@ -23,5 +23,4 @@ This software is a development build and work in progress. Your best shot will b
 
 ## Examples
 
-* [my-circle](./packages/component-my-circle/README.md)
-* [webaudio-controls](./packages/component-webaudio/README.md)
+* [my-circle](./packages/component-my-circle/README.md) — minimal hand-written component
