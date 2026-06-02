@@ -80,9 +80,17 @@ Writes to stdout unless `-o` is given.
 | Option | Description |
 |---|---|
 | `-o, --output <path>` | Write the page to a file instead of stdout |
+| `--script-src <path>` | Component module `src` used in the page (default `./dist/<tag>.js`) |
+| `--stylesheet <value>` | A URL, a local `.css` file to inline, or `none` (default: PicoCSS CDN) |
 
 ```bash
 banira doc src/my-button.ts -o docs/my-button.html
+
+# self-contained / offline page: inline a local stylesheet, point at a custom build
+banira doc src/my-button.ts --stylesheet ./theme.css --script-src ./my-button.js
+
+# no stylesheet at all
+banira doc src/my-button.ts --stylesheet none
 ```
 
 ### `banira manifest <files...>`

@@ -3,6 +3,17 @@ import type { CustomElementDeclaration } from "../manifest.js";
 
 const DEMO_TAG = '@demo';
 
+/** The default page stylesheet (PicoCSS via CDN), used when none is configured. */
+export const DEFAULT_STYLESHEET_HREF = 'https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css';
+
+/**
+ * Stylesheet for the generated doc page:
+ * - `{ href }` — an external `<link rel="stylesheet">` (URL or relative path)
+ * - `{ inline }` — inlined CSS in a `<style>` block (offline-safe / self-contained)
+ * - `'none'` — no stylesheet
+ */
+export type Stylesheet = { href: string } | { inline: string } | 'none';
+
 /**
  * Escapes a string for safe inclusion in HTML text/attribute content.
  */
@@ -235,18 +246,33 @@ export class FormatterDocPage {
         ].filter(Boolean).join('\n        ');
     }
 
-    createDocPage(tagName: string, src: string, title: string): string {
+    /** Renders the `<head>` stylesheet fragment for the configured option. */
+    private renderStylesheet(stylesheet: Stylesheet): string {
+        if (stylesheet === 'none') return '';
+        if ('inline' in stylesheet) return `<style>\n${stylesheet.inline}\n    </style>`;
+        return `<link rel="stylesheet" href="${escapeHtml(stylesheet.href)}">`;
+    }
+
+    /**
+     * @param tagName - The custom element tag to preview.
+     * @param src - The component module `src` for the page's `<script type="module">`.
+     * @param title - The page title.
+     * @param stylesheet - The page stylesheet (link / inline / none). Defaults to the PicoCSS CDN.
+     */
+    createDocPage(
+        tagName: string,
+        src: string,
+        title: string,
+        stylesheet: Stylesheet = { href: DEFAULT_STYLESHEET_HREF }
+    ): string {
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${escapeHtml(title)}</title>
-    <script type="module" src="${src}"></script>
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-    />
+    <script type="module" src="${escapeHtml(src)}"></script>
+    ${this.renderStylesheet(stylesheet)}
 </head>
 <body>
     <header class="container">

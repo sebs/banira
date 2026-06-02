@@ -1,8 +1,18 @@
 import { TSDocParser, type ParserContext, TSDocConfiguration, TSDocTagDefinition, TSDocTagSyntaxKind } from '@microsoft/tsdoc';
 import * as path from 'path';
 import { readFile } from 'fs/promises';
-import { FormatterDocPage } from './formatter/doc-page.js';
+import { FormatterDocPage, DEFAULT_STYLESHEET_HREF, type Stylesheet } from './formatter/doc-page.js';
 import { ManifestGenerator, type CustomElementDeclaration } from './manifest.js';
+
+export type { Stylesheet } from './formatter/doc-page.js';
+
+/** Options controlling the generated documentation page. */
+export interface DocGenOptions {
+    /** Override the component module `src` in the page. Default: `./dist/${tagName}.js`. */
+    scriptSrc?: string;
+    /** Page stylesheet: an external `{ href }`, inline `{ inline }` CSS, or `'none'`. Default: PicoCSS CDN. */
+    stylesheet?: Stylesheet;
+}
 
 /**
  * A class for parsing and rendering TSDoc documentation comments.
@@ -33,21 +43,34 @@ export class DocGen {
 
     public readonly tagName: string;
 
-    get src(): string { 
-        return `./dist/${this.tagName}.js`;
+    private readonly options: DocGenOptions;
+
+    /** The component module `src` used in the generated page (configurable via options). */
+    get src(): string {
+        return this.options.scriptSrc ?? `./dist/${this.tagName}.js`;
     }
 
     get title(): string {
         return `${this.tagName} Component Demo`;
     }
 
-    constructor(tagName: string = "my-circle") {
+    /**
+     * @param tagName - The custom element tag name to document.
+     * @param options - Optional output configuration ({@link DocGenOptions}).
+     */
+    constructor(tagName: string = "my-circle", options: DocGenOptions = {}) {
         this.tagName = tagName;
+        this.options = options;
         // Add custom tag definitions to detect demo blocks
         this.customConfiguration.addTagDefinitions([
             DocGen.CUSTOM_BLOCK_DEFINITION_DEMO
         ]);
         this.tsdocParser = new TSDocParser(this.customConfiguration);
+    }
+
+    /** The resolved page stylesheet (defaults to the PicoCSS CDN link). */
+    private get stylesheet(): Stylesheet {
+        return this.options.stylesheet ?? { href: DEFAULT_STYLESHEET_HREF };
     }
 
     fromString(sourceCode: string): ParserContext { 
@@ -91,7 +114,7 @@ export class DocGen {
             throw new Error('Invalid parser context: docComment is undefined');
         }
         const formatter = new FormatterDocPage(context, declaration);
-        return formatter.createDocPage(this.tagName, this.src, this.title);
+        return formatter.createDocPage(this.tagName, this.src, this.title, this.stylesheet);
     }
 
     /**

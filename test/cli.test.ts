@@ -36,6 +36,19 @@ describe("banira CLI", () => {
         assert.ok(!result.stderr, "Expected no errors");
     });
 
+    it("doc --script-src and --stylesheet none produce an offline-safe page", async () => {
+        const result = await runCommand([
+            'doc',
+            'examples/my-circle/my-circle.ts',
+            '--script-src', './my-circle.js',
+            '--stylesheet', 'none'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful documentation generation");
+        assert.match(result.stdout, /<script type="module" src="\.\/my-circle\.js">/);
+        assert.doesNotMatch(result.stdout, /picocss/, "Expected no CDN stylesheet");
+        assert.doesNotMatch(result.stdout, /<link rel="stylesheet"/);
+    });
+
     it("should generate a custom elements manifest", async () => {
         const result = await runCommand([
             'manifest',

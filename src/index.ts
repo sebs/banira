@@ -7,6 +7,7 @@ export type { VirtualCompilerHost, VirtualFileSystemOptions } from './virtual-fs
 export { TestHelper } from './test-helper.js';
 export type { MountContext, BrowserMountContext } from './test-helper.js';
 export { DocGen } from './doc-gen.js';
+export type { DocGenOptions, Stylesheet } from './doc-gen.js';
 export { ManifestGenerator } from './manifest.js';
 export type {
     Package,

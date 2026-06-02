@@ -36,6 +36,8 @@ program
   .description('Generate an HTML documentation page (with API reference) for a component')
   .argument('<file>', 'TypeScript file to document')
   .option('-o, --output <path>', 'Write the doc page to a file instead of stdout')
+  .option('--script-src <path>', 'Component module src used in the page (default ./dist/<tag>.js)')
+  .option('--stylesheet <value>', "Page stylesheet: a URL, a local .css file to inline, or 'none' (default: PicoCSS CDN)")
   .action(doc);
 
 program

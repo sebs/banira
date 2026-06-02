@@ -1,8 +1,30 @@
-import { DocGen, ManifestGenerator } from '../../index.js';
+import { DocGen, ManifestGenerator, type DocGenOptions, type Stylesheet } from '../../index.js';
 import { resolve, basename, dirname } from 'path';
-import { writeFile, mkdir } from 'fs/promises';
+import { existsSync, statSync } from 'fs';
+import { writeFile, mkdir, readFile } from 'fs/promises';
 
-export const doc = async (file: string, options: { output?: string } = {}) => {
+export interface DocOptions {
+  output?: string;
+  scriptSrc?: string;
+  stylesheet?: string;
+}
+
+/**
+ * Resolves the `--stylesheet` value:
+ * - `none`            -> no stylesheet
+ * - an existing file  -> inlined into the page (offline-safe)
+ * - anything else     -> treated as a URL / href
+ */
+async function resolveStylesheet(value: string): Promise<Stylesheet> {
+  if (value === 'none') return 'none';
+  const filePath = resolve(value);
+  if (existsSync(filePath) && statSync(filePath).isFile()) {
+    return { inline: await readFile(filePath, 'utf8') };
+  }
+  return { href: value };
+}
+
+export const doc = async (file: string, options: DocOptions = {}) => {
   try {
     const filePath = resolve(file);
 
@@ -12,7 +34,11 @@ export const doc = async (file: string, options: { output?: string } = {}) => {
     const declaration = declarations[0];
     const tagName = declaration?.tagName ?? basename(filePath, '.ts');
 
-    const docGen = new DocGen(tagName);
+    const docOptions: DocGenOptions = {};
+    if (options.scriptSrc) docOptions.scriptSrc = options.scriptSrc;
+    if (options.stylesheet) docOptions.stylesheet = await resolveStylesheet(options.stylesheet);
+
+    const docGen = new DocGen(tagName, docOptions);
     const parsed = await docGen.parseDoc(filePath);
     const rendered = docGen.renderDocs(parsed, declaration);
 
