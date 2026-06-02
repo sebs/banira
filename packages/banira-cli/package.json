@@ -1,6 +1,6 @@
 {
   "name": "banira-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI tool for banira.js",
   "main": "dist/packages/banira-cli/src/index.js",
   "type": "module",
@@ -13,7 +13,7 @@
     "start": "node ./dist/packages/banira-cli/src/index.js"
   },
   "dependencies": {
-    "banira": "0.1.0",
+    "banira": "0.1.1",
     "commander": "12.1.0"
   },
   "devDependencies": {
