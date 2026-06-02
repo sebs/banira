@@ -9,6 +9,7 @@ export type { MountContext, BrowserMountContext } from './test-helper.js';
 export { DocGen } from './doc-gen.js';
 export type { DocGenOptions, Stylesheet } from './doc-gen.js';
 export { ManifestGenerator } from './manifest.js';
+export { bundleModule } from './module-bundler.js';
 export type {
     Package,
     Module,

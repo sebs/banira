@@ -2,8 +2,7 @@ import { JSDOM, ConstructorOptions } from 'jsdom';
 import { CompilerOptions} from 'typescript';
 import { DOMWindow } from 'jsdom';
 import { Compiler } from './compiler.js';
-import { VirtualCompilerHost } from './virtual-fs.js';
-import { basename } from 'path';
+import { bundleModule } from './module-bundler.js';
 
 /**
  * Interface representing the context after mounting a component in JSDOM
@@ -84,33 +83,24 @@ export class TestHelper {
      * Compiles a TypeScript component and mounts it in a JSDOM environment
      * 
      * @remarks
-     * This method performs the following steps:
-     * 1. Compiles the TypeScript file using the virtual filesystem
-     * 2. Extracts the compiled JavaScript code
-     * 3. Mounts the component in a JSDOM environment
-     * 
+     * Compiles the file **and its local import graph** into a single
+     * self-contained classic script (see {@link bundleModule}) and mounts it, so
+     * components that import sibling modules work — not just single-file ones.
+     *
      * @param tagName - The custom element tag name
      * @param fileName - Path to the TypeScript source file
      * @param compilerOptions - TypeScript compiler options
      * @param attributes - Optional key-value pairs of attributes to set on the mounted component
      * @returns Promise resolving to a {@link MountContext}
-     * @throws Error if the compiler host is undefined
      */
     async compileAndMountAsScript(
-        tagName: string, 
-        fileName: string, 
+        tagName: string,
+        fileName: string,
         compilerOptions: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS,
         attributes?: Record<string, string>
     ): Promise<MountContext> {
-        const compiler = await Compiler.withVirtualFs([fileName], compilerOptions);
-        compiler.emit();
-        const { host } = compiler;
-        if (!host) {
-            throw new Error('Host is undefined');
-        }
-        const outFile = `${compilerOptions.outDir}/${basename(fileName).replace(/\.ts$/, '.js')}`;
-        const compiledCode = (host as VirtualCompilerHost).volume.readFileSync(outFile, 'utf8').toString();
-        return this.mountAsScript(tagName, compiledCode, attributes);
+        const code = bundleModule(fileName, compilerOptions);
+        return this.mountAsScript(tagName, code, attributes);
     }
 
     /**

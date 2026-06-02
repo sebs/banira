@@ -47,7 +47,7 @@ const manifest = new ManifestGenerator(['src/my-button.ts']).generate();
 | Class | Description |
 |----|----|
 | Compiler | Uses tsc to compile TypeScript files to JavaScript |
-| TestHelper | Test web components in JSDOM (deterministic readiness) or, optionally, a real browser via Playwright (`mountInBrowser`) |
+| TestHelper | Mount web components in JSDOM (including ones that **import sibling modules**) with deterministic readiness, or — optionally — a real browser via Playwright (`mountInBrowser`) |
 | DocGen | Generates an HTML documentation page (summary, `@demo`, and a full API reference) for a component |
 | ManifestGenerator | Produces a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (`custom-elements.json`) from vanilla components |
 
