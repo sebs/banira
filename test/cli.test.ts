@@ -34,7 +34,18 @@ describe("banira CLI", () => {
         assert.strictEqual(result.exitCode, 0, "Expected successful documentation generation");
         assert.ok(result.stdout.length > 0, "Expected documentation output");
         assert.ok(!result.stderr, "Expected no errors");
-        console.log(result.stdout);
+    });
+
+    it("should generate a custom elements manifest", async () => {
+        const result = await runCommand([
+            'manifest',
+            'examples/my-circle/my-circle.ts'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful manifest generation");
+        const manifest = JSON.parse(result.stdout);
+        assert.strictEqual(manifest.schemaVersion, '2.1.0');
+        const decl = manifest.modules.flatMap((m: { declarations: unknown[] }) => m.declarations)[0];
+        assert.strictEqual(decl.tagName, 'my-circle');
     });
 });
 

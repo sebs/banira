@@ -2,6 +2,7 @@ import { TSDocParser, type ParserContext, TSDocConfiguration, TSDocTagDefinition
 import * as path from 'path';
 import { readFile } from 'fs/promises';
 import { FormatterDocPage } from './formatter/doc-page.js';
+import { ManifestGenerator, type CustomElementDeclaration } from './manifest.js';
 
 /**
  * A class for parsing and rendering TSDoc documentation comments.
@@ -85,11 +86,38 @@ export class DocGen {
      * @returns A complete HTML document as a string
      * @throws Error if the context or docComment is undefined
      */
-    renderDocs(context: ParserContext): string {
+    renderDocs(context: ParserContext, declaration?: CustomElementDeclaration): string {
         if (!context || !context.docComment) {
             throw new Error('Invalid parser context: docComment is undefined');
         }
-        const formatter = new FormatterDocPage(context);
+        const formatter = new FormatterDocPage(context, declaration);
         return formatter.createDocPage(this.tagName, this.src, this.title);
+    }
+
+    /**
+     * Builds the Custom Elements Manifest declaration for a source file,
+     * preferring the one whose tag name matches this generator's tag.
+     *
+     * @param file - Path to the TypeScript source file
+     * @returns The matching declaration, or undefined if none is found
+     */
+    manifestDeclaration(file: string): CustomElementDeclaration | undefined {
+        const pkg = new ManifestGenerator([path.resolve(file)]).generate();
+        const declarations = pkg.modules.flatMap((m) => m.declarations);
+        return declarations.find((d) => d.tagName === this.tagName) ?? declarations[0];
+    }
+
+    /**
+     * Produces a complete documentation page for a component: the TSDoc summary
+     * and `@demo` blocks combined with a full API reference (attributes,
+     * properties, events, slots, CSS parts and CSS custom properties) derived
+     * from the Custom Elements Manifest.
+     *
+     * @param file - Path to the TypeScript source file to document
+     * @returns A complete HTML document as a string
+     */
+    async generate(file: string): Promise<string> {
+        const context = await this.parseDoc(file);
+        return this.renderDocs(context, this.manifestDeclaration(file));
     }
 }

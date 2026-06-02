@@ -40,8 +40,9 @@ const page = docGen.renderDocs(await docGen.parseDoc('src/my-button.ts'));
 | Class | Description |
 |----|----|
 | Compiler | Uses tsc to compile TypeScript files to JavaScript |
-| TestHelper | Helper class for testing web components in a JSDOM environment |
-| DocGen | Generates HTML documentation for web components based on `@example` tags |
+| TestHelper | Test web components in JSDOM (deterministic readiness) or, optionally, a real browser via Playwright (`mountInBrowser`) |
+| DocGen | Generates an HTML documentation page (summary, `@demo`, and a full API reference) for a component |
+| ManifestGenerator | Produces a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (`custom-elements.json`) from vanilla components |
 
 ## CLI
 
@@ -64,7 +65,9 @@ banira compile src/my-button.ts -o dist
 
 ### `banira doc <file>`
 
-Generate an HTML documentation page for a component from its `@example` tags.
+Generate an HTML documentation page for a component. Combines the TSDoc summary
+and `@demo` blocks with a full API reference — attributes, properties, methods,
+events, slots, CSS parts and CSS custom properties — derived from the manifest.
 Writes to stdout unless `-o` is given.
 
 | Option | Description |
@@ -73,6 +76,46 @@ Writes to stdout unless `-o` is given.
 
 ```bash
 banira doc src/my-button.ts -o docs/my-button.html
+```
+
+### `banira manifest <files...>`
+
+Generate a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest)
+(`custom-elements.json`) — the ecosystem-standard descriptor that powers IDE
+autocomplete, Storybook controls and template type-checking. Writes to stdout
+unless `-o` is given.
+
+```bash
+banira manifest src/*.ts -o custom-elements.json
+```
+
+Attributes are read from `observedAttributes`, properties/methods from public
+class members, events from `new CustomEvent(...)`, and slots / CSS parts / CSS
+custom properties from class jsdoc tags (`@slot`, `@csspart`, `@cssprop`, `@fires`).
+
+### `banira watch <files...>`
+
+Recompile components whenever their source changes. Same options as `compile`
+(`-p`, `-o`).
+
+```bash
+banira watch src/my-button.ts -o dist
+```
+
+### `banira serve [root]`
+
+Serve a directory over HTTP with live reload (changes under the root trigger a
+browser refresh). Pair it with `watch` for a compile-and-refresh dev loop.
+
+| Option | Description |
+|---|---|
+| `-p, --port <number>` | Port to listen on (default `8080`) |
+
+```bash
+# terminal 1: rebuild on change
+banira watch src/my-button.ts -o demo/dist
+# terminal 2: serve the demo with live reload
+banira serve demo
 ```
 
 ## Development

@@ -20,6 +20,17 @@ export interface MountContext {
 }
 
 /**
+ * Handle returned by {@link TestHelper.mountInBrowser}: the Playwright page and
+ * browser, plus a `close()` to tear them down. Typed loosely because Playwright
+ * is an optional peer dependency.
+ */
+export interface BrowserMountContext {
+    page: { waitForFunction: (fn: string, arg?: unknown) => Promise<unknown>; [key: string]: unknown };
+    browser: { close: () => Promise<void>; [key: string]: unknown };
+    close: () => Promise<void>;
+}
+
+/**
  * Helper class for testing web components in a JSDOM environment
  * 
  * @remarks
@@ -54,8 +65,15 @@ export class TestHelper {
     };
 
     /**
+     * Upper bound (ms) for waiting on a custom element to be defined before
+     * giving up, so a component that never registers fails fast instead of
+     * hanging. Resolution happens as soon as the element is defined.
+     */
+    public readyTimeout: number = 1000;
+
+    /**
      * Creates a new TestHelper instance
-     * 
+     *
      * @param options - Optional JSDOM constructor options to override defaults
      */
     constructor(options?: ConstructorOptions) {
@@ -134,7 +152,56 @@ export class TestHelper {
         const scriptElement = document.createElement('script');
         scriptElement.textContent = code;
         document.head.appendChild(scriptElement);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await this.waitForDefined(window, tagName);
         return { document, window, jsdom: dom};
+    }
+
+    /**
+     * Waits until the custom element is registered, rather than guessing with a
+     * fixed delay. Defining an element synchronously upgrades already-present
+     * instances, so a microtask/timer flush afterwards lets their lifecycle
+     * callbacks settle. Bounded by {@link readyTimeout} so a script that never
+     * defines the element fails the assertion instead of hanging forever.
+     */
+    private async waitForDefined(window: DOMWindow, tagName: string): Promise<void> {
+        await Promise.race([
+            window.customElements.whenDefined(tagName),
+            new Promise<void>(resolve => window.setTimeout(resolve, this.readyTimeout)),
+        ]);
+        await new Promise<void>(resolve => window.setTimeout(resolve, 0));
+    }
+
+    /**
+     * Mounts a compiled component in a real browser via Playwright, for
+     * higher-fidelity testing than JSDOM (layout, real CSS, true custom-element
+     * semantics). Playwright is an optional peer dependency — install it with
+     * `npm i -D playwright` and `npx playwright install chromium`.
+     *
+     * @param tagName - The custom element tag name
+     * @param code - The compiled JavaScript (injected as a module script, so
+     *   components with imports/exports work)
+     * @returns A {@link BrowserMountContext}; call `close()` when done
+     * @throws Error if Playwright is not installed
+     */
+    async mountInBrowser(tagName: string, code: string): Promise<BrowserMountContext> {
+        // A non-literal specifier keeps TypeScript from resolving (and requiring)
+        // the optional dependency at build time.
+        const specifier: string = 'playwright';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let playwright: any;
+        try {
+            playwright = await import(specifier);
+        } catch {
+            throw new Error(
+                'Real-browser testing requires Playwright. Install it with `npm i -D playwright` and `npx playwright install chromium`.'
+            );
+        }
+
+        const browser = await playwright.chromium.launch();
+        const page = await browser.newPage();
+        await page.setContent(`<!DOCTYPE html><html><body><${tagName}></${tagName}></body></html>`);
+        await page.addScriptTag({ content: code, type: 'module' });
+        await page.waitForFunction((tag: string) => !!customElements.get(tag), tagName);
+        return { page, browser, close: () => browser.close() };
     }
 }
