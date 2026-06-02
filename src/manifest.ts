@@ -6,6 +6,7 @@ import {
     isCallExpression,
     isClassDeclaration,
     isGetAccessorDeclaration,
+    isIdentifier,
     isMethodDeclaration,
     isNewExpression,
     isPrivateIdentifier,
@@ -16,8 +17,10 @@ import {
     displayPartsToString,
     getTextOfJSDocComment,
     ModifierFlags,
+    SymbolFlags,
     type ClassDeclaration,
     type CompilerOptions,
+    type Identifier,
     type Node,
     type Program,
     type SourceFile,
@@ -124,6 +127,11 @@ const LIFECYCLE_MEMBERS = new Set([
     'observedAttributes',
 ]);
 
+/** A valid custom-element tag name: lowercase, starts with a letter, contains a hyphen. */
+function isCustomElementName(name: string): boolean {
+    return /^[a-z][a-z0-9._]*-[a-z0-9._-]*$/.test(name);
+}
+
 /** Splits `name - description` (or `name description`) used by jsdoc tags like @slot/@csspart. */
 function parseNameDescription(raw: string): NamedDoc {
     const text = raw.trim();
@@ -182,7 +190,12 @@ export class ManifestGenerator {
         const exports: ModuleExport[] = [];
 
         forEachChild(sourceFile, (node) => {
-            if (isClassDeclaration(node) && node.name && this.extendsHTMLElement(node)) {
+            if (
+                isClassDeclaration(node) &&
+                node.name &&
+                !this.isAbstract(node) &&
+                this.extendsHTMLElement(node)
+            ) {
                 const decl = this.analyzeClass(node, definitions);
                 declarations.push(decl);
                 exports.push({ kind: 'js', name: decl.name, declaration: { name: decl.name } });
@@ -199,19 +212,26 @@ export class ManifestGenerator {
         return { kind: 'javascript-module', path: sourceFile.fileName, declarations, exports };
     }
 
-    /** Maps class name -> tag name from `customElements.define('x', ClassName)` calls. */
+    /**
+     * Maps class name -> tag name from registration calls. Recognizes both
+     * `customElements.define('x', Ctor)` and registration helpers such as
+     * `defineOnce('x', Ctor)` — for a helper call the tag must be a valid custom
+     * element name and `Ctor` must resolve to a (transitive) custom-element class,
+     * which avoids misreading ordinary `fn('label', SomeClass)` calls.
+     */
     private collectDefinitions(sourceFile: SourceFile): Map<string, string> {
         const map = new Map<string, string>();
         const visit = (node: Node): void => {
-            if (
-                isCallExpression(node) &&
-                isPropertyAccessExpression(node.expression) &&
-                node.expression.name.text === 'define' &&
-                node.arguments.length >= 2
-            ) {
+            if (isCallExpression(node) && node.arguments.length >= 2) {
                 const [tag, ctor] = node.arguments;
-                if (tag && isStringLiteralLike(tag) && ctor && 'text' in ctor && typeof (ctor as { text?: unknown }).text === 'string') {
-                    map.set((ctor as { text: string }).text, tag.text);
+                if (tag && isStringLiteralLike(tag) && ctor && isIdentifier(ctor)) {
+                    const callee = node.expression;
+                    const isDefineCall = isPropertyAccessExpression(callee) && callee.name.text === 'define';
+                    if (isDefineCall) {
+                        map.set(ctor.text, tag.text);
+                    } else if (isCustomElementName(tag.text) && this.identifierIsCustomElementClass(ctor)) {
+                        map.set(ctor.text, tag.text);
+                    }
                 }
             }
             forEachChild(node, visit);
@@ -220,9 +240,36 @@ export class ManifestGenerator {
         return map;
     }
 
-    private extendsHTMLElement(node: ClassDeclaration): boolean {
+    /** True if the class extends `HTMLElement` directly or through a base class in the program. */
+    private extendsHTMLElement(node: ClassDeclaration, seen: Set<ClassDeclaration> = new Set()): boolean {
+        if (seen.has(node)) return false;
+        seen.add(node);
         const heritage = node.heritageClauses?.flatMap((c) => c.types) ?? [];
-        return heritage.some((t) => t.expression.getText().endsWith('HTMLElement'));
+        for (const type of heritage) {
+            if (type.expression.getText().endsWith('HTMLElement')) return true;
+            const base = this.resolveClassDeclaration(type.expression);
+            if (base && this.extendsHTMLElement(base, seen)) return true;
+        }
+        return false;
+    }
+
+    /** Resolves a class reference (identifier, possibly imported) to its ClassDeclaration. */
+    private resolveClassDeclaration(expr: Node): ClassDeclaration | undefined {
+        let symbol = this.checker.getSymbolAtLocation(expr);
+        if (symbol && symbol.flags & SymbolFlags.Alias) {
+            symbol = this.checker.getAliasedSymbol(symbol);
+        }
+        return symbol?.declarations?.find((d): d is ClassDeclaration => isClassDeclaration(d));
+    }
+
+    /** Whether an identifier resolves to a class that is (transitively) a custom element. */
+    private identifierIsCustomElementClass(id: Identifier): boolean {
+        const decl = this.resolveClassDeclaration(id);
+        return decl ? this.extendsHTMLElement(decl) : false;
+    }
+
+    private isAbstract(node: ClassDeclaration): boolean {
+        return (getCombinedModifierFlags(node) & ModifierFlags.Abstract) !== 0;
     }
 
     private analyzeClass(node: ClassDeclaration, definitions: Map<string, string>): CustomElementDeclaration {
