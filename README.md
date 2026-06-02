@@ -1,5 +1,9 @@
 # banira.js
 
+[![CI](https://github.com/sebs/banira/actions/workflows/ci.yml/badge.svg)](https://github.com/sebs/banira/actions/workflows/ci.yml)
+[![Release](https://github.com/sebs/banira/actions/workflows/release.yml/badge.svg)](https://github.com/sebs/banira/actions/workflows/release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/sebs/banira)](https://github.com/sebs/banira/releases/latest)
+
 > !!! WARNING: This is a work in progress. Please use at your own risk.
 
 Rationale and background in a [blog post](https://dev.to/sebs/taking-llms-to-code-town-part-ii-creating-a-vanillajs-web-component-toolchain-from-ground-up-mi9)
@@ -25,16 +29,18 @@ npx banira --help
 ## Library
 
 ```ts
-import { Compiler, ResultAnalyzer, DocGen, TestHelper } from 'banira';
+import { Compiler, ResultAnalyzer, DocGen, ManifestGenerator } from 'banira';
 
-// Compile TypeScript components to JavaScript
+// Compile a component to browser-ready ES modules
 const compiler = new Compiler(['src/my-button.ts'], Compiler.DEFAULT_COMPILER_OPTIONS);
 const analyzer = new ResultAnalyzer(compiler.emit());
 if (analyzer.diag().hasErrors) throw new Error('compilation failed');
 
-// Generate an HTML documentation page from @example tags
-const docGen = new DocGen('my-button');
-const page = docGen.renderDocs(await docGen.parseDoc('src/my-button.ts'));
+// Generate an HTML documentation page (summary, @demo, and a full API reference)
+const page = await new DocGen('my-button').generate('src/my-button.ts');
+
+// Generate a Custom Elements Manifest
+const manifest = new ManifestGenerator(['src/my-button.ts']).generate();
 ```
 
 | Class | Description |
@@ -120,23 +126,7 @@ banira serve demo
 
 ## Development
 
-This software is a development build and work in progress. Your best shot will be
-to build it using a unix or linux machine.
-
-* `make bootstrap` - install dependencies and build
-* `make test` - run the test suite
-* `make lint` - type-check src and tests (strict)
-* `make docs` - generate the API documentation
-* `make clean` - remove build artifacts and dependencies
-
-Project layout:
-
-```
-src/        library source; src/cli is the banira command
-test/       test suite
-examples/   reference components (my-circle), excluded from the package
-dist/       build output (the published package)
-```
+Build, test and release instructions live in [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Examples
 
