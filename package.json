@@ -1,6 +1,6 @@
 {
   "name": "banira",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A toolchain for developing web components using vanilla JavaScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
