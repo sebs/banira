@@ -36,7 +36,7 @@ export function bundleModule(fileName: string, compilerOptions: CompilerOptions 
     const options: CompilerOptions = {
         ...rest,
         module: ModuleKind.CommonJS,
-        moduleResolution: ModuleResolutionKind.NodeJs,
+        moduleResolution: ModuleResolutionKind.Bundler,
         declaration: false,
         sourceMap: false,
         inlineSourceMap: false,

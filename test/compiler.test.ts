@@ -19,7 +19,7 @@ describe("Compiler", () => {
             outDir,
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
-            moduleResolution: ts.ModuleResolutionKind.NodeJs,
+            moduleResolution: ts.ModuleResolutionKind.Bundler,
             esModuleInterop: true,
             skipLibCheck: true,
             strict: false
@@ -73,8 +73,8 @@ describe("Compiler", () => {
         it("should have correct module resolution", () => {
             assert.strictEqual(
                 Compiler.DEFAULT_COMPILER_OPTIONS.moduleResolution,
-                ts.ModuleResolutionKind.NodeJs,
-                "Should have NodeJs module resolution"
+                ts.ModuleResolutionKind.Bundler,
+                "Should have Bundler module resolution"
             );
         });
 

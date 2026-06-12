@@ -10,7 +10,7 @@ linux machine.
 
 ## Prerequisites
 
-- Node.js `>=18.19.0`
+- Node.js `>=22.12.0`
 
 ## Setup
 

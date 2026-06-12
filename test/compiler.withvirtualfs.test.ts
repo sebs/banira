@@ -24,7 +24,7 @@ describe("Compiler.withVirtualFs", () => {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
             outDir: customOutDir,
-            moduleResolution: ts.ModuleResolutionKind.NodeJs,
+            moduleResolution: ts.ModuleResolutionKind.Bundler,
             esModuleInterop: true,
             skipLibCheck: true,
             strict: false,

@@ -22,7 +22,7 @@ describe("ResultAnalyzer", () => {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
             outDir,
-            moduleResolution: ts.ModuleResolutionKind.Node10,
+            moduleResolution: ts.ModuleResolutionKind.Bundler,
             esModuleInterop: true,
             skipLibCheck: true,
             strict: false,
@@ -114,13 +114,13 @@ describe("ResultAnalyzer", () => {
             assert.ok(analyzer.comments);
         });
 
-        it("gets > 10K comments", () => {
+        it("gets > 5K comments", () => {
             // The program pulls in TypeScript's lib.*.d.ts files, whose exact
-            // comment count drifts with the TS version, so assert a threshold
-            // rather than a brittle exact count.
+            // comment count drifts with the TS version (~13K on TS 5.7, ~7K on
+            // TS 6.0), so assert a threshold rather than a brittle exact count.
             assert.ok(
-                analyzer.comments.length > 10000,
-                `expected > 10000 comments, got ${analyzer.comments.length}`
+                analyzer.comments.length > 5000,
+                `expected > 5000 comments, got ${analyzer.comments.length}`
             );
         });
     }); 

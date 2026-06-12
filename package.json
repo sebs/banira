@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/sebs/banira#readme",
   "engines": {
-    "node": ">=18.19.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "build": "tsc",
@@ -46,16 +46,16 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
-    "@microsoft/tsdoc": "0.15.1",
-    "commander": "12.1.0",
-    "jsdom": "25.0.1",
-    "memfs": "4.15.1",
-    "typescript": "5.7.2"
+    "@microsoft/tsdoc": "0.16.0",
+    "commander": "15.0.0",
+    "jsdom": "29.1.1",
+    "memfs": "4.57.7",
+    "typescript": "6.0.3"
   },
   "devDependencies": {
-    "@types/jsdom": "21.1.7",
-    "@types/node": "22.10.2",
-    "tsx": "4.19.2",
-    "typedoc": "0.27.6"
+    "@types/jsdom": "28.0.3",
+    "@types/node": "25.9.3",
+    "tsx": "4.22.4",
+    "typedoc": "0.28.19"
   }
 }

@@ -107,7 +107,7 @@ export class Compiler {
         target: ScriptTarget.ES2015,
         module: ModuleKind.ES2015,
         outDir: './dist',
-        moduleResolution: ModuleResolutionKind.NodeJs,
+        moduleResolution: ModuleResolutionKind.Bundler,
         esModuleInterop: true,
         skipLibCheck: true,
         strict: false,

@@ -22,7 +22,7 @@ describe("Virtual FileSystem", () => {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
             outDir: "/dist",
-            moduleResolution: ts.ModuleResolutionKind.NodeJs,
+            moduleResolution: ts.ModuleResolutionKind.Bundler,
             esModuleInterop: true,
             skipLibCheck: true,
             strict: false
