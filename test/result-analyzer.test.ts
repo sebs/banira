@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -15,7 +15,9 @@ describe("ResultAnalyzer", () => {
     const testFile = resolve(__dirname, "./fixtures/simple.ts");
     const outDir = resolve(__dirname, "./fixtures/dist");
     
-    beforeEach(() => {
+    // The compile is expensive and every test only reads the result, so it
+    // runs once for the whole suite.
+    before(() => {
         const options: ts.CompilerOptions = {
             target: ts.ScriptTarget.ES2015,
             module: ts.ModuleKind.ES2015,
@@ -34,7 +36,7 @@ describe("ResultAnalyzer", () => {
 
     describe("analyzer.diag", ()=>{
         let diag: DiagResult
-        beforeEach(() => { 
+        before(() => {
             diag = analyzer.diag();
         });
 

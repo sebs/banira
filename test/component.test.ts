@@ -1,8 +1,8 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, before, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { TestHelper, MountContext } from '../src/index.js';
+import { TestHelper, MountContext, Compiler, bundleModule } from '../src/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -10,6 +10,7 @@ const __dirname = dirname(__filename);
 const componentPath = resolve(__dirname, '../examples/my-circle/my-circle.ts');
 
 describe('MyCircle Component', () => {
+    let compiledCode: string;
     let mountContext: MountContext;
 
     let circleTag: Element;
@@ -17,9 +18,15 @@ describe('MyCircle Component', () => {
     let svg: SVGSVGElement;
     let circleElement: SVGCircleElement;
 
+    // Compiling is the expensive part; do it once. Mounting is cheap and the
+    // tests mutate the element, so each test still gets a fresh mount.
+    before(() => {
+        compiledCode = bundleModule(componentPath, Compiler.DEFAULT_COMPILER_OPTIONS);
+    });
+
     beforeEach(async () => {
         const helper = new TestHelper();
-        mountContext = await helper.compileAndMountAsScript('my-circle', componentPath);
+        mountContext = await helper.mountAsScript('my-circle', compiledCode);
         const { document } = mountContext;
         circleTag = document.querySelector('my-circle')!;
         shadowRoot = circleTag?.shadowRoot as ShadowRoot;

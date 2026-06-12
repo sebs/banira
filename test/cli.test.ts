@@ -9,7 +9,8 @@ const __dirname = dirname(__filename);
 
 const cliPath = resolve(__dirname, "../dist/cli/index.js");
 
-describe("banira CLI", () => {
+// Each test spawns its own CLI process, so they can run concurrently.
+describe("banira CLI", { concurrency: true }, () => {
     it("should show help message", async () => {
         const result = await runCommand(['--help']);
         assert.match(result.stdout, /Usage: banira/);

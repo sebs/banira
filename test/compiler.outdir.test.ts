@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -15,14 +15,16 @@ describe("Compiler outDir", () => {
     const originalOutDir = resolve(__dirname, "./fixtures/dist");
     const customOutDir = resolve(__dirname, "./dist/custom");
     
-    beforeEach(() => {
-        const options = Compiler.DEFAULT_COMPILER_OPTIONS;
-        options.outDir = originalOutDir;
+    before(() => {
+        // Copy the defaults instead of mutating the shared static object.
+        const options = { ...Compiler.DEFAULT_COMPILER_OPTIONS, outDir: originalOutDir };
         compiler = new Compiler([testFile], options);
     });
 
     describe("when custom outDir is provided", () => {
-        beforeEach(() => {
+        // emit() is a full compile and the tests only read the result, so it
+        // runs once per describe block.
+        before(() => {
             result = compiler.emit(customOutDir);
         });
 
@@ -48,7 +50,7 @@ describe("Compiler outDir", () => {
     });
 
     describe("when no custom outDir is provided", () => {
-        beforeEach(() => {
+        before(() => {
             result = compiler.emit();
         });
 

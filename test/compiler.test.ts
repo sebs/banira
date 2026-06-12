@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -14,7 +14,7 @@ describe("Compiler", () => {
     const testFile = resolve(__dirname, "./fixtures/simple.ts");
     const outDir = resolve(__dirname, "./dist");
     
-    beforeEach(() => {
+    before(() => {
         const options: ts.CompilerOptions = {
             outDir,
             target: ts.ScriptTarget.ES2015,
@@ -137,7 +137,9 @@ describe("Compiler", () => {
     });
 
     describe("emission", () => {
-        beforeEach(() => {
+        // emit() is a full compile and the tests only read the result, so it
+        // runs once for the describe block.
+        before(() => {
             result = compiler.emit();
         });
 
