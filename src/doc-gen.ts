@@ -41,6 +41,20 @@ export class DocGen {
         syntaxKind: TSDocTagSyntaxKind.BlockTag
     });
 
+    /**
+     * TSDoc tag definitions for the web-component documentation tags
+     * (`@slot`, `@csspart`, `@cssprop`, `@fires`). Registering them as block
+     * tags keeps their text out of the summary section — their content is
+     * rendered in the API reference tables from the manifest instead.
+     */
+    public static WEB_COMPONENT_BLOCK_DEFINITIONS = ['@slot', '@csspart', '@cssprop', '@fires'].map(
+        (tagName) => new TSDocTagDefinition({
+            tagName,
+            syntaxKind: TSDocTagSyntaxKind.BlockTag,
+            allowMultiple: true
+        })
+    );
+
     public readonly tagName: string;
 
     private readonly options: DocGenOptions;
@@ -58,12 +72,14 @@ export class DocGen {
      * @param tagName - The custom element tag name to document.
      * @param options - Optional output configuration ({@link DocGenOptions}).
      */
-    constructor(tagName: string = "my-circle", options: DocGenOptions = {}) {
+    constructor(tagName: string, options: DocGenOptions = {}) {
         this.tagName = tagName;
         this.options = options;
-        // Add custom tag definitions to detect demo blocks
+        // Add custom tag definitions to detect demo blocks and to keep the
+        // web-component tags (@slot/@csspart/@cssprop/@fires) out of the summary.
         this.customConfiguration.addTagDefinitions([
-            DocGen.CUSTOM_BLOCK_DEFINITION_DEMO
+            DocGen.CUSTOM_BLOCK_DEFINITION_DEMO,
+            ...DocGen.WEB_COMPONENT_BLOCK_DEFINITIONS
         ]);
         this.tsdocParser = new TSDocParser(this.customConfiguration);
     }
@@ -137,10 +153,13 @@ export class DocGen {
      * from the Custom Elements Manifest.
      *
      * @param file - Path to the TypeScript source file to document
+     * @param declaration - Optional pre-built manifest declaration; pass it when
+     *   one is already available (e.g. when documenting a whole library) to
+     *   avoid re-running the manifest analysis for this file
      * @returns A complete HTML document as a string
      */
-    async generate(file: string): Promise<string> {
+    async generate(file: string, declaration?: CustomElementDeclaration): Promise<string> {
         const context = await this.parseDoc(file);
-        return this.renderDocs(context, this.manifestDeclaration(file));
+        return this.renderDocs(context, declaration ?? this.manifestDeclaration(file));
     }
 }

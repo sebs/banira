@@ -94,6 +94,15 @@ describe("Compiler", () => {
             );
         });
 
+        it("should be used when no options are passed", () => {
+            const defaulted = new Compiler(["./test/fixtures/simple.ts"]);
+            assert.strictEqual(
+                defaulted.options,
+                Compiler.DEFAULT_COMPILER_OPTIONS,
+                "Should fall back to DEFAULT_COMPILER_OPTIONS"
+            );
+        });
+
         it("should have correct esModuleInterop setting", () => {
             assert.strictEqual(
                 Compiler.DEFAULT_COMPILER_OPTIONS.esModuleInterop,

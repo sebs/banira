@@ -28,8 +28,8 @@ program
   .description('Compile TypeScript files using banira')
   .argument('<files...>', 'TypeScript files to compile')
   .option('-p, --project <path>', 'Path to tsconfig.json')
-  .option('-o, --outDir <path>', 'Output directory')
-  .action(compile);
+  .option('-o, --output <path>', 'Output directory')
+  .action((files, options) => compile(files, { project: options.project, outDir: options.output }));
 
 program
   .command('doc')
@@ -52,14 +52,22 @@ program
   .description('Recompile components whenever their source changes')
   .argument('<files...>', 'TypeScript files to compile')
   .option('-p, --project <path>', 'Path to tsconfig.json')
-  .option('-o, --outDir <path>', 'Output directory')
-  .action((files, options) => { watch(files, options); });
+  .option('-o, --output <path>', 'Output directory')
+  .action((files, options) => { watch(files, { project: options.project, outDir: options.output }); });
 
 program
   .command('serve')
   .description('Serve a directory over HTTP with live reload')
   .argument('[root]', 'Directory to serve', '.')
   .option('-p, --port <number>', 'Port to listen on', '8080')
-  .action((root, options) => { serve(root, options); });
+  .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose on the network)')
+  .action((root, options) => {
+    try {
+      serve(root, options);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+  });
 
 program.parse();

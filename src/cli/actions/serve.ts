@@ -1,10 +1,12 @@
 import { createServer, type Server, type ServerResponse } from 'http';
-import { watch as fsWatch } from 'fs';
-import { readFile, stat } from 'fs/promises';
+import { watch as fsWatch, realpathSync } from 'fs';
+import { readFile, stat, realpath } from 'fs/promises';
 import { resolve, join, extname, normalize, sep } from 'path';
 
 export interface ServeOptions {
   port?: string | number;
+  /** Host/interface to bind. Defaults to 127.0.0.1; pass 0.0.0.0 to expose on the network. */
+  host?: string;
 }
 
 const MIME: Record<string, string> = {
@@ -34,11 +36,21 @@ new EventSource('/__livereload').onmessage = () => location.reload();
  * change under the served root pushes a reload. Pair it with `banira watch` to
  * recompile-and-refresh.
  *
+ * Binds 127.0.0.1 by default so the dev server is not reachable from the
+ * network; pass `host: '0.0.0.0'` (CLI: `--host`) to expose it deliberately.
+ *
  * @returns The running http.Server (used by tests to close it).
  */
 export const serve = (root: string = '.', options: ServeOptions = {}): Server => {
   const rootDir = resolve(root);
+  // Resolve symlinks in the root once, so served files can be checked against
+  // the real root (a symlinked root like /tmp on macOS is still fine).
+  const realRootDir = realpathSync(rootDir);
   const port = Number(options.port ?? 8080);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`Invalid port "${options.port}": expected a number between 0 and 65535`);
+  }
+  const host = options.host ?? '127.0.0.1';
   const clients = new Set<ServerResponse>();
 
   const server = createServer(async (req, res) => {
@@ -66,14 +78,23 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
     try {
       const stats = await stat(filePath);
       if (stats.isDirectory()) filePath = join(filePath, 'index.html');
+
+      // Re-check after resolving symlinks: a link inside the root pointing
+      // outside it passes the string-prefix test above but not this one.
+      const realFilePath = await realpath(filePath);
+      if (realFilePath !== realRootDir && !realFilePath.startsWith(realRootDir + sep)) {
+        res.writeHead(403).end('Forbidden');
+        return;
+      }
+
       const ext = extname(filePath).toLowerCase();
       const type = MIME[ext] ?? 'application/octet-stream';
 
       if (ext === '.html') {
-        const html = (await readFile(filePath, 'utf8')).replace(/<\/body>/i, `${LIVE_RELOAD}</body>`);
+        const html = (await readFile(realFilePath, 'utf8')).replace(/<\/body>/i, `${LIVE_RELOAD}</body>`);
         res.writeHead(200, { 'Content-Type': type }).end(html);
       } else {
-        res.writeHead(200, { 'Content-Type': type }).end(await readFile(filePath));
+        res.writeHead(200, { 'Content-Type': type }).end(await readFile(realFilePath));
       }
     } catch {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
@@ -104,8 +125,19 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
     clients.clear();
   });
 
-  server.listen(port, () => {
-    console.log(`banira serving ${rootDir} at http://localhost:${port}  (live reload on)`);
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    watcher.close();
+    if (error.code === 'EADDRINUSE') {
+      console.error(`banira serve: port ${port} is already in use (try --port <number>)`);
+    } else {
+      console.error(`banira serve: ${error.message}`);
+    }
+    process.exitCode = 1;
+  });
+
+  server.listen(port, host, () => {
+    const displayHost = host === '0.0.0.0' || host === '::' ? 'localhost' : host;
+    console.log(`banira serving ${rootDir} at http://${displayHost}:${port}  (live reload on, bound to ${host})`);
   });
 
   return server;

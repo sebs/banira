@@ -36,7 +36,12 @@ export interface BrowserMountContext {
  * This class provides utilities for compiling TypeScript web components
  * and mounting them in a JSDOM environment for testing. It supports both
  * direct script mounting and compile-then-mount workflows.
- * 
+ *
+ * Mounting runs the component's code (jsdom is configured with
+ * `runScripts: "dangerously"` — required for custom elements to register and
+ * upgrade). Only mount code you trust, i.e. your own components under test;
+ * never feed untrusted third-party source through the helper.
+ *
  * @example
  * ```typescript
  * // Mount a pre-compiled component

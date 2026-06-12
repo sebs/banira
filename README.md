@@ -33,7 +33,8 @@ npx banira --help
 import { Compiler, ResultAnalyzer, DocGen, ManifestGenerator } from 'banira';
 
 // Compile a component to browser-ready ES modules
-const compiler = new Compiler(['src/my-button.ts'], Compiler.DEFAULT_COMPILER_OPTIONS);
+// (uses Compiler.DEFAULT_COMPILER_OPTIONS unless you pass your own)
+const compiler = new Compiler(['src/my-button.ts']);
 const analyzer = new ResultAnalyzer(compiler.emit());
 if (analyzer.diag().hasErrors) throw new Error('compilation failed');
 
@@ -64,7 +65,7 @@ Compile one or more TypeScript files with banira's compiler defaults.
 | Option | Description |
 |---|---|
 | `-p, --project <path>` | Path to a `tsconfig.json` whose options override the defaults |
-| `-o, --outDir <path>` | Directory to write the emitted JavaScript to |
+| `-o, --output <path>` | Directory to write the emitted JavaScript to |
 
 ```bash
 banira compile src/my-button.ts -o dist
@@ -82,6 +83,10 @@ Writes to stdout unless `-o` is given.
 | `-o, --output <path>` | Write the page to a file instead of stdout |
 | `--script-src <path>` | Component module `src` used in the page (default `./dist/<tag>.js`) |
 | `--stylesheet <value>` | A URL, a local `.css` file to inline, or `none` (default: PicoCSS CDN) |
+
+By default the page links PicoCSS from a CDN, so it needs network access to be
+styled. For a fully offline / self-contained page, pass a local `.css` file to
+`--stylesheet` — it is inlined into the page.
 
 ```bash
 banira doc src/my-button.ts -o docs/my-button.html
@@ -121,10 +126,13 @@ banira watch src/my-button.ts -o dist
 
 Serve a directory over HTTP with live reload (changes under the root trigger a
 browser refresh). Pair it with `watch` for a compile-and-refresh dev loop.
+Binds `127.0.0.1` only, so the server is not reachable from the network unless
+you opt in with `--host`.
 
 | Option | Description |
 |---|---|
 | `-p, --port <number>` | Port to listen on (default `8080`) |
+| `--host <host>` | Host/interface to bind (default `127.0.0.1`; use `0.0.0.0` to expose on the network) |
 
 ```bash
 # terminal 1: rebuild on change

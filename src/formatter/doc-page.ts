@@ -25,6 +25,15 @@ function escapeHtml(value: string): string {
         .replace(/"/g, '&quot;');
 }
 
+/**
+ * Renders manifest description text as HTML: escapes it and converts markdown
+ * inline code spans (backticks) to `<code>` elements, matching how TSDoc
+ * code spans are rendered in the summary. Unpaired backticks stay literal.
+ */
+function descriptionHtml(value: string): string {
+    return escapeHtml(value).replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
 export class FormatterDocPage {
     private context: ParserContext;
     private declaration: CustomElementDeclaration | undefined;
@@ -102,12 +111,18 @@ export class FormatterDocPage {
         const html = this.renderNode(this.summary).trim();
         if (html) return `<section id="description">${html}</section>`;
         const description = this.declaration?.description;
-        return description ? `<section id="description"><p>${escapeHtml(description)}</p></section>` : '';
+        return description ? `<section id="description"><p>${descriptionHtml(description)}</p></section>` : '';
     }
 
     /**
      * Renders every `@demo` block: each fenced code example is shown live
      * (so the custom element upgrades) alongside its source.
+     *
+     * The preview intentionally injects the demo markup unescaped — that is
+     * what makes it live. Demo code comes from the component author's own
+     * TSDoc, so it is trusted at the same level as the component source
+     * itself. Do not feed untrusted third-party sources through the doc
+     * generator.
      */
     private renderDemos(): string {
         const demoBlocks = this.custom.filter(block => block.blockTag.tagName === DEMO_TAG);
@@ -134,8 +149,8 @@ export class FormatterDocPage {
             .map(cells => `<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`)
             .join('\n            ');
         return `<section id="${id}">
-        <h2>${escapeHtml(title)}</h2>
-        <table>
+        <h2 id="${id}-title">${escapeHtml(title)}</h2>
+        <table aria-labelledby="${id}-title">
             <thead><tr>${head}</tr></thead>
             <tbody>
             ${body}
@@ -154,7 +169,7 @@ export class FormatterDocPage {
             this.code(a.name),
             this.code(a.type?.text),
             this.code(a.default),
-            escapeHtml(a.description ?? ''),
+            descriptionHtml(a.description ?? ''),
         ]);
         return this.renderTable('attributes', 'Attributes', ['Attribute', 'Type', 'Default', 'Description'], rows);
     }
@@ -163,7 +178,7 @@ export class FormatterDocPage {
     private renderProperties(): string {
         const rows = (this.declaration?.members ?? [])
             .filter(m => m.kind === 'field')
-            .map(m => [this.code(m.name), this.code(m.type?.text), this.code(m.default), escapeHtml(m.description ?? '')]);
+            .map(m => [this.code(m.name), this.code(m.type?.text), this.code(m.default), descriptionHtml(m.description ?? '')]);
         return this.renderTable('properties', 'Properties', ['Property', 'Type', 'Default', 'Description'], rows);
     }
 
@@ -171,7 +186,7 @@ export class FormatterDocPage {
     private renderMethods(): string {
         const rows = (this.declaration?.members ?? [])
             .filter(m => m.kind === 'method')
-            .map(m => [this.code(m.name), this.code(m.return?.type?.text), escapeHtml(m.description ?? '')]);
+            .map(m => [this.code(m.name), this.code(m.return?.type?.text), descriptionHtml(m.description ?? '')]);
         return this.renderTable('methods', 'Methods', ['Method', 'Returns', 'Description'], rows);
     }
 
@@ -180,7 +195,7 @@ export class FormatterDocPage {
         const rows = (this.declaration?.events ?? []).map(e => [
             this.code(e.name),
             this.code(e.type?.text),
-            escapeHtml(e.description ?? ''),
+            descriptionHtml(e.description ?? ''),
         ]);
         return this.renderTable('events', 'Events', ['Event', 'Type', 'Description'], rows);
     }
@@ -189,14 +204,14 @@ export class FormatterDocPage {
     private renderSlots(): string {
         const rows = (this.declaration?.slots ?? []).map(s => [
             this.code(s.name || '(default)'),
-            escapeHtml(s.description ?? ''),
+            descriptionHtml(s.description ?? ''),
         ]);
         return this.renderTable('slots', 'Slots', ['Slot', 'Description'], rows);
     }
 
     /** CSS shadow parts table from the manifest. */
     private renderCssParts(): string {
-        const rows = (this.declaration?.cssParts ?? []).map(p => [this.code(p.name), escapeHtml(p.description ?? '')]);
+        const rows = (this.declaration?.cssParts ?? []).map(p => [this.code(p.name), descriptionHtml(p.description ?? '')]);
         return this.renderTable('css-parts', 'CSS Parts', ['Part', 'Description'], rows);
     }
 
@@ -205,7 +220,7 @@ export class FormatterDocPage {
         const rows = (this.declaration?.cssProperties ?? []).map(p => [
             this.code(p.name),
             this.code(p.default),
-            escapeHtml(p.description ?? ''),
+            descriptionHtml(p.description ?? ''),
         ]);
         return this.renderTable('css-properties', 'CSS Custom Properties', ['Property', 'Default', 'Description'], rows);
     }
@@ -283,6 +298,7 @@ export class FormatterDocPage {
     <main class="container">
         ${this.renderSummary()}
         <section id="preview">
+        <h2>Preview</h2>
         <${tagName}></${tagName}>
         </section>
         ${this.renderDemos()}

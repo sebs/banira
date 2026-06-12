@@ -66,7 +66,11 @@ export interface CompilerResult {
  * 
  * @example
  * ```typescript
- * // Using standard filesystem
+ * // Using standard filesystem (library default compiler options)
+ * const compiler = new Compiler(['src/file.ts']);
+ * compiler.emit();
+ *
+ * // With custom options
  * const compiler = new Compiler(['src/file.ts'], { outDir: 'dist' });
  * compiler.emit();
  * 
@@ -117,12 +121,12 @@ export class Compiler {
 
     /**
      * Creates a new Compiler instance
-     * 
+     *
      * @param fileNames - Array of file paths to compile
-     * @param options - TypeScript compiler options
+     * @param options - TypeScript compiler options (defaults to {@link Compiler.DEFAULT_COMPILER_OPTIONS})
      * @param host - Compiler host
      */
-    constructor(fileNames: string[], options: CompilerOptions, host?: CompilerHost) {
+    constructor(fileNames: string[], options: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS, host?: CompilerHost) {
         this.fileNames = fileNames;
         this.options = options;
         this.host = host;

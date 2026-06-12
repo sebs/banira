@@ -58,6 +58,10 @@ library by relative path), so a single `tsc` build produces both the library
 entry (`dist/index.js`) and the `banira` binary (`dist/cli/index.js`) with no
 bundler and no separate runtime dependency.
 
+API convention: stateful multi-step workflows are classes (`Compiler`, `DocGen`,
+`ManifestGenerator`, `TestHelper`); pure one-shot helpers are free functions
+(`bundleModule`, `createVirtualCompilerHost`).
+
 ## Testing notes
 
 - Component tests mount in JSDOM via `TestHelper` and wait deterministically for
