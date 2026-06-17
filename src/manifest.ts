@@ -20,6 +20,7 @@ import {
     isSpreadElement,
     isStringLiteralLike,
     isVariableDeclaration,
+    isJSDocParameterTag,
     displayPartsToString,
     getTextOfJSDocComment,
     ModifierFlags,
@@ -30,7 +31,9 @@ import {
     type CompilerOptions,
     type GetAccessorDeclaration,
     type Identifier,
+    type MethodDeclaration,
     type Node,
+    type ParameterDeclaration,
     type Program,
     type SignatureDeclaration,
     type SourceFile,
@@ -76,6 +79,8 @@ export interface CustomElementDeclaration {
     slots?: NamedDoc[];
     cssParts?: NamedDoc[];
     cssProperties?: CssCustomProperty[];
+    /** Present when the class is marked `@deprecated`; the string is the deprecation note, if any. */
+    deprecated?: boolean | string;
 }
 
 export interface Attribute {
@@ -84,6 +89,8 @@ export interface Attribute {
     type?: { text: string };
     default?: string;
     fieldName?: string;
+    /** Present when the attribute is marked `@deprecated`; the string is the deprecation note, if any. */
+    deprecated?: boolean | string;
 }
 
 export interface ClassField {
@@ -92,9 +99,22 @@ export interface ClassField {
     description?: string;
     privacy: 'public' | 'private' | 'protected';
     static?: boolean;
+    readonly?: boolean;
     type?: { text: string };
     default?: string;
     inheritedFrom?: { name: string };
+    /** Present when the field is marked `@deprecated`; the string is the deprecation note, if any. */
+    deprecated?: boolean | string;
+}
+
+/** A single parameter of a method, following the CEM `Parameter` shape. */
+export interface Parameter {
+    name: string;
+    description?: string;
+    type?: { text: string };
+    optional?: boolean;
+    default?: string;
+    rest?: boolean;
 }
 
 export interface ClassMethod {
@@ -103,8 +123,11 @@ export interface ClassMethod {
     description?: string;
     privacy: 'public' | 'private' | 'protected';
     static?: boolean;
-    return?: { type?: { text: string } };
+    parameters?: Parameter[];
+    return?: { type?: { text: string }; description?: string };
     inheritedFrom?: { name: string };
+    /** Present when the method is marked `@deprecated`; the string is the deprecation note, if any. */
+    deprecated?: boolean | string;
 }
 
 export type ClassMember = ClassField | ClassMethod;
@@ -113,6 +136,8 @@ export interface CemEvent {
     name: string;
     description?: string;
     type?: { text: string };
+    /** Present when the event is marked `@deprecated`; the string is the deprecation note, if any. */
+    deprecated?: boolean | string;
 }
 
 export interface NamedDoc {
@@ -206,6 +231,7 @@ export class ManifestGenerator {
                 isClassDeclaration(node) &&
                 node.name &&
                 !this.isAbstract(node) &&
+                !this.isInternal(node) &&
                 this.extendsHTMLElement(node)
             ) {
                 const decl = this.analyzeClass(node, definitions);
@@ -308,6 +334,9 @@ export class ManifestGenerator {
         const description = this.descriptionOf(node);
         if (description) decl.description = description;
 
+        const deprecated = this.deprecationOf(node);
+        if (deprecated !== undefined) decl.deprecated = deprecated;
+
         decl.superclass = { name: this.superclassNameOf(node) };
 
         // Class-level jsdoc tags: @slot, @csspart, @cssprop/@cssproperty, @fires/@event, @summary.
@@ -369,6 +398,8 @@ export class ManifestGenerator {
     /** Public fields, accessors (as fields), and public non-lifecycle methods declared on this class. */
     private collectOwnMembers(node: ClassDeclaration): ClassMember[] {
         const fields = new Map<string, ClassField>();
+        const getters = new Set<string>();
+        const setters = new Set<string>();
         const methods: ClassMethod[] = [];
 
         for (const member of node.members) {
@@ -378,7 +409,9 @@ export class ManifestGenerator {
             const isStatic = (getCombinedModifierFlags(member) & ModifierFlags.Static) !== 0;
 
             if (isPropertyDeclaration(member) || isGetAccessorDeclaration(member) || isSetAccessorDeclaration(member)) {
-                if (privacy !== 'public' || isStatic) continue;
+                if (privacy !== 'public' || isStatic || this.isInternal(member)) continue;
+                if (isGetAccessorDeclaration(member)) getters.add(memberName);
+                if (isSetAccessorDeclaration(member)) setters.add(memberName);
                 const existing = fields.get(memberName);
                 const field: ClassField = existing ?? { kind: 'field', name: memberName, privacy };
                 const description = this.descriptionOf(member);
@@ -388,17 +421,36 @@ export class ManifestGenerator {
                 if (isPropertyDeclaration(member) && member.initializer && field.default === undefined) {
                     field.default = member.initializer.getText();
                 }
+                if (isPropertyDeclaration(member) && getCombinedModifierFlags(member) & ModifierFlags.Readonly) {
+                    field.readonly = true;
+                }
+                const deprecated = this.deprecationOf(member);
+                if (deprecated !== undefined && field.deprecated === undefined) field.deprecated = deprecated;
                 fields.set(memberName, field);
             } else if (isMethodDeclaration(member)) {
-                if (privacy !== 'public' || LIFECYCLE_MEMBERS.has(memberName)) continue;
+                if (privacy !== 'public' || LIFECYCLE_MEMBERS.has(memberName) || this.isInternal(member)) continue;
                 const method: ClassMethod = { kind: 'method', name: memberName, privacy };
                 if (isStatic) method.static = true;
                 const description = this.descriptionOf(member);
                 if (description) method.description = description;
-                const ret = this.typeTextOf(member);
-                if (ret) method.return = { type: { text: ret } };
+                const parameters = this.parametersOf(member);
+                if (parameters.length) method.parameters = parameters;
+                const ret = this.returnTypeOf(member);
+                const retDescription = this.returnDescriptionOf(member);
+                if (ret || retDescription) {
+                    method.return = {};
+                    if (ret) method.return.type = { text: ret };
+                    if (retDescription) method.return.description = retDescription;
+                }
+                const deprecated = this.deprecationOf(member);
+                if (deprecated !== undefined) method.deprecated = deprecated;
                 methods.push(method);
             }
+        }
+
+        // A getter with no corresponding setter is a read-only property.
+        for (const [name, field] of fields) {
+            if (getters.has(name) && !setters.has(name)) field.readonly = true;
         }
 
         // Backfill accessor defaults/descriptions from a matching private backing field (_name / #name).
@@ -451,6 +503,7 @@ export class ManifestGenerator {
                 if (field.type) attr.type = field.type;
                 if (field.default !== undefined) attr.default = field.default;
                 if (field.description) attr.description = field.description;
+                if (field.deprecated !== undefined) attr.deprecated = field.deprecated;
             }
             return attr;
         });
@@ -629,5 +682,81 @@ export class ManifestGenerator {
         } catch {
             return undefined;
         }
+    }
+
+    /**
+     * The deprecation status of a node from its `@deprecated` jsdoc tag: the note
+     * text if one is given, `true` for a bare tag, or `undefined` when absent.
+     */
+    private deprecationOf(node: Node): boolean | string | undefined {
+        for (const tag of getJSDocTags(node)) {
+            if (tag.tagName.text.toLowerCase() === 'deprecated') {
+                const note = getTextOfJSDocComment(tag.comment)?.trim();
+                return note ? note : true;
+            }
+        }
+        return undefined;
+    }
+
+    /** Whether a node is marked `@internal` or `@ignore` and should be omitted from the manifest. */
+    private isInternal(node: Node): boolean {
+        for (const tag of getJSDocTags(node)) {
+            const name = tag.tagName.text.toLowerCase();
+            if (name === 'internal' || name === 'ignore') return true;
+        }
+        return false;
+    }
+
+    /** The declared parameters of a method, with types, optionality, defaults and `@param` descriptions. */
+    private parametersOf(method: MethodDeclaration): Parameter[] {
+        const descriptions = this.paramDescriptions(method);
+        return method.parameters.map((param: ParameterDeclaration) => {
+            const name = param.name.getText();
+            const entry: Parameter = { name };
+            const description = descriptions.get(name);
+            if (description) entry.description = description;
+            const typeText = param.type ? param.type.getText() : this.typeTextOf(param);
+            if (typeText) entry.type = { text: typeText };
+            if (param.questionToken || param.initializer) entry.optional = true;
+            if (param.initializer) entry.default = param.initializer.getText();
+            if (param.dotDotDotToken) entry.rest = true;
+            return entry;
+        });
+    }
+
+    /** Maps parameter name -> `@param` description text from a method's jsdoc. */
+    private paramDescriptions(method: MethodDeclaration): Map<string, string> {
+        const map = new Map<string, string>();
+        for (const tag of getJSDocTags(method)) {
+            if (isJSDocParameterTag(tag)) {
+                const text = getTextOfJSDocComment(tag.comment)?.trim();
+                if (text) map.set(tag.name.getText(), text);
+            }
+        }
+        return map;
+    }
+
+    /** The resolved return type of a method, or undefined for `void`/unknown. */
+    private returnTypeOf(method: MethodDeclaration): string | undefined {
+        try {
+            const signature = this.checker.getSignatureFromDeclaration(method);
+            if (!signature) return undefined;
+            const text = this.checker.typeToString(this.checker.getReturnTypeOfSignature(signature));
+            return text && text !== 'any' && text !== 'error' && text !== 'void' ? text : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    /** The `@returns`/`@return` description from a method's jsdoc. */
+    private returnDescriptionOf(method: MethodDeclaration): string | undefined {
+        for (const tag of getJSDocTags(method)) {
+            const name = tag.tagName.text.toLowerCase();
+            if (name === 'returns' || name === 'return') {
+                const text = getTextOfJSDocComment(tag.comment)?.trim();
+                if (text) return text;
+            }
+        }
+        return undefined;
     }
 }

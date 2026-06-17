@@ -18,6 +18,7 @@ export type {
     ClassMember,
     ClassField,
     ClassMethod,
+    Parameter,
     CemEvent,
     NamedDoc,
     CssCustomProperty,

@@ -49,10 +49,45 @@ describe('ManifestGenerator', () => {
         const decl = declarationFor('fixtures/rich-element.ts');
         const fieldNames = (decl.members ?? []).filter((m) => m.kind === 'field').map((m) => m.name).sort();
         const methodNames = (decl.members ?? []).filter((m) => m.kind === 'method').map((m) => m.name).sort();
-        assert.deepStrictEqual(fieldNames, ['max', 'value']);
-        assert.deepStrictEqual(methodNames, ['reset']);
+        assert.deepStrictEqual(fieldNames, ['label', 'max', 'summary', 'value']);
+        assert.deepStrictEqual(methodNames, ['reset', 'setRating']);
         assert.ok(!(decl.members ?? []).some((m) => m.name === '_value'), 'private backing field must be hidden');
         assert.ok(!(decl.members ?? []).some((m) => m.name === 'render'), 'private method must be hidden');
+    });
+
+    it('marks deprecated members and omits @internal members', () => {
+        const decl = declarationFor('fixtures/rich-element.ts');
+        const label = (decl.members ?? []).find((m) => m.name === 'label');
+        assert.strictEqual(label?.deprecated, 'use a slot instead');
+        const labelAttr = (decl.attributes ?? []).find((a) => a.name === 'label');
+        assert.strictEqual(labelAttr, undefined, 'label is not observed, so it is not an attribute');
+        assert.ok(!(decl.members ?? []).some((m) => m.name === 'debugDump'), '@internal method must be hidden');
+    });
+
+    it('detects read-only accessors (getter with no setter)', () => {
+        const decl = declarationFor('fixtures/rich-element.ts');
+        const summary = (decl.members ?? []).find((m) => m.name === 'summary');
+        assert.strictEqual(summary?.kind, 'field');
+        assert.strictEqual((summary as { readonly?: boolean }).readonly, true);
+        const value = (decl.members ?? []).find((m) => m.name === 'value');
+        assert.ok(!(value as { readonly?: boolean }).readonly, 'value has a setter, so it is not read-only');
+    });
+
+    it('extracts method parameters, return type and @param/@returns descriptions', () => {
+        const decl = declarationFor('fixtures/rich-element.ts');
+        const setRating = (decl.members ?? []).find((m) => m.name === 'setRating');
+        assert.strictEqual(setRating?.kind, 'method');
+        const method = setRating as import('../src/index.js').ClassMethod;
+        assert.deepStrictEqual(
+            (method.parameters ?? []).map((p) => ({ name: p.name, type: p.type?.text, optional: p.optional })),
+            [
+                { name: 'star', type: 'number', optional: undefined },
+                { name: 'animate', type: 'boolean', optional: true },
+            ]
+        );
+        assert.match((method.parameters ?? [])[0]?.description ?? '', /star index/i);
+        assert.strictEqual(method.return?.type?.text, 'number');
+        assert.match(method.return?.description ?? '', /clamped value/i);
     });
 
     it('detects events from CustomEvent construction and @fires descriptions', () => {
