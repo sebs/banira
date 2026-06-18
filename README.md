@@ -224,6 +224,18 @@ directory.
 banira dev src/my-button.ts -o demo/dist -r demo
 ```
 
+### `banira test <files...>`
+
+Manifest-driven smoke test: for every custom element found in the sources,
+banira compiles its module, mounts it in JSDOM, and asserts the tag registers
+and upgrades to an `HTMLElement` — catching the most common breakages (a
+component that throws on construction, or never calls `customElements.define`)
+with no per-component test code. Exits non-zero if any element fails.
+
+```bash
+banira test src/*.ts
+```
+
 ## Development
 
 Build, test and release instructions live in [DEVELOPMENT.md](./DEVELOPMENT.md).

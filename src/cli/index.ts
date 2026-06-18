@@ -13,6 +13,7 @@ import { diff } from './actions/diff.js';
 import { watch } from './actions/watch.js';
 import { serve } from './actions/serve.js';
 import { dev } from './actions/dev.js';
+import { test } from './actions/test.js';
 
 // Read our own version from package.json at runtime. The CLI is built to
 // dist/cli/index.js, so the package root is two levels up.
@@ -122,5 +123,11 @@ program
       process.exit(1);
     }
   });
+
+program
+  .command('test')
+  .description('Manifest-driven smoke test: mount each element and assert it registers')
+  .argument('<files...>', 'Component source files to test')
+  .action((files) => test(files));
 
 program.parse();

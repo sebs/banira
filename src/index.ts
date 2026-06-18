@@ -33,3 +33,5 @@ export { toTypeDefinitions } from './type-shims.js';
 export type { TypeShimOptions } from './type-shims.js';
 export { diffManifests, formatManifestDiff } from './manifest-diff.js';
 export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-diff.js';
+export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
+export type { SmokeResult, SmokeOptions } from './smoke-test.js';

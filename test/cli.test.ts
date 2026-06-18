@@ -92,6 +92,16 @@ describe("banira CLI", { concurrency: true }, () => {
         assert.match(result.stdout, /interface HTMLElementTagNameMap/);
         assert.match(result.stdout, /'my-circle':/);
     });
+
+    it("test runs a manifest-driven smoke test", async () => {
+        const result = await runCommand([
+            'test',
+            'examples/my-circle/my-circle.ts'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected smoke test to pass");
+        assert.match(result.stdout, /PASS <my-circle>/);
+        assert.match(result.stdout, /1\/1 passed/);
+    });
 });
 
 interface CliResult {
