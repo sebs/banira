@@ -1,6 +1,6 @@
 import { prerenderManifest } from '../../index.js';
-import { writeFile, mkdir } from 'fs/promises';
-import { resolve, dirname } from 'path';
+import { resolve } from 'path';
+import { action, emit, plural } from './run.js';
 
 /**
  * `banira prerender <files...>` — render the components to static HTML using
@@ -8,22 +8,13 @@ import { resolve, dirname } from 'path';
  * (shadow DOM and all) before any JavaScript runs. Writes the concatenated
  * markup to stdout unless `-o` is given.
  */
-export const prerender = async (files: string[], options: { output?: string } = {}) => {
-  try {
+export const prerender = action(
+  'Failed to prerender',
+  async (files: string[], options: { output?: string } = {}) => {
     const results = await prerenderManifest(files.map((f) => resolve(f)));
-    const html = results.map((r) => r.html).join('\n') + '\n';
+    const html = results.map((r) => r.html).join('\n');
 
-    if (options.output) {
-      const outPath = resolve(options.output);
-      await mkdir(dirname(outPath), { recursive: true });
-      await writeFile(outPath, html, 'utf8');
-      console.log(`Prerendered ${results.length} element${results.length === 1 ? '' : 's'} to ${outPath}`);
-    } else {
-      process.stdout.write(html);
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to prerender: ${message}`);
-    process.exit(1);
+    const outPath = await emit(html, options.output);
+    if (outPath) console.log(`Prerendered ${plural(results.length, 'element')} to ${outPath}`);
   }
-};
+);

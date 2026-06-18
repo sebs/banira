@@ -2,6 +2,7 @@ import { Compiler, ResultAnalyzer } from '../../index.js';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
+import { action } from './run.js';
 
 export interface CompileOptions {
   project?: string;
@@ -78,23 +79,18 @@ export function formatErrors(errors: ts.Diagnostic[]): string {
     .join('\n');
 }
 
-export const compile = async (files: string[], options: CompileOptions) => {
-  try {
-    const { ok, errors, outputs } = compileFiles(files, options);
+export const compile = action('Compilation failed', async (files: string[], options: CompileOptions) => {
+  const { ok, errors, outputs } = compileFiles(files, options);
 
-    if (!ok) {
-      console.error('Compilation errors:');
-      console.error(formatErrors(errors));
-      process.exit(1);
-    }
-
-    console.log('Compilation complete');
-    if (outputs.length > 0) {
-      console.log('Generated files:');
-      outputs.forEach((file) => console.log(`  ${file}`));
-    }
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
+  if (!ok) {
+    console.error('Compilation errors:');
+    console.error(formatErrors(errors));
     process.exit(1);
   }
-};
+
+  console.log('Compilation complete');
+  if (outputs.length > 0) {
+    console.log('Generated files:');
+    outputs.forEach((file) => console.log(`  ${file}`));
+  }
+});

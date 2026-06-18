@@ -2,6 +2,7 @@ import { ManifestGenerator, toVsCodeHtmlData, toVsCodeCssData, toWebTypes } from
 import { readFileSync } from 'fs';
 import { writeFile, mkdir } from 'fs/promises';
 import { resolve, join } from 'path';
+import { action } from './run.js';
 
 /** Reads `name`/`version` from the nearest package.json, falling back to sensible defaults. */
 function packageInfo(): { name: string; version: string } {
@@ -18,10 +19,10 @@ function packageInfo(): { name: string; version: string } {
  * components' manifest: VS Code HTML and CSS custom-data files plus a JetBrains
  * web-types file, all written to the output directory.
  */
-export const editorData = async (files: string[], options: { outDir?: string } = {}) => {
-  try {
-    const generator = new ManifestGenerator(files.map((f) => resolve(f)));
-    const pkg = generator.generate();
+export const editorData = action(
+  'Failed to generate editor data',
+  async (files: string[], options: { outDir?: string } = {}) => {
+    const pkg = new ManifestGenerator(files.map((f) => resolve(f))).generate();
     const info = packageInfo();
     const outDir = resolve(options.outDir ?? '.');
     await mkdir(outDir, { recursive: true });
@@ -37,9 +38,5 @@ export const editorData = async (files: string[], options: { outDir?: string } =
       await writeFile(outPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
       console.log(`Wrote ${outPath}`);
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`Failed to generate editor data: ${message}`);
-    process.exit(1);
   }
-};
+);
