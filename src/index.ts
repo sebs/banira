@@ -23,3 +23,13 @@ export type {
     NamedDoc,
     CssCustomProperty,
 } from './manifest.js';
+export { manifestToMarkdown } from './manifest-markdown.js';
+export type { MarkdownOptions } from './manifest-markdown.js';
+export { validateManifest, formatValidationIssues } from './manifest-validate.js';
+export type { ValidationIssue } from './manifest-validate.js';
+export { toVsCodeHtmlData, toVsCodeCssData, toWebTypes } from './editor-data.js';
+export type { VsCodeHtmlData, VsCodeCssData, WebTypes, WebTypesOptions } from './editor-data.js';
+export { toTypeDefinitions } from './type-shims.js';
+export type { TypeShimOptions } from './type-shims.js';
+export { diffManifests, formatManifestDiff } from './manifest-diff.js';
+export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-diff.js';

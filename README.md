@@ -41,16 +41,24 @@ if (analyzer.diag().hasErrors) throw new Error('compilation failed');
 // Generate an HTML documentation page (summary, @demo, and a full API reference)
 const page = await new DocGen('my-button').generate('src/my-button.ts');
 
-// Generate a Custom Elements Manifest
+// Generate a Custom Elements Manifest, then derive artifacts from it
 const manifest = new ManifestGenerator(['src/my-button.ts']).generate();
+import { manifestToMarkdown, toTypeDefinitions } from 'banira';
+const apiDocs = manifestToMarkdown(manifest);   // Markdown API tables
+const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 ```
 
-| Class | Description |
+| Export | Description |
 |----|----|
 | Compiler | Uses tsc to compile TypeScript files to JavaScript |
 | TestHelper | Mount web components in JSDOM (including ones that **import sibling modules**) with deterministic readiness, or — optionally — a real browser via Playwright (`mountInBrowser`) |
 | DocGen | Generates an HTML documentation page (summary, `@demo`, and a full API reference) for a component |
 | ManifestGenerator | Produces a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (`custom-elements.json`) from vanilla components |
+| manifestToMarkdown | Renders a manifest as Markdown API documentation |
+| toVsCodeHtmlData / toVsCodeCssData / toWebTypes | Generate editor IntelliSense data (VS Code custom-data, JetBrains web-types) from a manifest |
+| toTypeDefinitions | Generates a `.d.ts` typing the custom elements from a manifest |
+| validateManifest | Structurally validates a manifest against the CEM 2.1.0 shape |
+| diffManifests | Diffs two manifests and suggests a semver release type |
 
 ## CLI
 
@@ -112,6 +120,63 @@ banira manifest src/*.ts -o custom-elements.json
 Attributes are read from `observedAttributes`, properties/methods from public
 class members, events from `new CustomEvent(...)`, and slots / CSS parts / CSS
 custom properties from class jsdoc tags (`@slot`, `@csspart`, `@cssprop`, `@fires`).
+Members marked `@deprecated` carry the note through; `@internal` / `@ignore`
+members are omitted.
+
+| Option | Description |
+|---|---|
+| `-o, --output <path>` | Write the output to a file instead of stdout |
+| `--md` | Emit Markdown API documentation instead of JSON |
+| `--validate` | Validate the generated manifest and print a report (exit 1 on errors) |
+
+```bash
+# Markdown API tables for a README
+banira manifest src/*.ts --md -o API.md
+```
+
+### `banira editor-data <files...>`
+
+Generate editor IntelliSense data from the manifest so consumers get autocomplete
+and hover docs for your custom elements: VS Code HTML/CSS `*.custom-data.json`
+and a JetBrains `web-types.json`, all written to the output directory.
+
+| Option | Description |
+|---|---|
+| `-o, --out-dir <dir>` | Directory to write the data files to (default `.`) |
+
+```bash
+banira editor-data src/*.ts -o .vscode
+```
+
+### `banira types <files...>`
+
+Generate a self-contained `.d.ts` from the manifest that augments
+`HTMLElementTagNameMap` (and, with `--jsx`, `JSX.IntrinsicElements`) so
+`document.querySelector('my-el')` and `document.createElement('my-el')` are
+typed for consumers — no runtime import required.
+
+| Option | Description |
+|---|---|
+| `-o, --output <path>` | Write the `.d.ts` to a file instead of stdout |
+| `--jsx` | Also augment `JSX.IntrinsicElements` |
+
+```bash
+banira types src/*.ts -o dist/elements.d.ts
+```
+
+### `banira diff <baseline> <current>`
+
+Compare two `custom-elements.json` files and report API changes with a suggested
+semver release type (removals/type changes → `major`, additions → `minor`,
+otherwise `patch`). Useful as a release gate.
+
+| Option | Description |
+|---|---|
+| `--json` | Emit the diff as JSON |
+
+```bash
+banira diff old/custom-elements.json custom-elements.json
+```
 
 ### `banira watch <files...>`
 

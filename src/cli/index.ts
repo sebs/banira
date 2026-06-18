@@ -7,6 +7,9 @@ import { dirname, join } from 'path';
 import { compile } from './actions/compile.js';
 import { doc } from './actions/doc.js';
 import { manifest } from './actions/manifest.js';
+import { editorData } from './actions/editor-data.js';
+import { types } from './actions/types.js';
+import { diff } from './actions/diff.js';
 import { watch } from './actions/watch.js';
 import { serve } from './actions/serve.js';
 
@@ -44,8 +47,33 @@ program
   .command('manifest')
   .description('Generate a Custom Elements Manifest (custom-elements.json)')
   .argument('<files...>', 'Component source files to analyze')
-  .option('-o, --output <path>', 'Write the manifest to a file instead of stdout')
+  .option('-o, --output <path>', 'Write the output to a file instead of stdout')
+  .option('--md', 'Emit Markdown API documentation instead of JSON')
+  .option('--validate', 'Validate the generated manifest and print a report (exit 1 on errors)')
   .action(manifest);
+
+program
+  .command('editor-data')
+  .description('Generate editor IntelliSense data (VS Code custom-data + JetBrains web-types)')
+  .argument('<files...>', 'Component source files to analyze')
+  .option('-o, --out-dir <dir>', 'Directory to write the data files to', '.')
+  .action((files, options) => editorData(files, { outDir: options.outDir }));
+
+program
+  .command('types')
+  .description('Generate a .d.ts that types the custom elements (HTMLElementTagNameMap)')
+  .argument('<files...>', 'Component source files to analyze')
+  .option('-o, --output <path>', 'Write the .d.ts to a file instead of stdout')
+  .option('--jsx', 'Also augment JSX.IntrinsicElements')
+  .action((files, options) => types(files, { output: options.output, jsx: options.jsx }));
+
+program
+  .command('diff')
+  .description('Diff two Custom Elements Manifest JSON files and suggest a semver bump')
+  .argument('<baseline>', 'Baseline custom-elements.json')
+  .argument('<current>', 'Current custom-elements.json')
+  .option('--json', 'Emit the diff as JSON')
+  .action((baseline, current, options) => diff(baseline, current, { json: options.json }));
 
 program
   .command('watch')

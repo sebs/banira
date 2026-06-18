@@ -61,6 +61,37 @@ describe("banira CLI", { concurrency: true }, () => {
         const decl = manifest.modules.flatMap((m: { declarations: unknown[] }) => m.declarations)[0];
         assert.strictEqual(decl.tagName, 'my-circle');
     });
+
+    it("manifest --md emits Markdown API docs", async () => {
+        const result = await runCommand([
+            'manifest',
+            'examples/my-circle/my-circle.ts',
+            '--md'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful markdown generation");
+        assert.match(result.stdout, /## `<my-circle>`/);
+        assert.match(result.stdout, /### Attributes/);
+    });
+
+    it("manifest --validate reports a valid manifest", async () => {
+        const result = await runCommand([
+            'manifest',
+            'examples/my-circle/my-circle.ts',
+            '--validate'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected validation to pass");
+        assert.match(result.stdout, /Manifest is valid/);
+    });
+
+    it("types emits a tag-name map augmentation", async () => {
+        const result = await runCommand([
+            'types',
+            'examples/my-circle/my-circle.ts'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful type generation");
+        assert.match(result.stdout, /interface HTMLElementTagNameMap/);
+        assert.match(result.stdout, /'my-circle':/);
+    });
 });
 
 interface CliResult {
