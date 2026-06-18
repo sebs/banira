@@ -198,6 +198,11 @@ you opt in with `--host`.
 |---|---|
 | `-p, --port <number>` | Port to listen on (default `8080`) |
 | `--host <host>` | Host/interface to bind (default `127.0.0.1`; use `0.0.0.0` to expose on the network) |
+| `--ts` | Serve TypeScript transpiled on the fly (no separate compile step) |
+
+With `--ts`, a `.ts` request is served as an ES module and a request for `foo.js`
+falls back to a sibling `foo.ts` when no compiled `foo.js` exists — so you can
+point a page at `./my-button.js` and skip the build during development.
 
 ```bash
 # terminal 1: rebuild on change
@@ -219,6 +224,7 @@ directory.
 | `-r, --root <path>` | Directory to serve (defaults to the output dir, or `.`) |
 | `--port <number>` | Port to listen on (default `8080`) |
 | `--host <host>` | Host/interface to bind (default `127.0.0.1`) |
+| `--ts` | Serve TypeScript transpiled on the fly (no separate compile step) |
 
 ```bash
 banira dev src/my-button.ts -o demo/dist -r demo

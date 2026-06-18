@@ -10,6 +10,7 @@ export { DocGen } from './doc-gen.js';
 export type { DocGenOptions, Stylesheet } from './doc-gen.js';
 export { ManifestGenerator } from './manifest.js';
 export { bundleModule } from './module-bundler.js';
+export { transpileToEsm } from './transpile-module.js';
 export type {
     Package,
     Module,

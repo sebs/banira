@@ -96,6 +96,7 @@ program
   .option('-r, --root <path>', 'Directory to serve (defaults to the output dir, or .)')
   .option('--port <number>', 'Port to listen on', '8080')
   .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose)')
+  .option('--ts', 'Serve TypeScript transpiled on the fly (no separate compile step)')
   .action((files, options) => {
     try {
       dev(files, {
@@ -104,6 +105,7 @@ program
         root: options.root,
         port: options.port,
         host: options.host,
+        transformTs: options.ts,
       });
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);
@@ -117,9 +119,10 @@ program
   .argument('[root]', 'Directory to serve', '.')
   .option('-p, --port <number>', 'Port to listen on', '8080')
   .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose on the network)')
+  .option('--ts', 'Serve TypeScript transpiled on the fly (no separate compile step)')
   .action((root, options) => {
     try {
-      serve(root, options);
+      serve(root, { port: options.port, host: options.host, transformTs: options.ts });
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);

@@ -13,6 +13,8 @@ export interface DevOptions {
   root?: string;
   port?: string | number;
   host?: string;
+  /** Serve TypeScript transpiled on the fly (see {@link ServeOptions.transformTs}). */
+  transformTs?: boolean;
 }
 
 export interface DevHandle {
@@ -39,6 +41,7 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   const serveOptions: ServeOptions = {};
   if (options.port !== undefined) serveOptions.port = options.port;
   if (options.host !== undefined) serveOptions.host = options.host;
+  if (options.transformTs !== undefined) serveOptions.transformTs = options.transformTs;
   const server = serve(root, serveOptions);
 
   const stop = (): void => {

@@ -2,11 +2,18 @@ import { createServer, type Server, type ServerResponse } from 'http';
 import { watch as fsWatch, realpathSync } from 'fs';
 import { readFile, stat, realpath } from 'fs/promises';
 import { resolve, join, extname, normalize, sep } from 'path';
+import { transpileToEsm } from '../../transpile-module.js';
 
 export interface ServeOptions {
   port?: string | number;
   /** Host/interface to bind. Defaults to 127.0.0.1; pass 0.0.0.0 to expose on the network. */
   host?: string;
+  /**
+   * Transpile TypeScript on the fly: serve `.ts` files as ES modules and map a
+   * request for `foo.js` to a sibling `foo.ts` when no compiled `foo.js` exists,
+   * so the dev loop needs no separate compile step.
+   */
+  transformTs?: boolean;
 }
 
 const MIME: Record<string, string> = {
@@ -75,6 +82,26 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
       return;
     }
 
+    // On-the-fly TypeScript: serve `.ts` as JS, and map `foo.js` to `foo.ts`
+    // when no compiled `foo.js` is present, so no separate compile step is needed.
+    let transform = false;
+    if (options.transformTs) {
+      const reqExt = extname(filePath).toLowerCase();
+      if (reqExt === '.ts') {
+        transform = true;
+      } else if (reqExt === '.js') {
+        const jsExists = await stat(filePath).then((s) => s.isFile()).catch(() => false);
+        if (!jsExists) {
+          const tsPath = filePath.slice(0, -3) + '.ts';
+          const tsExists = await stat(tsPath).then((s) => s.isFile()).catch(() => false);
+          if (tsExists) {
+            filePath = tsPath;
+            transform = true;
+          }
+        }
+      }
+    }
+
     try {
       const stats = await stat(filePath);
       if (stats.isDirectory()) filePath = join(filePath, 'index.html');
@@ -84,6 +111,13 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
       const realFilePath = await realpath(filePath);
       if (realFilePath !== realRootDir && !realFilePath.startsWith(realRootDir + sep)) {
         res.writeHead(403).end('Forbidden');
+        return;
+      }
+
+      if (transform) {
+        const source = await readFile(realFilePath, 'utf8');
+        const js = transpileToEsm(source, realFilePath);
+        res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' }).end(js);
         return;
       }
 
