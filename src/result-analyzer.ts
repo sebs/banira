@@ -83,11 +83,7 @@ export class ResultAnalyzer {
     }
 
     get comments(): IFoundComment[] {
-        const foundComments: IFoundComment[] = [];
-        for (const sourceFile of this.program.getSourceFiles()) {
-            discoverComments(sourceFile, foundComments);
-        }
-        return foundComments;
+        return this.program.getSourceFiles().flatMap((sourceFile) => discoverComments(sourceFile));
     }
 
     /**
@@ -114,11 +110,9 @@ export class ResultAnalyzer {
      */
     diag(): DiagResult {
         const diagnostics = [
-            ...this.emitResult.diagnostics, 
+            ...this.emitResult.diagnostics,
             ...getPreEmitDiagnostics(this.program)
         ];
-        const hasErrors = diagnostics.some(d => d.category === DiagnosticCategory.Error);
-        const hasWarnings = diagnostics.some(d => d.category === DiagnosticCategory.Warning);
         const errors = diagnostics.filter(d => d.category === DiagnosticCategory.Error);
         const warnings = diagnostics.filter(d => d.category === DiagnosticCategory.Warning);
         const formatted = formatDiagnosticsWithColorAndContext(diagnostics, {
@@ -128,8 +122,8 @@ export class ResultAnalyzer {
         });
 
         return {
-            hasErrors,
-            hasWarnings,
+            hasErrors: errors.length > 0,
+            hasWarnings: warnings.length > 0,
             errors,
             warnings,
             formatted

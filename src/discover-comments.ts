@@ -72,24 +72,22 @@ function getJSDocCommentRanges(node: Node, text: string): CommentRange[] {
 }
 
 /**
- * Recursively walks through the TypeScript AST and discovers JSDoc comments associated with declaration nodes.
- * 
- * @param node - The TypeScript AST node to analyze
- * @param foundComments - Array to collect discovered comments
+ * Recursively walks a TypeScript AST and returns the JSDoc comments associated
+ * with declaration nodes.
+ *
+ * @param node - The TypeScript AST node to analyze (typically a source file)
+ * @returns The discovered comments, in document order.
  */
-export function discoverComments(node: Node, foundComments: IFoundComment[]): void {
+export function discoverComments(node: Node): IFoundComment[] {
     const buffer: string = node.getSourceFile().getFullText(); // don't use getText() here!
-    if (isDeclarationKind(node.kind)) {
-        const comments: CommentRange[] = getJSDocCommentRanges(node, buffer);
+    const own: IFoundComment[] = isDeclarationKind(node.kind)
+        ? getJSDocCommentRanges(node, buffer).map((comment) => ({
+              compilerNode: node,
+              textRange: TextRange.fromStringRange(buffer, comment.pos, comment.end),
+          }))
+        : [];
 
-        if (comments.length > 0) {
-            for (const comment of comments) {
-                foundComments.push({
-                    compilerNode: node,
-                    textRange: TextRange.fromStringRange(buffer, comment.pos, comment.end)
-                });
-            }
-        }
-    }
-    return node.forEachChild((child) => discoverComments(child, foundComments));
+    const children: IFoundComment[] = [];
+    node.forEachChild((child) => { children.push(...discoverComments(child)); });
+    return [...own, ...children];
 }
