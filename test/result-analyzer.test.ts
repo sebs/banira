@@ -141,5 +141,22 @@ describe("ResultAnalyzer", () => {
                 "outputFiles.length should be a number"
             );
         });
+
+        it("lists emitted files under DEFAULT_COMPILER_OPTIONS (#17)", () => {
+            const defaultsAnalyzer = new ResultAnalyzer(
+                new Compiler([testFile], {
+                    ...Compiler.DEFAULT_COMPILER_OPTIONS,
+                    outDir,
+                }).emit()
+            );
+            assert.ok(
+                defaultsAnalyzer.outputFiles.length > 0,
+                "outputFiles should be non-empty after a successful emit"
+            );
+            assert.ok(
+                defaultsAnalyzer.outputFiles.some((f) => f.endsWith(".js")),
+                "outputFiles should include the emitted .js"
+            );
+        });
     });
 });

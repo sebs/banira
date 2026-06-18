@@ -20,6 +20,8 @@ export interface DevOptions {
 export interface DevHandle {
   stop: () => void;
   server: Server;
+  /** Resolves once dev has fully torn down — via {@link stop} or a fatal server error. */
+  closed: Promise<void>;
 }
 
 /**
@@ -35,7 +37,6 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   const compileOptions: CompileOptions = {};
   if (options.project !== undefined) compileOptions.project = options.project;
   if (options.outDir !== undefined) compileOptions.outDir = options.outDir;
-  const stopWatch = watch(files, compileOptions);
 
   const root = options.root ?? options.outDir ?? '.';
   const serveOptions: ServeOptions = {};
@@ -44,10 +45,35 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   if (options.transformTs !== undefined) serveOptions.transformTs = options.transformTs;
   const server = serve(root, serveOptions);
 
+  // Drive the browser reload off the compile result, not a second file watcher:
+  // after every successful recompile, push a reload directly to connected tabs.
+  // This is far more reliable than hoping serve's directory watcher notices the
+  // freshly written output, and the log makes it visible that a reload was sent.
+  const stopWatch = watch(files, compileOptions, (result) => {
+    if (!result.ok) return;
+    const n = server.reload();
+    if (n > 0) console.log(`  ↻ reloaded ${n} browser tab(s)`);
+  });
+
+  let resolveClosed!: () => void;
+  const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
+
+  let stopped = false;
   const stop = (): void => {
+    if (stopped) return;
+    stopped = true;
     stopWatch();
-    server.close();
+    server.close(() => resolveClosed());
+    // close()'s callback won't fire if the server never started listening
+    // (e.g. the port was in use), so resolve unconditionally too.
+    resolveClosed();
   };
+
+  // If the server can't start (e.g. EADDRINUSE) serve() logs the reason and
+  // sets a non-zero exit code, but the compile watcher would keep the event
+  // loop alive — leaving dev hung with no live-reload server. Tear everything
+  // down so the process drains and exits with that non-zero code.
+  server.on('error', stop);
 
   const shutdown = (): void => {
     stop();
@@ -56,5 +82,5 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
 
-  return { stop, server };
+  return { stop, server, closed };
 };

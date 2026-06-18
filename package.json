@@ -43,6 +43,12 @@
     "lint": "tsc -p tsconfig.lint.json",
     "docs": "typedoc",
     "clean": "make clean",
+    "example": "npm run build && npm run example:compile && npm run example:manifest && npm run example:doc",
+    "example:compile": "node dist/cli/index.js compile examples/my-circle/my-circle.ts -o examples/my-circle/demo/dist",
+    "example:manifest": "node dist/cli/index.js manifest examples/my-circle/my-circle.ts -o examples/my-circle/custom-elements.json",
+    "example:doc": "node dist/cli/index.js doc examples/my-circle/my-circle.ts -o examples/my-circle/demo/doc.html",
+    "example:serve": "node dist/cli/index.js serve examples/my-circle/demo",
+    "example:dev": "node dist/cli/index.js dev examples/my-circle/my-circle.ts -o examples/my-circle/demo/dist -r examples/my-circle/demo",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {

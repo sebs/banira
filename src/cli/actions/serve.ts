@@ -37,6 +37,18 @@ const LIVE_RELOAD = `<script>
 new EventSource('/__livereload').onmessage = () => location.reload();
 </script>`;
 
+// This is a dev server with live reload: every served file may change between
+// requests, so the browser must never serve a cached copy. Without this the
+// recompiled module is fetched from cache after a live-reload refresh and the
+// change appears not to take effect.
+const NO_STORE = 'no-store';
+
+/** An http.Server that can also push a live-reload to connected browsers. */
+export interface ReloadableServer extends Server {
+  /** Push a reload to every connected live-reload client; returns the count. */
+  reload(): number;
+}
+
 /**
  * `banira serve [root]` — a tiny static file server for the dev loop, with
  * live reload: HTML responses get a small EventSource snippet injected, and any
@@ -46,9 +58,11 @@ new EventSource('/__livereload').onmessage = () => location.reload();
  * Binds 127.0.0.1 by default so the dev server is not reachable from the
  * network; pass `host: '0.0.0.0'` (CLI: `--host`) to expose it deliberately.
  *
- * @returns The running http.Server (used by tests to close it).
+ * @returns The running server, augmented with a {@link ReloadableServer.reload}
+ *   method so callers (e.g. `dev`) can push a reload directly after a successful
+ *   recompile instead of relying on the file watcher noticing the output.
  */
-export const serve = (root: string = '.', options: ServeOptions = {}): Server => {
+export const serve = (root: string = '.', options: ServeOptions = {}): ReloadableServer => {
   const rootDir = resolve(root);
   // Resolve symlinks in the root once, so served files can be checked against
   // the real root (a symlinked root like /tmp on macOS is still fine).
@@ -117,7 +131,7 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
       if (transform) {
         const source = await readFile(realFilePath, 'utf8');
         const js = transpileToEsm(source, realFilePath);
-        res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' }).end(js);
+        res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': NO_STORE }).end(js);
         return;
       }
 
@@ -126,22 +140,28 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
 
       if (ext === '.html') {
         const html = (await readFile(realFilePath, 'utf8')).replace(/<\/body>/i, `${LIVE_RELOAD}</body>`);
-        res.writeHead(200, { 'Content-Type': type }).end(html);
+        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': NO_STORE }).end(html);
       } else {
-        res.writeHead(200, { 'Content-Type': type }).end(await readFile(realFilePath));
+        res.writeHead(200, { 'Content-Type': type, 'Cache-Control': NO_STORE }).end(await readFile(realFilePath));
       }
     } catch {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Not found');
     }
   });
 
-  // Push a reload to all connected clients when the served tree changes.
+  // Push a reload to every connected live-reload client. Returns how many were
+  // notified, so callers can log/observe whether any browser is listening.
+  const reload = (): number => {
+    for (const client of clients) client.write('data: reload\n\n');
+    return clients.size;
+  };
+
+  // Debounced reload when the served tree changes on disk. This still covers
+  // plain `serve` (no compiler) and any out-of-band edits under the root.
   let timer: ReturnType<typeof setTimeout> | undefined;
   const notify = (): void => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      for (const client of clients) client.write('data: reload\n\n');
-    }, 50);
+    timer = setTimeout(reload, 50);
   };
   let watcher;
   try {
@@ -174,5 +194,7 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Server =>
     console.log(`banira serving ${rootDir} at http://${displayHost}:${port}  (live reload on, bound to ${host})`);
   });
 
-  return server;
+  const reloadable = server as ReloadableServer;
+  reloadable.reload = reload;
+  return reloadable;
 };

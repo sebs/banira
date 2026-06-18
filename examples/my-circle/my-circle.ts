@@ -25,6 +25,8 @@ class MyCircle extends HTMLElement {
         this.render();
     }
 
+
+
     static get observedAttributes() {
         return ['size', 'color'];
     }
@@ -34,9 +36,12 @@ class MyCircle extends HTMLElement {
         return this._size;
     }
 
+
+    
+
     set size(value: number) {
         this._size = value;
-        this.dispatchEvent(new CustomEvent('size-change', { detail: { size: value } }));
+        this.dispatchEvent(new CustomEvent('size-change', { detail: { size: value } }));    
         this.render();
     }
 
@@ -58,7 +63,7 @@ class MyCircle extends HTMLElement {
                 this.size = parseInt(newValue || '50');
                 break;
             case 'color':
-                this.color = newValue || 'red';
+                this.color = newValue || 'black';
                 break;
         }
     }
@@ -73,6 +78,7 @@ class MyCircle extends HTMLElement {
                 :host { display: inline-block; text-align: center; }
                 circle { fill: var(--circle-color, ${this._color}); }
             </style>
+
             <svg width="${this._size * 2}" height="${this._size * 2}" viewBox="0 0 ${this._size * 2} ${this._size * 2}">
                 <circle
                     part="circle"

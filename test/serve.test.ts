@@ -1,17 +1,17 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import type { Server } from 'http';
+import { get, type Server } from 'http';
 import type { AddressInfo } from 'net';
 import { mkdtempSync, symlinkSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { serve } from '../src/cli/actions/serve.js';
+import { serve, type ReloadableServer } from '../src/cli/actions/serve.js';
 
 const PORT = 8137;
 const base = `http://127.0.0.1:${PORT}`;
 
 describe('serve (static dev server)', () => {
-    let server: Server;
+    let server: ReloadableServer;
 
     before(async () => {
         // Serve the examples directory, which contains my-circle/demo/index.html.
@@ -35,6 +35,38 @@ describe('serve (static dev server)', () => {
         const res = await fetch(`${base}/index.html`);
         assert.strictEqual(res.status, 200);
         assert.match(res.headers.get('content-type') ?? '', /text\/html/);
+    });
+
+    it('serves files with no-store so live reload picks up recompiles', async () => {
+        // Without this the browser serves the cached module after a reload and
+        // the recompiled change appears not to take effect.
+        const html = await fetch(`${base}/`);
+        assert.strictEqual(html.headers.get('cache-control'), 'no-store');
+        const asset = await fetch(`${base}/index.html`);
+        assert.strictEqual(asset.headers.get('cache-control'), 'no-store');
+    });
+
+    it('reload() pushes to connected live-reload clients', async () => {
+        // Connect like the browser's EventSource does, then trigger reload()
+        // directly (what dev calls after a successful recompile).
+        const received = await new Promise<string>((resolveMsg, reject) => {
+            const req = get(`${base}/__livereload`, (res) => {
+                res.setEncoding('utf8');
+                res.on('data', (chunk: string) => {
+                    if (chunk.includes('data: reload')) {
+                        req.destroy();
+                        resolveMsg(chunk.trim());
+                    }
+                });
+            });
+            req.on('error', reject);
+            // Give the SSE connection a tick to register, then push.
+            setTimeout(() => {
+                const n = server.reload();
+                assert.strictEqual(n, 1, 'reload() should report one connected client');
+            }, 100);
+        });
+        assert.match(received, /data: reload/);
     });
 
     it('returns 404 for missing files', async () => {

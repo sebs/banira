@@ -112,6 +112,9 @@ export class Compiler {
         skipLibCheck: true,
         strict: false,
         noEmitOnError: false,
+        // Populate EmitResult.emittedFiles so ResultAnalyzer.outputFiles can
+        // report what was written (drives compile/watch/dev output). See #17.
+        listEmittedFiles: true,
         lib: [
             "lib.es2015.d.ts",
             "lib.dom.d.ts",
