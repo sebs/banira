@@ -206,6 +206,24 @@ banira watch src/my-button.ts -o demo/dist
 banira serve demo
 ```
 
+### `banira dev <files...>`
+
+The one-command dev loop: `watch` and `serve` together, so a source edit
+recompiles and the browser refreshes. The served root defaults to the output
+directory.
+
+| Option | Description |
+|---|---|
+| `-p, --project <path>` | Path to a `tsconfig.json` whose options override the defaults |
+| `-o, --output <path>` | Directory to write compiled output to |
+| `-r, --root <path>` | Directory to serve (defaults to the output dir, or `.`) |
+| `--port <number>` | Port to listen on (default `8080`) |
+| `--host <host>` | Host/interface to bind (default `127.0.0.1`) |
+
+```bash
+banira dev src/my-button.ts -o demo/dist -r demo
+```
+
 ## Development
 
 Build, test and release instructions live in [DEVELOPMENT.md](./DEVELOPMENT.md).

@@ -12,6 +12,7 @@ import { types } from './actions/types.js';
 import { diff } from './actions/diff.js';
 import { watch } from './actions/watch.js';
 import { serve } from './actions/serve.js';
+import { dev } from './actions/dev.js';
 
 // Read our own version from package.json at runtime. The CLI is built to
 // dist/cli/index.js, so the package root is two levels up.
@@ -82,6 +83,30 @@ program
   .option('-p, --project <path>', 'Path to tsconfig.json')
   .option('-o, --output <path>', 'Output directory')
   .action((files, options) => { watch(files, { project: options.project, outDir: options.output }); });
+
+program
+  .command('dev')
+  .description('Compile-on-change and serve with live reload in one command')
+  .argument('<files...>', 'TypeScript files to compile')
+  .option('-p, --project <path>', 'Path to tsconfig.json')
+  .option('-o, --output <path>', 'Output directory')
+  .option('-r, --root <path>', 'Directory to serve (defaults to the output dir, or .)')
+  .option('--port <number>', 'Port to listen on', '8080')
+  .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose)')
+  .action((files, options) => {
+    try {
+      dev(files, {
+        project: options.project,
+        outDir: options.output,
+        root: options.root,
+        port: options.port,
+        host: options.host,
+      });
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : error);
+      process.exit(1);
+    }
+  });
 
 program
   .command('serve')
