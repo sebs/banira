@@ -236,6 +236,30 @@ with no per-component test code. Exits non-zero if any element fails.
 banira test src/*.ts
 ```
 
+### `banira init <tag-name> [dir]`
+
+Scaffold a starter vanilla web component — a TypeScript source file (shadow DOM,
+an observed attribute/property, an event, and the `@slot` / `@csspart` /
+`@cssprop` / `@fires` jsdoc tags banira's manifest and doc tooling read) plus a
+demo HTML page wired for `banira serve`. Existing files are left untouched
+unless `--force` is given.
+
+```bash
+banira init my-button src
+```
+
+### `banira prerender <files...>`
+
+Render the components to static HTML using
+[Declarative Shadow DOM](https://web.dev/articles/declarative-shadow-dom)
+(`<template shadowrootmode="open">`), so they display — shadow DOM and all —
+before any JavaScript runs. Components are mounted in JSDOM and their shadow
+root serialized. Writes to stdout unless `-o` is given.
+
+```bash
+banira prerender src/my-button.ts -o prerendered.html
+```
+
 ## Development
 
 Build, test and release instructions live in [DEVELOPMENT.md](./DEVELOPMENT.md).

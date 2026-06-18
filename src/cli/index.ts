@@ -14,6 +14,8 @@ import { watch } from './actions/watch.js';
 import { serve } from './actions/serve.js';
 import { dev } from './actions/dev.js';
 import { test } from './actions/test.js';
+import { init } from './actions/init.js';
+import { prerender } from './actions/prerender.js';
 
 // Read our own version from package.json at runtime. The CLI is built to
 // dist/cli/index.js, so the package root is two levels up.
@@ -129,5 +131,20 @@ program
   .description('Manifest-driven smoke test: mount each element and assert it registers')
   .argument('<files...>', 'Component source files to test')
   .action((files) => test(files));
+
+program
+  .command('init')
+  .description('Scaffold a starter vanilla web component (source + demo page)')
+  .argument('<tag-name>', 'Custom element tag name (must contain a hyphen)')
+  .argument('[dir]', 'Directory to scaffold into', '.')
+  .option('--force', 'Overwrite existing files')
+  .action((tagName, dir, options) => init(tagName, dir, { force: options.force }));
+
+program
+  .command('prerender')
+  .description('Render components to static HTML using Declarative Shadow DOM')
+  .argument('<files...>', 'Component source files to prerender')
+  .option('-o, --output <path>', 'Write the markup to a file instead of stdout')
+  .action((files, options) => prerender(files, { output: options.output }));
 
 program.parse();

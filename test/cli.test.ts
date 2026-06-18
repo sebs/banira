@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import { spawn } from "child_process";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { readFile, rm } from "fs/promises";
 import assert from "node:assert";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -101,6 +102,26 @@ describe("banira CLI", { concurrency: true }, () => {
         assert.strictEqual(result.exitCode, 0, "Expected smoke test to pass");
         assert.match(result.stdout, /PASS <my-circle>/);
         assert.match(result.stdout, /1\/1 passed/);
+    });
+
+    it("prerender emits a declarative shadow DOM template", async () => {
+        const result = await runCommand([
+            'prerender',
+            'examples/my-circle/my-circle.ts'
+        ]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful prerender");
+        assert.match(result.stdout, /<my-circle>/);
+        assert.match(result.stdout, /<template shadowrootmode="open">/);
+    });
+
+    it("init scaffolds a component into a directory", async () => {
+        const dir = `dist/.cli-init-test-${Date.now()}`;
+        const result = await runCommand(['init', 'demo-button', dir]);
+        assert.strictEqual(result.exitCode, 0, "Expected successful scaffold");
+        assert.match(result.stdout, /Created/);
+        const source = await readFile(resolve(dir, 'demo-button.ts'), 'utf8');
+        assert.match(source, /class DemoButton extends HTMLElement/);
+        await rm(dir, { recursive: true, force: true });
     });
 });
 

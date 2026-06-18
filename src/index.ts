@@ -35,3 +35,7 @@ export { diffManifests, formatManifestDiff } from './manifest-diff.js';
 export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-diff.js';
 export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
 export type { SmokeResult, SmokeOptions } from './smoke-test.js';
+export { scaffoldComponent } from './scaffold.js';
+export type { ScaffoldFile } from './scaffold.js';
+export { prerenderManifest, declarativeShadowDom } from './prerender.js';
+export type { PrerenderResult, PrerenderOptions } from './prerender.js';
