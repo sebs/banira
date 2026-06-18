@@ -90,7 +90,16 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
     }
 
     // Resolve the request to a path inside rootDir, rejecting traversal.
-    let filePath = join(rootDir, normalize(decodeURIComponent(url)));
+    // decodeURIComponent throws on a malformed escape (e.g. `/%ZZ`); treat that
+    // as a bad request rather than letting it crash the handler.
+    let decodedUrl: string;
+    try {
+      decodedUrl = decodeURIComponent(url);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Bad Request');
+      return;
+    }
+    let filePath = join(rootDir, normalize(decodedUrl));
     if (filePath !== rootDir && !filePath.startsWith(rootDir + sep)) {
       res.writeHead(403).end('Forbidden');
       return;

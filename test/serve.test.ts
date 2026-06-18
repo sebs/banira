@@ -79,6 +79,15 @@ describe('serve (static dev server)', () => {
         assert.ok(res.status === 403 || res.status === 404, `expected 403/404, got ${res.status}`);
     });
 
+    it('returns 400 for a malformed percent-escape instead of crashing', async () => {
+        // decodeURIComponent throws on `%ZZ`; the handler must not die.
+        const res = await fetch(`${base}/%ZZ`);
+        assert.strictEqual(res.status, 400);
+        // The server is still up and serving afterwards.
+        const ok = await fetch(`${base}/`);
+        assert.strictEqual(ok.status, 200);
+    });
+
     it('binds to 127.0.0.1 by default', () => {
         const address = server.address() as AddressInfo;
         assert.strictEqual(address.address, '127.0.0.1');
