@@ -1,0 +1,41 @@
+/* banira.js — TypeDoc theme override.
+   Remaps TypeDoc's color tokens to the website palette so the generated API
+   reference at /api/ matches the rest of the site (amber accent, warm cream
+   backgrounds) in both light and dark mode. Loaded via the `customCss` option
+   in typedoc.json, after the default theme, so these :root values win. */
+
+:root {
+  /* ── light ── */
+  --light-color-background: #f6f1e6;
+  --light-color-background-secondary: #fffdf7;
+  --light-color-background-active: #efe4cd;
+  --light-color-active-menu-item: #efe4cd;
+  --light-color-background-warning: #fbe9c9;
+  --light-color-text: #221e16;
+  --light-color-text-aside: #766f5e;
+  --light-color-link: #bd7f28;
+  --light-color-accent: #e8e0cf;
+  --light-color-focus-outline: #bd7f28;
+  --light-color-icon-background: #f6f1e6;
+  --light-color-ts-keyword: #bd7f28;
+
+  /* ── dark ── */
+  --dark-color-background: #13110c;
+  --dark-color-background-secondary: #19160f;
+  --dark-color-background-active: #2a2418;
+  --dark-color-active-menu-item: #2a2418;
+  --dark-color-background-warning: #3a2f16;
+  --dark-color-text: #f0ebdf;
+  --dark-color-text-aside: #9c9583;
+  --dark-color-link: #e0b25c;
+  --dark-color-accent: #2c281e;
+  --dark-color-focus-outline: #e0b25c;
+  --dark-color-icon-background: #13110c;
+  --dark-color-ts-keyword: #e0b25c;
+}
+
+/* Match the site's accent for the selected/hover menu indicator border. */
+.tsd-navigation a:hover,
+.tsd-navigation a.current {
+  color: var(--color-link);
+}
