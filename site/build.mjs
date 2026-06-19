@@ -17,10 +17,17 @@ import { commands } from './cli.mjs';
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(process.argv[2] || join(here, '..', '_site'));
 
+// GitHub Pages serves this project under https://sebs.github.io/banira/, so every
+// root-absolute link (href="/…", src="/…") must carry that base prefix or it
+// resolves to the domain root and 404s. Override with SITE_BASE='' for a
+// custom domain served from the root. Trailing slash is normalized off.
+const BASE = (process.env.SITE_BASE ?? '/banira').replace(/\/$/, '');
+const withBase = html => BASE ? html.replace(/(href|src)="\//g, `$1="${BASE}/`) : html;
+
 const write = (rel, html) => {
   const file = join(out, rel);
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(file, html);
+  writeFileSync(file, withBase(html));
 };
 
 // ── reset + static assets ──
