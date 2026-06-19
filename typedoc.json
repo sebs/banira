@@ -2,5 +2,13 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["./src/index.ts"],
   "out": "docs",
-  "customCss": "./site/typedoc-theme.css"
+  "customCss": "./site/typedoc-theme.css",
+
+  "titleLink": "/banira/",
+  "navigationLinks": {
+    "Home": "/banira/",
+    "Docs": "/banira/docs/getting-started/",
+    "CLI": "/banira/cli/",
+    "GitHub": "https://github.com/sebs/banira"
+  }
 }
