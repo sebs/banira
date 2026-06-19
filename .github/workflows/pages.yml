@@ -1,8 +1,10 @@
 name: Pages
 
-# Generate the TypeDoc API docs and deploy them to GitHub Pages.
-# Docs are never committed: they are built fresh from source on every push to
-# main and published as a Pages artifact.
+# Build the banira website and deploy it to GitHub Pages.
+# The site is generated from site/ by a zero-dependency Node script (landing,
+# docs guides, CLI reference, playground); the TypeDoc API reference is generated
+# fresh from source and mounted under /api/. Nothing is committed: the whole site
+# is assembled in the pipeline and published as a Pages artifact.
 #
 # One-time setup on GitHub: repo -> Settings -> Pages -> Build and deployment
 # -> Source: "GitHub Actions".
@@ -39,13 +41,21 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Generate docs
+      - name: Build site
+        run: node site/build.mjs
+
+      - name: Generate API docs
         run: npm run docs
+
+      - name: Mount API reference under /api/
+        run: |
+          mkdir -p _site/api
+          cp -r docs/. _site/api/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          path: _site
 
   deploy:
     needs: build

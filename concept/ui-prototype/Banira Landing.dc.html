@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :root {
+    --bg:#f6f1e6; --bg2:#fffdf7; --card:#fffefb; --text:#221e16; --muted:#766f5e;
+    --faint:#a89f8b; --border:#e8e0cf; --border2:#d9cdb4; --accent:#bd7f28;
+    --code-bg:#1b1812; --code-text:#ece5d4; --code-dim:#8a8270; --green:#7fb069;
+    --shadow:0 1px 2px rgba(50,40,18,.05), 0 10px 34px rgba(50,40,18,.06);
+  }
+  [data-theme="dark"] {
+    --bg:#13110c; --bg2:#19160f; --card:#1d1a13; --text:#f0ebdf; --muted:#9c9583;
+    --faint:#6e6755; --border:#2c281e; --border2:#3a3527; --accent:#e0b25c;
+    --code-bg:#0d0c08; --code-text:#e7e1d2; --code-dim:#7c7560; --green:#8fc47a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 44px rgba(0,0,0,.45);
+  }
+  [data-accent="teal"] { --accent:#2f9e8f; }
+  [data-accent="blue"] { --accent:#3b7fd4; }
+  [data-accent="rose"] { --accent:#d2627f; }
+  ::selection { background: var(--accent); color: #fff; }
+  a { color: inherit; }
+  @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+  @keyframes fadeup { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" data-accent="{{ accentName }}" style="min-height:100vh; background:var(--bg); color:var(--text);">
+
+  <!-- ░░ NAV ░░ -->
+  <header style="position:sticky; top:0; z-index:20; backdrop-filter:saturate(1.4) blur(10px); background:color-mix(in srgb, var(--bg) 82%, transparent); border-bottom:1px solid var(--border);">
+    <nav style="max-width:1120px; margin:0 auto; padding:14px 28px; display:flex; align-items:center; gap:28px;">
+      <a href="/" style="display:flex; align-items:center; gap:10px; text-decoration:none; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.18rem; letter-spacing:-.02em;">
+        <span style="width:22px; height:22px; border-radius:7px; background:var(--accent); display:inline-flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 2px color-mix(in srgb, #000 14%, transparent);">
+          <span style="width:7px; height:7px; border-radius:2px; background:var(--bg2);"></span>
+        </span>
+        <span>banira<span style="color:var(--accent);">.js</span></span>
+      </a>
+      <div style="flex:1;"></div>
+      <a href="/docs/getting-started/" style="text-decoration:none; color:var(--muted); font-size:.92rem; font-weight:500;" style-hover="color:var(--text);">Docs</a>
+      <a href="/cli/" style="text-decoration:none; color:var(--muted); font-size:.92rem; font-weight:500;" style-hover="color:var(--text);">CLI</a>
+      <a href="/api/" style="text-decoration:none; color:var(--muted); font-size:.92rem; font-weight:500;" style-hover="color:var(--text);">API</a>
+      <a href="https://github.com/sebs/banira" style="text-decoration:none; color:var(--muted); font-size:.92rem; font-weight:500;" style-hover="color:var(--text);">GitHub ↗</a>
+      <button onClick="{{ toggleTheme }}" aria-label="Toggle theme" style="cursor:pointer; width:34px; height:34px; border-radius:9px; border:1px solid var(--border2); background:var(--card); color:var(--text); font-size:.95rem; display:inline-flex; align-items:center; justify-content:center;" style-hover="border-color:var(--accent);">{{ themeIcon }}</button>
+    </nav>
+  </header>
+
+  <!-- ░░ WIP BANNER ░░ -->
+  <div style="max-width:1120px; margin:0 auto; padding:12px 28px 0;">
+    <div style="display:flex; align-items:center; gap:10px; font-size:.82rem; color:var(--muted); border:1px dashed var(--border2); border-radius:10px; padding:8px 14px; background:var(--bg2);">
+      <span style="width:7px; height:7px; border-radius:50%; background:var(--accent); flex:none;"></span>
+      <span><strong style="color:var(--text); font-weight:600;">Work in progress.</strong> banira is pre-1.0 — APIs may change. The honest README applies.</span>
+    </div>
+  </div>
+
+  <!-- ░░ HERO ░░ -->
+  <section style="max-width:1120px; margin:0 auto; padding:74px 28px 30px; text-align:center;">
+    <div style="display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace; font-size:.74rem; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); background:var(--bg2); border:1px solid var(--border); border-radius:100px; padding:6px 14px; margin-bottom:26px;">
+      <span style="color:var(--accent);">◆</span> vanilla web components · no runtime
+    </div>
+    <h1 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:clamp(2.5rem,6.2vw,4.7rem); line-height:1.02; letter-spacing:-.035em; margin:0 auto; max-width:13ch; text-wrap:balance;">
+      A toolchain for vanilla web components.
+    </h1>
+    <p style="font-size:clamp(1.05rem,2vw,1.28rem); line-height:1.55; color:var(--muted); max-width:60ch; margin:24px auto 0; text-wrap:pretty;">
+      No bundler. No framework. Just web standards, TypeScript, and a CLI that <strong style="color:var(--text); font-weight:600;">compiles</strong>, <strong style="color:var(--text); font-weight:600;">documents</strong>, and <strong style="color:var(--text); font-weight:600;">type-checks</strong> your components.
+    </p>
+
+    <!-- primary CTA: copyable install -->
+    <div style="display:flex; flex-wrap:wrap; gap:14px; justify-content:center; align-items:center; margin-top:38px;">
+      <div style="display:flex; align-items:center; gap:14px; background:var(--code-bg); border-radius:13px; padding:13px 13px 13px 20px; box-shadow:var(--shadow); font-family:'IBM Plex Mono',monospace; font-size:.96rem;">
+        <span style="color:var(--code-dim);">$</span>
+        <span style="color:var(--code-text);">npx <span style="color:var(--accent);">banira</span> init my-button src</span>
+        <button onClick="{{ copyInit }}" style="cursor:pointer; border:none; border-radius:8px; padding:9px 14px; font-family:'IBM Plex Mono',monospace; font-size:.8rem; font-weight:500; background:color-mix(in srgb, var(--code-text) 12%, transparent); color:var(--code-text);" style-hover="background:color-mix(in srgb, var(--code-text) 22%, transparent);">
+          <sc-if value="{{ copiedInit }}" hint-placeholder-val="{{ false }}"><span style="color:var(--green);">✓ copied</span></sc-if>
+          <sc-if value="{{ idleInit }}" hint-placeholder-val="{{ true }}">copy</sc-if>
+        </button>
+      </div>
+      <a href="/docs/getting-started/" style="text-decoration:none; font-weight:600; font-size:.96rem; padding:14px 22px; border-radius:13px; border:1px solid var(--border2); color:var(--text); background:var(--card);" style-hover="border-color:var(--accent);">Read the docs →</a>
+    </div>
+    <p style="font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--faint); margin-top:18px;">scaffolds a component + demo in seconds</p>
+  </section>
+
+  <!-- ░░ THE SELLING BLOCK ░░ -->
+  <section style="max-width:1120px; margin:0 auto; padding:30px 28px;">
+    <div style="background:var(--code-bg); border-radius:16px; box-shadow:var(--shadow); overflow:hidden;">
+      <div style="display:flex; align-items:center; gap:8px; padding:13px 18px; border-bottom:1px solid color-mix(in srgb, var(--code-text) 9%, transparent);">
+        <span style="width:11px;height:11px;border-radius:50%;background:#e06c5b;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#e3b04a;"></span>
+        <span style="width:11px;height:11px;border-radius:50%;background:#7fb069;"></span>
+        <span style="margin-left:10px; font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--code-dim);">~/my-button — zsh</span>
+        <span style="flex:1;"></span>
+        <button onClick="{{ copyDev }}" style="cursor:pointer; border:none; border-radius:7px; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:.74rem; background:color-mix(in srgb, var(--code-text) 12%, transparent); color:var(--code-text);" style-hover="background:color-mix(in srgb, var(--code-text) 22%, transparent);">
+          <sc-if value="{{ copiedDev }}" hint-placeholder-val="{{ false }}"><span style="color:var(--green);">✓ copied</span></sc-if>
+          <sc-if value="{{ idleDev }}" hint-placeholder-val="{{ true }}">copy all</sc-if>
+        </button>
+      </div>
+      <pre style="margin:0; padding:22px 22px 24px; font-family:'IBM Plex Mono',monospace; font-size:.92rem; line-height:1.85; color:var(--code-text); overflow-x:auto;"><span style="color:var(--code-dim);"># scaffold a component + its demo</span>
+<span style="color:var(--code-dim);">$</span> npx <span style="color:var(--accent);">banira</span> init my-button src
+
+<span style="color:var(--code-dim);"># watch · compile · serve · live-reload</span>
+<span style="color:var(--code-dim);">$</span> npx <span style="color:var(--accent);">banira</span> dev src/my-button.ts <span style="color:var(--code-dim);">-o</span> demo/dist <span style="color:var(--code-dim);">-r</span> demo
+<span style="color:var(--code-dim);">  ✓ compiled my-button.ts → demo/dist/my-button.js (12ms)</span>
+<span style="color:var(--code-dim);">  ➜ serving demo/ on http://localhost:8080</span> <span style="color:var(--green);">●</span><span style="color:var(--accent); animation:blink 1.1s steps(1) infinite;">_</span></pre>
+    </div>
+  </section>
+
+  <!-- ░░ ONE SOURCE → MANY ARTIFACTS ░░ -->
+  <section style="max-width:1120px; margin:0 auto; padding:54px 28px 30px;">
+    <div style="text-align:center; margin-bottom:40px;">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 12px;">the payoff</p>
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:clamp(1.8rem,3.6vw,2.6rem); letter-spacing:-.025em; margin:0; line-height:1.08;">One source file. Many artifacts.</h2>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(240px,0.9fr) auto minmax(280px,1.1fr); gap:8px; align-items:center;">
+      <!-- source -->
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden;">
+        <div style="padding:10px 16px; border-bottom:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--muted); display:flex; gap:8px; align-items:center;"><span style="color:var(--accent);">●</span> src/my-button.ts</div>
+        <pre style="margin:0; padding:16px; font-family:'IBM Plex Mono',monospace; font-size:.74rem; line-height:1.7; color:var(--text); overflow-x:auto;"><span style="color:var(--muted);">/** @csspart button */</span>
+<span style="color:var(--accent);">class</span> MyButton <span style="color:var(--accent);">extends</span> HTMLElement {
+  <span style="color:var(--muted);">static</span> observedAttributes
+    = [<span style="color:var(--green);">'variant'</span>];
+  <span style="color:var(--muted);">/* … */</span>
+}</pre>
+      </div>
+      <!-- arrow / engine -->
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px; padding:0 6px;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--muted); white-space:nowrap;">banira ▸</div>
+        <div style="width:1px; height:30px; background:linear-gradient(var(--accent), transparent);"></div>
+      </div>
+      <!-- artifacts -->
+      <div style="display:grid; gap:10px;">
+        <div style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:11px; padding:13px 16px; box-shadow:var(--shadow);">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:1.1rem; color:var(--accent);">{ }</span>
+          <div><div style="font-weight:600; font-size:.9rem;">custom-elements.json</div><div style="font-size:.78rem; color:var(--muted);">the manifest, single source of truth</div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:11px; padding:13px 16px; box-shadow:var(--shadow);">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:1.1rem; color:var(--accent);">TS</span>
+          <div><div style="font-weight:600; font-size:.9rem;">elements.d.ts</div><div style="font-size:.78rem; color:var(--muted);">types + JSX intrinsic elements</div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:11px; padding:13px 16px; box-shadow:var(--shadow);">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:1.1rem; color:var(--accent);">{}</span>
+          <div><div style="font-weight:600; font-size:.9rem;">editor IntelliSense</div><div style="font-size:.78rem; color:var(--muted);">VS Code &amp; JetBrains data</div></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:11px; padding:13px 16px; box-shadow:var(--shadow);">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:1.1rem; color:var(--accent);">&lt;/&gt;</span>
+          <div><div style="font-weight:600; font-size:.9rem;">my-button.html</div><div style="font-size:.78rem; color:var(--muted);">a doc page, PicoCSS by default</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- pipeline commands -->
+    <div style="background:var(--code-bg); border-radius:14px; box-shadow:var(--shadow); margin-top:20px; overflow:hidden;">
+      <div style="display:flex; align-items:center; padding:11px 18px; border-bottom:1px solid color-mix(in srgb, var(--code-text) 9%, transparent);">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:.76rem; color:var(--code-dim);">generate everything</span>
+        <span style="flex:1;"></span>
+        <button onClick="{{ copyPipe }}" style="cursor:pointer; border:none; border-radius:7px; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:.74rem; background:color-mix(in srgb, var(--code-text) 12%, transparent); color:var(--code-text);" style-hover="background:color-mix(in srgb, var(--code-text) 22%, transparent);">
+          <sc-if value="{{ copiedPipe }}" hint-placeholder-val="{{ false }}"><span style="color:var(--green);">✓ copied</span></sc-if>
+          <sc-if value="{{ idlePipe }}" hint-placeholder-val="{{ true }}">copy</sc-if>
+        </button>
+      </div>
+      <pre style="margin:0; padding:18px 22px; font-family:'IBM Plex Mono',monospace; font-size:.88rem; line-height:1.9; color:var(--code-text); overflow-x:auto;"><span style="color:var(--code-dim);">$</span> <span style="color:var(--accent);">banira</span> manifest src/*.ts        <span style="color:var(--code-dim);">-o</span> custom-elements.json
+<span style="color:var(--code-dim);">$</span> <span style="color:var(--accent);">banira</span> types    src/*.ts        <span style="color:var(--code-dim);">-o</span> dist/elements.d.ts
+<span style="color:var(--code-dim);">$</span> <span style="color:var(--accent);">banira</span> doc      src/my-button.ts <span style="color:var(--code-dim);">-o</span> docs/my-button.html</pre>
+    </div>
+  </section>
+
+  <!-- ░░ WHY BANIRA ░░ -->
+  <section style="max-width:1120px; margin:0 auto; padding:54px 28px;">
+    <div style="text-align:center; margin-bottom:42px;">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 12px;">why banira</p>
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:clamp(1.8rem,3.6vw,2.6rem); letter-spacing:-.025em; margin:0;">Three reasons, no hand-waving.</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px;">
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:var(--shadow);">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:1.5rem; color:var(--accent); margin-bottom:16px;">◆</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.25rem; margin:0 0 10px; letter-spacing:-.02em;">Standards, not abstractions</h3>
+        <p style="margin:0; color:var(--muted); line-height:1.62; font-size:.96rem; text-wrap:pretty;">Vanilla custom elements, shadow DOM, modern CSS. There's no runtime to ship and nothing new to learn — it's the platform.</p>
+      </div>
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:var(--shadow);">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:1.5rem; color:var(--accent); margin-bottom:16px;">⎘</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.25rem; margin:0 0 10px; letter-spacing:-.02em;">One source, many artifacts</h3>
+        <p style="margin:0; color:var(--muted); line-height:1.62; font-size:.96rem; text-wrap:pretty;">A single component yields a manifest, <code style="font-family:'IBM Plex Mono',monospace; font-size:.85em;">.d.ts</code>, VS Code / JetBrains IntelliSense, and docs — all in sync, all generated.</p>
+      </div>
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; box-shadow:var(--shadow);">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:1.5rem; color:var(--accent); margin-bottom:16px;">⟳</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.25rem; margin:0 0 10px; letter-spacing:-.02em;">Built for CI</h3>
+        <p style="margin:0; color:var(--muted); line-height:1.62; font-size:.96rem; text-wrap:pretty;"><code style="font-family:'IBM Plex Mono',monospace; font-size:.85em;">banira test</code> smoke-mounts every element; <code style="font-family:'IBM Plex Mono',monospace; font-size:.85em;">banira diff</code> reads the manifest and suggests a semver bump.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ LIVE DEMO ░░ -->
+  <sc-if value="{{ showDemo }}" hint-placeholder-val="{{ true }}">
+  <section style="max-width:1120px; margin:0 auto; padding:30px 28px 60px;">
+    <div style="text-align:center; margin-bottom:40px;">
+      <p style="font-family:'IBM Plex Mono',monospace; font-size:.76rem; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 12px;">live proof</p>
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:clamp(1.8rem,3.6vw,2.6rem); letter-spacing:-.025em; margin:0;">A real <code style="font-family:'IBM Plex Mono',monospace; color:var(--accent); font-size:.82em;">&lt;my-button&gt;</code>, compiled by banira.</h2>
+      <p style="color:var(--muted); margin:14px auto 0; max-width:52ch; line-height:1.55; text-wrap:pretty;">Drive the element below. The same source produces its manifest and its doc page — flip the tabs.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; align-items:stretch;">
+      <!-- playground -->
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden;">
+        <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:48px 24px; background:repeating-linear-gradient(45deg, var(--bg2), var(--bg2) 10px, transparent 10px, transparent 20px);">
+          <button onClick="{{ fireClick }}" style="{{ demoBtnStyle }}">{{ demoLabel }}</button>
+        </div>
+        <div style="padding:18px 20px; border-top:1px solid var(--border); display:grid; gap:16px;">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <span style="font-size:.78rem; color:var(--muted); width:54px; font-family:'IBM Plex Mono',monospace;">variant</span>
+            <button onClick="{{ setVariantPrimary }}" style="{{ vBtn.primary }}">primary</button>
+            <button onClick="{{ setVariantSecondary }}" style="{{ vBtn.secondary }}">secondary</button>
+            <button onClick="{{ setVariantGhost }}" style="{{ vBtn.ghost }}">ghost</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <span style="font-size:.78rem; color:var(--muted); width:54px; font-family:'IBM Plex Mono',monospace;">size</span>
+            <button onClick="{{ setSizeSm }}" style="{{ sBtn.sm }}">sm</button>
+            <button onClick="{{ setSizeMd }}" style="{{ sBtn.md }}">md</button>
+            <button onClick="{{ setSizeLg }}" style="{{ sBtn.lg }}">lg</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <span style="font-size:.78rem; color:var(--muted); width:54px; font-family:'IBM Plex Mono',monospace;">state</span>
+            <button onClick="{{ toggleDisabled }}" style="{{ disBtn }}">disabled</button>
+            <span style="flex:1;"></span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:.76rem; color:var(--muted);">click fired ×<span style="color:var(--accent);">{{ demoClicks }}</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- code panel with tabs -->
+      <div style="background:var(--code-bg); border-radius:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden;">
+        <div style="display:flex; gap:2px; padding:12px 12px 0;">
+          <button onClick="{{ setTabSource }}" style="{{ tab.source }}">my-button.ts</button>
+          <button onClick="{{ setTabManifest }}" style="{{ tab.manifest }}">manifest</button>
+          <button onClick="{{ setTabDoc }}" style="{{ tab.doc }}">doc</button>
+        </div>
+        <div style="flex:1; min-height:0;">
+          <sc-if value="{{ isSource }}" hint-placeholder-val="{{ true }}">
+            <pre style="margin:0; padding:20px; font-family:'IBM Plex Mono',monospace; font-size:.78rem; line-height:1.75; color:var(--code-text); overflow:auto; height:100%;"><span style="color:var(--code-dim);">/**
+ * @element my-button
+ * @attr {string} variant - primary | secondary | ghost
+ * @attr {string} size    - sm | md | lg
+ * @csspart button
+ * @fires click
+ */</span>
+<span style="color:var(--accent);">export class</span> MyButton <span style="color:var(--accent);">extends</span> HTMLElement {
+  <span style="color:var(--accent);">static</span> observedAttributes = [<span style="color:var(--green);">'variant'</span>, <span style="color:var(--green);">'size'</span>];
+
+  connectedCallback() {
+    <span style="color:var(--accent);">this</span>.attachShadow({ mode: <span style="color:var(--green);">'open'</span> });
+    <span style="color:var(--accent);">this</span>.render();
+  }
+  <span style="color:var(--code-dim);">/* render reads variant + size attrs */</span>
+}
+customElements.define(<span style="color:var(--green);">'my-button'</span>, MyButton);</pre>
+          </sc-if>
+          <sc-if value="{{ isManifest }}" hint-placeholder-val="{{ false }}">
+            <pre style="margin:0; padding:20px; font-family:'IBM Plex Mono',monospace; font-size:.78rem; line-height:1.75; color:var(--code-text); overflow:auto; height:100%;">{
+  <span style="color:var(--green);">"tagName"</span>: <span style="color:var(--green);">"my-button"</span>,
+  <span style="color:var(--green);">"customElement"</span>: <span style="color:var(--accent);">true</span>,
+  <span style="color:var(--green);">"attributes"</span>: [
+    { <span style="color:var(--green);">"name"</span>: <span style="color:var(--green);">"variant"</span>,
+      <span style="color:var(--green);">"type"</span>: { <span style="color:var(--green);">"text"</span>: <span style="color:var(--green);">"string"</span> } },
+    { <span style="color:var(--green);">"name"</span>: <span style="color:var(--green);">"size"</span>,
+      <span style="color:var(--green);">"type"</span>: { <span style="color:var(--green);">"text"</span>: <span style="color:var(--green);">"string"</span> } }
+  ],
+  <span style="color:var(--green);">"cssParts"</span>: [{ <span style="color:var(--green);">"name"</span>: <span style="color:var(--green);">"button"</span> }],
+  <span style="color:var(--green);">"events"</span>:   [{ <span style="color:var(--green);">"name"</span>: <span style="color:var(--green);">"click"</span> }]
+}</pre>
+          </sc-if>
+          <sc-if value="{{ isDoc }}" hint-placeholder-val="{{ false }}">
+            <div style="height:100%; overflow:auto; background:var(--bg2); padding:24px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:.7rem; color:var(--faint); margin-bottom:16px;">▸ docs/my-button.html · PicoCSS</div>
+              <h3 style="font-family:'Space Grotesk',sans-serif; font-size:1.3rem; margin:0 0 4px;">&lt;my-button&gt;</h3>
+              <p style="color:var(--muted); font-size:.86rem; margin:0 0 18px;">A button custom element with variant + size attributes.</p>
+              <table style="width:100%; border-collapse:collapse; font-size:.8rem;">
+                <thead><tr style="border-bottom:1px solid var(--border2); text-align:left; color:var(--muted);"><th style="padding:6px 8px; font-weight:600;">Attr</th><th style="padding:6px 8px; font-weight:600;">Type</th><th style="padding:6px 8px; font-weight:600;">Values</th></tr></thead>
+                <tbody>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:7px 8px; font-family:'IBM Plex Mono',monospace; color:var(--accent);">variant</td><td style="padding:7px 8px; color:var(--muted);">string</td><td style="padding:7px 8px;">primary · secondary · ghost</td></tr>
+                  <tr style="border-bottom:1px solid var(--border);"><td style="padding:7px 8px; font-family:'IBM Plex Mono',monospace; color:var(--accent);">size</td><td style="padding:7px 8px; color:var(--muted);">string</td><td style="padding:7px 8px;">sm · md · lg</td></tr>
+                </tbody>
+              </table>
+              <div style="margin-top:18px; font-size:.78rem; color:var(--muted);"><strong style="color:var(--text);">CSS parts:</strong> <code style="font-family:'IBM Plex Mono',monospace;">::part(button)</code> &nbsp;·&nbsp; <strong style="color:var(--text);">Events:</strong> <code style="font-family:'IBM Plex Mono',monospace;">click</code></div>
+            </div>
+          </sc-if>
+        </div>
+        <div style="padding:11px 16px; border-top:1px solid color-mix(in srgb, var(--code-text) 9%, transparent); font-family:'IBM Plex Mono',monospace; font-size:.74rem; color:var(--code-dim);">currently: &lt;my-button variant="<span style="color:var(--accent);">{{ demoVariant }}</span>" size="<span style="color:var(--accent);">{{ demoSize }}</span>"&gt;</div>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+
+  <!-- ░░ ROADMAP STRIP ░░ -->
+  <section style="max-width:1120px; margin:0 auto; padding:0 28px 60px;">
+    <div style="border:1px solid var(--border); border-radius:16px; background:var(--bg2); padding:30px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px;">
+      <div style="display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--green); grid-column:1/-1;">phased rollout · additive, ship incrementally</div>
+      <div><div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--accent);">phase 0 · done</div><div style="font-size:.88rem; margin-top:4px;">TypeDoc API on Pages</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--accent);">phase 1</div><div style="font-size:.88rem; margin-top:4px;">Landing + Getting Started</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--accent);">phase 2</div><div style="font-size:.88rem; margin-top:4px;">CLI pages + guides</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--accent);">phase 3</div><div style="font-size:.88rem; margin-top:4px;">Live demo on landing</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--muted);">phase 4 · maybe</div><div style="font-size:.88rem; margin-top:4px; color:var(--muted);">In-browser playground</div></div>
+    </div>
+  </section>
+
+  <!-- ░░ FOOTER / IA ░░ -->
+  <footer style="border-top:1px solid var(--border); background:var(--bg2);">
+    <div style="max-width:1120px; margin:0 auto; padding:48px 28px 30px; display:grid; grid-template-columns:1.4fr repeat(4,1fr); gap:32px;">
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.1rem; letter-spacing:-.02em;">
+          <span style="width:20px; height:20px; border-radius:6px; background:var(--accent); display:inline-flex; align-items:center; justify-content:center;"><span style="width:6px;height:6px;border-radius:2px;background:var(--bg2);"></span></span>
+          banira<span style="color:var(--accent);">.js</span>
+        </div>
+        <p style="color:var(--muted); font-size:.86rem; line-height:1.55; margin:14px 0 0; max-width:30ch; text-wrap:pretty;">A toolchain for vanilla web components. No bundler. No framework.</p>
+        <p style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--faint); margin-top:16px;">MIT · pre-1.0 · sebs/banira</p>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-bottom:14px;">Docs</div>
+        <div style="display:grid; gap:9px; font-size:.88rem;">
+          <a href="/docs/getting-started/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">Getting started</a>
+          <a href="/docs/the-toolchain/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">The toolchain</a>
+          <a href="/docs/authoring-components/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">Authoring components</a>
+          <a href="/docs/ci-and-release/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">CI &amp; release</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-bottom:14px;">CLI</div>
+        <div style="display:grid; gap:9px; font-size:.88rem; font-family:'IBM Plex Mono',monospace;">
+          <a href="/cli/compile/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">compile</a>
+          <a href="/cli/manifest/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">manifest</a>
+          <a href="/cli/doc/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">doc</a>
+          <a href="/cli/types/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">types</a>
+          <a href="/cli/test/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">test · diff · dev</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-bottom:14px;">Reference</div>
+        <div style="display:grid; gap:9px; font-size:.88rem;">
+          <a href="/api/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">API (TypeDoc)</a>
+          <a href="/playground/" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">Playground →</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-bottom:14px;">Project</div>
+        <div style="display:grid; gap:9px; font-size:.88rem;">
+          <a href="https://github.com/sebs/banira" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">GitHub ↗</a>
+          <a href="https://www.npmjs.com/package/banira" style="text-decoration:none; color:var(--muted);" style-hover="color:var(--accent);">npm ↗</a>
+        </div>
+      </div>
+    </div>
+    <div style="max-width:1120px; margin:0 auto; padding:0 28px 36px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:.72rem; color:var(--faint);">/ landing · /docs · /cli · /api · /playground</div></div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amber&quot;,&quot;teal&quot;,&quot;blue&quot;,&quot;rose&quot;],&quot;default&quot;:&quot;amber&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startDark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showLiveDemo&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = {
+    theme: this.props.startDark ? 'dark' : 'light',
+    copied: null,
+    demoVariant: 'primary',
+    demoSize: 'md',
+    demoDisabled: false,
+    demoClicks: 0,
+    tab: 'source',
+  };
+
+  accentMap = {
+    amber: { c: '#c98a2b', ink: '#1c1710' },
+    teal:  { c: '#2f9e8f', ink: '#ffffff' },
+    blue:  { c: '#3b7fd4', ink: '#ffffff' },
+    rose:  { c: '#d2627f', ink: '#ffffff' },
+  };
+
+  copy(key, text) {
+    try { navigator.clipboard && navigator.clipboard.writeText(text); } catch (e) {}
+    this.setState({ copied: key });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ copied: null }), 1600);
+  }
+
+  segStyle(active) {
+    return {
+      cursor: 'pointer',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: '.78rem',
+      padding: '7px 13px',
+      borderRadius: '8px',
+      border: '1px solid ' + (active ? 'var(--accent)' : 'var(--border2)'),
+      background: active ? 'color-mix(in srgb, var(--accent) 14%, transparent)' : 'var(--card)',
+      color: active ? 'var(--accent)' : 'var(--muted)',
+      fontWeight: active ? 600 : 400,
+    };
+  }
+
+  tabStyle(active) {
+    return {
+      cursor: 'pointer',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: '.76rem',
+      padding: '9px 15px',
+      border: 'none',
+      borderRadius: '9px 9px 0 0',
+      background: active ? 'var(--code-bg)' : 'transparent',
+      color: active ? 'var(--accent)' : 'var(--code-dim)',
+      boxShadow: active ? 'inset 0 2px 0 var(--accent)' : 'none',
+      fontWeight: active ? 600 : 400,
+    };
+  }
+
+  demoBtnStyle() {
+    const a = this.accentMap[this.props.accent ?? 'amber'] || this.accentMap.amber;
+    const v = this.state.demoVariant;
+    const s = this.state.demoSize;
+    const pad = s === 'sm' ? '8px 16px' : s === 'lg' ? '16px 34px' : '12px 26px';
+    const fs = s === 'sm' ? '.85rem' : s === 'lg' ? '1.18rem' : '1rem';
+    let base = {
+      cursor: this.state.demoDisabled ? 'not-allowed' : 'pointer',
+      fontFamily: "'Space Grotesk', sans-serif",
+      fontWeight: 600,
+      borderRadius: '11px',
+      padding: pad,
+      fontSize: fs,
+      transition: 'transform .12s ease, filter .12s ease',
+      opacity: this.state.demoDisabled ? 0.45 : 1,
+    };
+    if (v === 'primary') { base.background = a.c; base.color = a.ink; base.border = '1px solid ' + a.c; }
+    else if (v === 'secondary') { base.background = 'transparent'; base.color = a.c; base.border = '1.5px solid ' + a.c; }
+    else { base.background = 'transparent'; base.color = 'var(--text)'; base.border = '1.5px solid transparent'; }
+    return base;
+  }
+
+  renderVals() {
+    const c = this.state.copied;
+    const set = (k, v) => () => this.setState({ [k]: v });
+    return {
+      theme: this.state.theme,
+      accentName: this.props.accent ?? 'amber',
+      themeIcon: this.state.theme === 'dark' ? '☀' : '☾',
+      toggleTheme: () => this.setState(s => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      showDemo: this.props.showLiveDemo ?? true,
+
+      copyInit: () => this.copy('init', 'npx banira init my-button src'),
+      copyDev: () => this.copy('dev', 'npx banira init my-button src\nnpx banira dev src/my-button.ts -o demo/dist -r demo'),
+      copyPipe: () => this.copy('pipe', 'banira manifest src/*.ts -o custom-elements.json\nbanira types src/*.ts -o dist/elements.d.ts\nbanira doc src/my-button.ts -o docs/my-button.html'),
+      copiedInit: c === 'init', idleInit: c !== 'init',
+      copiedDev: c === 'dev', idleDev: c !== 'dev',
+      copiedPipe: c === 'pipe', idlePipe: c !== 'pipe',
+
+      demoVariant: this.state.demoVariant,
+      demoSize: this.state.demoSize,
+      demoClicks: this.state.demoClicks,
+      demoLabel: 'Get started',
+      demoBtnStyle: this.demoBtnStyle(),
+      fireClick: () => { if (!this.state.demoDisabled) this.setState(s => ({ demoClicks: s.demoClicks + 1 })); },
+
+      setVariantPrimary: set('demoVariant', 'primary'),
+      setVariantSecondary: set('demoVariant', 'secondary'),
+      setVariantGhost: set('demoVariant', 'ghost'),
+      vBtn: {
+        primary: this.segStyle(this.state.demoVariant === 'primary'),
+        secondary: this.segStyle(this.state.demoVariant === 'secondary'),
+        ghost: this.segStyle(this.state.demoVariant === 'ghost'),
+      },
+      setSizeSm: set('demoSize', 'sm'),
+      setSizeMd: set('demoSize', 'md'),
+      setSizeLg: set('demoSize', 'lg'),
+      sBtn: {
+        sm: this.segStyle(this.state.demoSize === 'sm'),
+        md: this.segStyle(this.state.demoSize === 'md'),
+        lg: this.segStyle(this.state.demoSize === 'lg'),
+      },
+      toggleDisabled: () => this.setState(s => ({ demoDisabled: !s.demoDisabled })),
+      disBtn: this.segStyle(this.state.demoDisabled),
+
+      setTabSource: set('tab', 'source'),
+      setTabManifest: set('tab', 'manifest'),
+      setTabDoc: set('tab', 'doc'),
+      tab: {
+        source: this.tabStyle(this.state.tab === 'source'),
+        manifest: this.tabStyle(this.state.tab === 'manifest'),
+        doc: this.tabStyle(this.state.tab === 'doc'),
+      },
+      isSource: this.state.tab === 'source',
+      isManifest: this.state.tab === 'manifest',
+      isDoc: this.state.tab === 'doc',
+    };
+  }
+}
+</script>
+</body>
+</html>

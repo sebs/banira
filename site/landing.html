@@ -1,0 +1,250 @@
+  <!-- ░░ WIP BANNER ░░ -->
+  <div class="wrap">
+    <div class="banner">
+      <span class="dot"></span>
+      <span><b>Work in progress.</b> banira is pre-1.0 — APIs may change. The honest README applies.</span>
+    </div>
+  </div>
+
+  <!-- ░░ HERO ░░ -->
+  <section class="hero">
+    <div class="pill"><span class="accent">◆</span> vanilla web components · no runtime</div>
+    <h1>A toolchain for vanilla web components.</h1>
+    <p class="lede">
+      No bundler. No framework. Just web standards, TypeScript, and a CLI that
+      <b>compiles</b>, <b>documents</b>, and <b>type-checks</b> your components.
+    </p>
+
+    <div class="cta-row">
+      <div class="install">
+        <span class="prompt">$</span>
+        <span class="cmd">npx <span class="accent">banira</span> init my-button src</span>
+        <button class="copy" data-copy="npx banira init my-button src">copy</button>
+      </div>
+      <a href="/docs/getting-started/" class="btn-secondary">Read the docs →</a>
+    </div>
+    <p class="caption">scaffolds a component + demo in seconds</p>
+  </section>
+
+  <!-- ░░ THE SELLING BLOCK ░░ -->
+  <section style="padding-top:30px;">
+    <div class="wrap">
+      <div class="terminal">
+        <div class="term-bar">
+          <span class="tl" style="background:#e06c5b;"></span>
+          <span class="tl" style="background:#e3b04a;"></span>
+          <span class="tl" style="background:#7fb069;"></span>
+          <span class="term-title">~/my-button — zsh</span>
+          <span class="grow"></span>
+          <button class="copy sm" data-copy="npx banira init my-button src&#10;npx banira dev src/my-button.ts -o demo/dist -r demo">copy all</button>
+        </div>
+<pre class="term"><span class="dim"># scaffold a component + its demo</span>
+<span class="dim">$</span> npx <span class="accent">banira</span> init my-button src
+
+<span class="dim"># watch · compile · serve · live-reload</span>
+<span class="dim">$</span> npx <span class="accent">banira</span> dev src/my-button.ts <span class="dim">-o</span> demo/dist <span class="dim">-r</span> demo
+<span class="dim">  ✓ compiled my-button.ts → demo/dist/my-button.js (12ms)</span>
+<span class="dim">  ➜ serving demo/ on http://localhost:8080</span> <span class="grn">●</span><span class="cursor">_</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ ONE SOURCE → MANY ARTIFACTS ░░ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">the payoff</p>
+        <h2>One source file. Many artifacts.</h2>
+      </div>
+
+      <div class="flow">
+        <div class="card">
+          <div class="card-head"><span class="accent">●</span> src/my-button.ts</div>
+<pre class="src"><span style="color:var(--muted);">/** @csspart button */</span>
+<span class="accent">class</span> MyButton <span class="accent">extends</span> HTMLElement {
+  <span style="color:var(--muted);">static</span> observedAttributes
+    = [<span class="grn">'variant'</span>];
+  <span style="color:var(--muted);">/* … */</span>
+}</pre>
+        </div>
+
+        <div class="engine">
+          <div class="lbl">banira ▸</div>
+          <div class="line"></div>
+        </div>
+
+        <div class="artifacts">
+          <div class="artifact">
+            <span class="glyph">{ }</span>
+            <div><div class="t">custom-elements.json</div><div class="d">the manifest, single source of truth</div></div>
+          </div>
+          <div class="artifact">
+            <span class="glyph">TS</span>
+            <div><div class="t">elements.d.ts</div><div class="d">types + JSX intrinsic elements</div></div>
+          </div>
+          <div class="artifact">
+            <span class="glyph">{}</span>
+            <div><div class="t">editor IntelliSense</div><div class="d">VS Code &amp; JetBrains data</div></div>
+          </div>
+          <div class="artifact">
+            <span class="glyph">&lt;/&gt;</span>
+            <div><div class="t">my-button.html</div><div class="d">a doc page, PicoCSS by default</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe">
+        <div class="pipe-bar">
+          <span class="lbl">generate everything</span>
+          <span class="grow"></span>
+          <button class="copy sm" data-copy="banira manifest src/*.ts -o custom-elements.json&#10;banira types src/*.ts -o dist/elements.d.ts&#10;banira doc src/my-button.ts -o docs/my-button.html">copy</button>
+        </div>
+<pre class="pipe-pre"><span class="dim">$</span> <span class="accent">banira</span> manifest src/*.ts        <span class="dim">-o</span> custom-elements.json
+<span class="dim">$</span> <span class="accent">banira</span> types    src/*.ts        <span class="dim">-o</span> dist/elements.d.ts
+<span class="dim">$</span> <span class="accent">banira</span> doc      src/my-button.ts <span class="dim">-o</span> docs/my-button.html</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ WHY BANIRA ░░ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">why banira</p>
+        <h2>Three reasons, no hand-waving.</h2>
+      </div>
+      <div class="why">
+        <div class="why-card">
+          <div class="ico">◆</div>
+          <h3>Standards, not abstractions</h3>
+          <p>Vanilla custom elements, shadow DOM, modern CSS. There's no runtime to ship and nothing new to learn — it's the platform.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">⎘</div>
+          <h3>One source, many artifacts</h3>
+          <p>A single component yields a manifest, <code>.d.ts</code>, VS Code / JetBrains IntelliSense, and docs — all in sync, all generated.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">⟳</div>
+          <h3>Built for CI</h3>
+          <p><code>banira test</code> smoke-mounts every element; <code>banira diff</code> reads the manifest and suggests a semver bump.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ LIVE DEMO ░░ -->
+  <section style="padding-top:30px; padding-bottom:60px;">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">live proof</p>
+        <h2>A real <code class="accent">&lt;my-button&gt;</code>, defined in vanilla JS.</h2>
+        <p class="lede" style="margin-top:14px; max-width:52ch;">Drive the element below — it's a genuine custom element with shadow DOM, running on this page. The same kind of source produces its manifest and its doc page; flip the tabs.</p>
+      </div>
+
+      <div class="demo-grid">
+        <!-- playground -->
+        <div class="card" style="display:flex; flex-direction:column;">
+          <div class="stage">
+            <my-button id="demoBtn" variant="primary" size="md">Get started</my-button>
+          </div>
+          <div class="controls">
+            <div class="ctrl-row" role="group" aria-label="variant">
+              <span class="ctrl-label">variant</span>
+              <button class="seg" data-attr="variant" data-val="primary" aria-pressed="true">primary</button>
+              <button class="seg" data-attr="variant" data-val="secondary" aria-pressed="false">secondary</button>
+              <button class="seg" data-attr="variant" data-val="ghost" aria-pressed="false">ghost</button>
+            </div>
+            <div class="ctrl-row" role="group" aria-label="size">
+              <span class="ctrl-label">size</span>
+              <button class="seg" data-attr="size" data-val="sm" aria-pressed="false">sm</button>
+              <button class="seg" data-attr="size" data-val="md" aria-pressed="true">md</button>
+              <button class="seg" data-attr="size" data-val="lg" aria-pressed="false">lg</button>
+            </div>
+            <div class="ctrl-row">
+              <span class="ctrl-label">state</span>
+              <button class="seg" id="toggleDisabled" aria-pressed="false">disabled</button>
+              <span class="grow"></span>
+              <span class="clicks">click fired ×<span class="accent" id="clickCount">0</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- code panel with tabs -->
+        <div class="terminal" style="display:flex; flex-direction:column;">
+          <div class="tabs" role="tablist">
+            <button class="tab" role="tab" data-tab="source" aria-selected="true">my-button.ts</button>
+            <button class="tab" role="tab" data-tab="manifest" aria-selected="false">manifest</button>
+            <button class="tab" role="tab" data-tab="doc" aria-selected="false">doc</button>
+          </div>
+
+          <div class="panel" data-panel="source" data-active>
+<pre class="code"><span class="dim">/**
+ * @element my-button
+ * @attr {string} variant - primary | secondary | ghost
+ * @attr {string} size    - sm | md | lg
+ * @csspart button
+ * @fires click
+ */</span>
+<span class="accent">export class</span> MyButton <span class="accent">extends</span> HTMLElement {
+  <span class="accent">static</span> observedAttributes = [<span class="grn">'variant'</span>, <span class="grn">'size'</span>];
+
+  connectedCallback() {
+    <span class="accent">this</span>.attachShadow({ mode: <span class="grn">'open'</span> });
+    <span class="accent">this</span>.render();
+  }
+  <span class="dim">/* render reads variant + size attrs */</span>
+}
+customElements.define(<span class="grn">'my-button'</span>, MyButton);</pre>
+          </div>
+
+          <div class="panel" data-panel="manifest">
+<pre class="code">{
+  <span class="grn">"tagName"</span>: <span class="grn">"my-button"</span>,
+  <span class="grn">"customElement"</span>: <span class="accent">true</span>,
+  <span class="grn">"attributes"</span>: [
+    { <span class="grn">"name"</span>: <span class="grn">"variant"</span>,
+      <span class="grn">"type"</span>: { <span class="grn">"text"</span>: <span class="grn">"string"</span> } },
+    { <span class="grn">"name"</span>: <span class="grn">"size"</span>,
+      <span class="grn">"type"</span>: { <span class="grn">"text"</span>: <span class="grn">"string"</span> } }
+  ],
+  <span class="grn">"cssParts"</span>: [{ <span class="grn">"name"</span>: <span class="grn">"button"</span> }],
+  <span class="grn">"events"</span>:   [{ <span class="grn">"name"</span>: <span class="grn">"click"</span> }]
+}</pre>
+          </div>
+
+          <div class="panel" data-panel="doc">
+            <div class="doc-preview">
+              <div class="crumb">▸ docs/my-button.html · PicoCSS</div>
+              <h3 style="font-size:1.3rem; margin:0 0 4px;">&lt;my-button&gt;</h3>
+              <p style="color:var(--muted); font-size:.86rem; margin:0 0 18px;">A button custom element with variant + size attributes.</p>
+              <table>
+                <thead><tr><th>Attr</th><th>Type</th><th>Values</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono accent">variant</td><td style="color:var(--muted);">string</td><td>primary · secondary · ghost</td></tr>
+                  <tr><td class="mono accent">size</td><td style="color:var(--muted);">string</td><td>sm · md · lg</td></tr>
+                </tbody>
+              </table>
+              <div style="margin-top:18px; font-size:.78rem; color:var(--muted);"><b style="color:var(--text);">CSS parts:</b> <code>::part(button)</code> &nbsp;·&nbsp; <b style="color:var(--text);">Events:</b> <code>click</code></div>
+            </div>
+          </div>
+
+          <div class="code-foot">currently: &lt;my-button variant="<span class="accent" id="curVariant">primary</span>" size="<span class="accent" id="curSize">md</span>"&gt;</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ ROADMAP STRIP ░░ -->
+  <section style="padding-top:0; padding-bottom:60px;">
+    <div class="wrap">
+      <div class="roadmap">
+        <div class="head">phased rollout · additive, ship incrementally</div>
+        <div><div class="phase">phase 0 · done</div><div class="body">TypeDoc API on Pages</div></div>
+        <div><div class="phase">phase 1 · done</div><div class="body">Landing + Getting Started</div></div>
+        <div><div class="phase">phase 2 · done</div><div class="body">CLI pages + guides</div></div>
+        <div><div class="phase">phase 3</div><div class="body">Live demo on landing</div></div>
+        <div><div class="phase muted">phase 4 · maybe</div><div class="body" style="color:var(--muted);">In-browser playground</div></div>
+      </div>
+    </div>
+  </section>
