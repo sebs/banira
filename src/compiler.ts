@@ -1,6 +1,6 @@
 import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult, CompilerHost, ModuleKind, ModuleResolutionKind, ScriptTarget }  from "typescript";
 import transformer from './transformer.js';
-import { lowerCssImports } from './css-transformer.js';
+import { lowerCssImports, type CssLoweringOptions } from './css-transformer.js';
 import { readFile } from "fs/promises";
 import { createVirtualCompilerHost } from "./virtual-fs.js";
 import { resolve, dirname } from "path";
@@ -138,14 +138,19 @@ export class Compiler {
      * @param options - TypeScript compiler options (defaults to {@link Compiler.DEFAULT_COMPILER_OPTIONS})
      * @param host - Compiler host
      */
-    constructor(fileNames: string[], options: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS, host?: CompilerHost) {
+    constructor(
+        fileNames: string[],
+        options: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS,
+        host?: CompilerHost,
+        cssLowering?: CssLoweringOptions
+    ) {
         this.fileNames = fileNames;
         this.options = options;
         this.host = host;
         // Lower CSS imports to constructable stylesheets first, so the import is
         // gone before the .js-extension transformer would otherwise mangle it.
         this.defaultTransformers = {
-            after: [lowerCssImports(), transformer()]
+            after: [lowerCssImports(cssLowering ?? {}), transformer()]
         }
     }
 

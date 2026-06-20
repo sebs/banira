@@ -51,7 +51,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | Export | Description |
 |----|----|
 | Compiler | Uses tsc to compile TypeScript files to JavaScript |
-| TestHelper | Mount web components in JSDOM (including ones that **import sibling modules**) with deterministic readiness, or — optionally — a real browser via Playwright (`mountInBrowser`) |
+| TestHelper | Mount web components in JSDOM (including ones that **import sibling modules**) with deterministic readiness — the mount context exposes shadow-piercing `query`/`queryAll` — or, optionally, a real browser via Playwright (`mountInBrowser`) |
 | DocGen | Generates an HTML documentation page (summary, `@demo`, and a full API reference) for a component |
 | ManifestGenerator | Produces a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (`custom-elements.json`) from vanilla components |
 | manifestToMarkdown | Renders a manifest as Markdown API documentation |
@@ -87,12 +87,16 @@ Compile one or more TypeScript files with banira's compiler defaults.
 | `-p, --project <path>` | Path to a `tsconfig.json` whose options override the defaults |
 | `-o, --output <path>` | Directory to write the emitted JavaScript to |
 | `--import-map [path]` | Also emit an import map for the components' bare imports (see below) |
+| `--optimize-css` | Run inlined CSS through [lightningcss](https://lightningcss.dev/) (flatten `@import`, lower nesting, minify) before it's adopted |
 
 ```bash
 banira compile src/my-button.ts -o dist
 # also write dist/import-map.json pinning bare imports to esm.sh
 banira compile src/my-button.ts -o dist --import-map
 ```
+
+`--optimize-css` needs the optional `lightningcss` dependency (`npm i -D lightningcss`),
+loaded lazily — a clear error is shown if it's requested but not installed.
 
 Compilation emits a `.js.map` source map next to each `.js`, with the original
 TypeScript embedded, so breakpoints in devtools land on the `.ts` even when the
@@ -416,6 +420,12 @@ Render the components to static HTML using
 (`<template shadowrootmode="open">`), so they display — shadow DOM and all —
 before any JavaScript runs. Components are mounted in JSDOM and their shadow
 root serialized. Writes to stdout unless `-o` is given.
+
+A component's adopted constructable stylesheet is inlined into the DSD template
+as `<style data-banira-critical>` (constructable sheets aren't serialized
+otherwise), so the prerendered markup is styled before JS — FOUC-free. On
+hydration, `hydrateShadow` adopts the (deduped) sheet and drops that inline
+style. Pass `{ inlineStyles: false }` to opt out.
 
 ```bash
 banira prerender src/my-button.ts -o prerendered.html

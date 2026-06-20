@@ -17,6 +17,13 @@ export interface PrerenderOptions {
     /** Attributes to set on each prerendered element. */
     attributes?: Record<string, string>;
     readyTimeout?: number;
+    /**
+     * Inline the component's constructable stylesheet(s) into the DSD template as
+     * a `<style data-banira-critical>` so the prerendered markup is styled before
+     * JS (FOUC-free). Default `true`. On hydration, {@link hydrateShadow} drops
+     * this inline style once it adopts the (deduped) constructable sheet.
+     */
+    inlineStyles?: boolean;
 }
 
 /** Serializes attributes into an HTML attribute string (leading space per attribute). */
@@ -24,6 +31,19 @@ function attributeString(attributes: Record<string, string>): string {
     return Object.entries(attributes)
         .map(([k, v]) => ` ${k}="${v.replace(/"/g, '&quot;')}"`)
         .join('');
+}
+
+/** Serializes a shadow root's adopted constructable stylesheets to a critical-CSS `<style>` (#44). */
+function criticalStyles(shadow: { adoptedStyleSheets?: ArrayLike<{ cssRules: ArrayLike<{ cssText: string }> }> }): string {
+    let css = '';
+    for (const sheet of Array.from(shadow.adoptedStyleSheets ?? [])) {
+        try {
+            for (const rule of Array.from(sheet.cssRules)) css += rule.cssText;
+        } catch {
+            /* ignore unreadable sheet */
+        }
+    }
+    return css ? `<style data-banira-critical>${css}</style>` : '';
 }
 
 /**
@@ -52,6 +72,8 @@ export interface PrerendererOptions {
     compilerOptions?: CompilerOptions;
     /** Upper bound (ms) on waiting for a component to register/settle. */
     readyTimeout?: number;
+    /** Inline adopted constructable stylesheets as critical CSS in the DSD template (default `true`). See #44. */
+    inlineStyles?: boolean;
 }
 
 /**
@@ -78,6 +100,7 @@ export interface Prerenderer {
 export async function createPrerenderer(files: string[], options: PrerendererOptions = {}): Promise<Prerenderer> {
     const compilerOptions = options.compilerOptions ?? Compiler.DEFAULT_COMPILER_OPTIONS;
     const readyTimeout = options.readyTimeout ?? 1000;
+    const inlineStyles = options.inlineStyles ?? true;
 
     const pkg = new ManifestGenerator(files, compilerOptions).generate();
     const tags = pkg.modules
@@ -118,8 +141,9 @@ export async function createPrerenderer(files: string[], options: PrerendererOpt
         await new Promise<void>((resolve) => window.setTimeout(resolve, 0)); // let render settle
 
         const shadow = (element as Element & { shadowRoot?: ShadowRoot | null }).shadowRoot;
+        const shadowHtml = shadow ? (inlineStyles ? criticalStyles(shadow) : '') + shadow.innerHTML.trim() : '';
         const markup = shadow
-            ? declarativeShadowDom(tagName, shadow.innerHTML.trim(), attributes, children)
+            ? declarativeShadowDom(tagName, shadowHtml, attributes, children)
             : `<${tagName}${attributeString(attributes)}>${children}</${tagName}>`;
         element.remove();
         return markup;
@@ -138,6 +162,7 @@ export async function createPrerenderer(files: string[], options: PrerendererOpt
  */
 export async function prerenderManifest(files: string[], options: PrerenderOptions = {}): Promise<PrerenderResult[]> {
     const compilerOptions = options.compilerOptions ?? Compiler.DEFAULT_COMPILER_OPTIONS;
+    const inlineStyles = options.inlineStyles ?? true;
     const generator = new ManifestGenerator(files, compilerOptions);
     const pkg = generator.generate();
     const results: PrerenderResult[] = [];
@@ -155,8 +180,9 @@ export async function prerenderManifest(files: string[], options: PrerenderOptio
             );
             const element = context.document.querySelector(decl.tagName);
             const shadow = (element as Element & { shadowRoot?: ShadowRoot | null })?.shadowRoot;
+            const shadowHtml = shadow ? (inlineStyles ? criticalStyles(shadow) : '') + shadow.innerHTML.trim() : '';
             const html = shadow
-                ? declarativeShadowDom(decl.tagName, shadow.innerHTML.trim(), options.attributes)
+                ? declarativeShadowDom(decl.tagName, shadowHtml, options.attributes)
                 : `<${decl.tagName}></${decl.tagName}>`;
             results.push({ tagName: decl.tagName, file: module.path, html });
             context.jsdom.window.close();

@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
+import { createRequire } from 'module';
 
 export interface CssLoweringOptions {
     /**
@@ -9,6 +10,20 @@ export interface CssLoweringOptions {
      * synchronous disk read; injectable for tests / virtual filesystems.
      */
     readCss?: (absolutePath: string) => string | undefined;
+    /**
+     * Run the inlined CSS through [lightningcss](https://lightningcss.dev/)
+     * before `replaceSync` — flatten `@import`, lower CSS nesting for the target
+     * browsers, and minify (#10). lightningcss is an optional dependency, loaded
+     * lazily (like Playwright/axe); a clear error is thrown if it's missing.
+     */
+    optimizeCss?: boolean;
+    /** lightningcss `targets` (e.g. from its `browserslistToTargets`); narrows nesting lowering. */
+    cssTargets?: unknown;
+    /**
+     * Overrides the CSS optimizer (default: lightningcss when `optimizeCss` is
+     * set). Injectable for tests and custom pipelines.
+     */
+    transformCss?: (css: string, filename: string) => string;
 }
 
 /** A relative `*.css` import specifier — the only kind we lower. */
@@ -23,6 +38,38 @@ const defaultReadCss = (absolutePath: string): string | undefined => {
         return undefined;
     }
 };
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Resolves the CSS optimizer for the lowering: the injected `transformCss`, or a
+ * lightningcss-backed one when `optimizeCss` is set (loaded lazily on first use,
+ * so a project with no CSS imports never needs the dependency), or `undefined`.
+ */
+function makeCssOptimizer(options: CssLoweringOptions): ((css: string, filename: string) => string) | undefined {
+    if (options.transformCss) return options.transformCss;
+    if (!options.optimizeCss) return undefined;
+
+    let transform: ((opts: Record<string, unknown>) => { code: { toString(): string } }) | undefined;
+    return (css: string, filename: string): string => {
+        if (!transform) {
+            // A non-literal specifier keeps TypeScript from requiring the optional dep at build time.
+            const specifier = 'lightningcss';
+            try {
+                transform = (createRequire(import.meta.url)(specifier) as any).transform;
+            } catch {
+                throw new Error('CSS optimization requires lightningcss. Install it with `npm i -D lightningcss`.');
+            }
+        }
+        const result = transform!({
+            filename,
+            code: Buffer.from(css),
+            minify: true,
+            ...(options.cssTargets ? { targets: options.cssTargets } : {}),
+        });
+        return result.code.toString();
+    };
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /** Name of the per-module helper that resolves a constructable sheet from the shared cache. */
 const HELPER_NAME = '__baniraAdoptStyles';
@@ -162,6 +209,7 @@ function helperStatement(factory: ts.NodeFactory): ts.Statement {
  */
 export function lowerCssImports(options: CssLoweringOptions = {}): ts.TransformerFactory<ts.SourceFile> {
     const readCss = options.readCss ?? defaultReadCss;
+    const optimizeCss = makeCssOptimizer(options);
 
     return (context) => (sourceFile) => {
         const { factory } = context;
@@ -192,8 +240,10 @@ export function lowerCssImports(options: CssLoweringOptions = {}): ts.Transforme
             const name = statement.importClause?.name; // the default-import binding
             if (!name) return undefined;
 
-            const css = readCss(resolve(baseDir, specifier));
-            if (css === undefined) return undefined;
+            const absolutePath = resolve(baseDir, specifier);
+            const raw = readCss(absolutePath);
+            if (raw === undefined) return undefined;
+            const css = optimizeCss ? optimizeCss(raw, absolutePath) : raw;
 
             // const <name> = __baniraAdoptStyles("…css…");
             return factory.createVariableStatement(

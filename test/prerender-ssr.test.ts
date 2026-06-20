@@ -1,17 +1,27 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import { resolve, dirname } from 'path';
+import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { mkdtempSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import {
     createPrerenderer,
     transformHtml,
     createEleventyPlugin,
+    scaffoldComponent,
     type Prerenderer,
     type EleventyConfigLike,
 } from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const circle = resolve(__dirname, '../examples/my-circle/my-circle.ts');
+
+/** Scaffolds a component that adopts a constructable stylesheet (the hydrate variant). */
+function adoptingComponent(tag: string): string {
+    const dir = mkdtempSync(resolve(tmpdir(), 'banira-critical-'));
+    for (const file of scaffoldComponent(tag, { hydrate: true })) writeFileSync(join(dir, file.path), file.content, 'utf8');
+    return join(dir, `${tag}.ts`);
+}
 
 describe('createPrerenderer / renderToString (issue #42)', () => {
     let renderer: Prerenderer;
@@ -41,6 +51,24 @@ describe('createPrerenderer / renderToString (issue #42)', () => {
         const b = await renderer.renderToString('my-circle', { attributes: { size: '40' } });
         assert.match(a, /size="10"/);
         assert.match(b, /size="40"/);
+    });
+});
+
+describe('critical-CSS inlining into DSD (issue #44)', () => {
+    it('inlines adopted constructable styles as <style data-banira-critical> by default', async () => {
+        const renderer = await createPrerenderer([adoptingComponent('crit-a')]);
+        const html = await renderer.renderToString('crit-a', { attributes: { value: 'Hi' } });
+        renderer.close();
+        assert.match(html, /<template shadowrootmode="open"><style data-banira-critical>:host/);
+        // critical style precedes the prerendered content (styled before JS)
+        assert.ok(html.indexOf('data-banira-critical') < html.indexOf('part="label"'));
+    });
+
+    it('omits the inline critical CSS when inlineStyles is false', async () => {
+        const renderer = await createPrerenderer([adoptingComponent('crit-b')], { inlineStyles: false });
+        const html = await renderer.renderToString('crit-b', { attributes: { value: 'Hi' } });
+        renderer.close();
+        assert.doesNotMatch(html, /data-banira-critical/);
     });
 });
 

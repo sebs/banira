@@ -76,6 +76,25 @@ describe('lowerCssImports (issues #9, #10)', () => {
         assert.strictEqual(ok, true, errors.map((e) => e.messageText).join('\n'));
     });
 
+    it('runs CSS through an injected optimizer before replaceSync (issue #31)', () => {
+        const sourceFile = ts.createSourceFile('/proj/comp.ts', `import s from './x.css';\n`, ts.ScriptTarget.Latest, true);
+        const result = ts.transform(sourceFile, [
+            lowerCssImports({ readCss: () => '.a {  color : red ; }', transformCss: (css) => css.replace(/\s+/g, '') }),
+        ]);
+        const out = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(result.transformed[0]!);
+        assert.match(out, /const s = __baniraAdoptStyles\("\.a\{color:red;\}"\)/);
+    });
+
+    it('optimizes real CSS via lightningcss when optimizeCss is set (issue #31)', () => {
+        // lightningcss is a devDependency here; minifies + normalizes + drops comments.
+        const css = '.card { color: red; font-weight: bold; } /* note */';
+        const sourceFile = ts.createSourceFile('/proj/comp.ts', `import s from './x.css';\n`, ts.ScriptTarget.Latest, true);
+        const result = ts.transform(sourceFile, [lowerCssImports({ readCss: () => css, optimizeCss: true })]);
+        const out = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(result.transformed[0]!);
+        assert.match(out, /font-weight:700/);
+        assert.doesNotMatch(out, /\/\* note \*\//);
+    });
+
     it('dedupes the sheet across modules: same CSS → one shared CSSStyleSheet (issue #30)', () => {
         // Two independently-lowered "modules" importing the same stylesheet.
         const css = '.a{color:red}';

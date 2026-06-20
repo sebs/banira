@@ -15,6 +15,8 @@ export interface CompileOptions {
    * version declared in `package.json`.
    */
   importMap?: boolean | string;
+  /** Run inlined CSS through lightningcss (flatten @import, lower nesting, minify). Optional dep. */
+  optimizeCss?: boolean;
 }
 
 export interface CompileOutcome {
@@ -67,7 +69,7 @@ export function resolveCompilerOptions(options: CompileOptions): ts.CompilerOpti
  */
 export function compileFiles(files: string[], options: CompileOptions): CompileOutcome {
   const compilerOptions = resolveCompilerOptions(options);
-  const compiler = new Compiler(files, compilerOptions);
+  const compiler = new Compiler(files, compilerOptions, undefined, options.optimizeCss ? { optimizeCss: true } : undefined);
   const analyzer = new ResultAnalyzer(compiler.emit());
   const diagnostics = analyzer.diag();
   // CSS imports are lowered to constructable stylesheets at emit; the

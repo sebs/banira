@@ -42,4 +42,19 @@ describe('hydrateShadow (issue #32)', () => {
         hydrateShadow(pre, { styles: [sheet] });
         assert.deepStrictEqual(pre.shadowRoot!.adoptedStyleSheets, [sheet]);
     });
+
+    it('drops the prerendered critical <style> once the constructable sheet is adopted (issue #44)', () => {
+        const sheet = new window.CSSStyleSheet();
+        sheet.replaceSync(':host{color:red}');
+        const host = el();
+        const sr = (host as unknown as { attachShadow: (i: { mode: string }) => ShadowRoot }).attachShadow({ mode: 'open' });
+        // Simulate prerendered DSD: critical style + content.
+        sr.innerHTML = '<style data-banira-critical>:host{color:red}</style><span part="label">Hi</span>';
+
+        const { hydrated } = hydrateShadow(host, { styles: sheet });
+        assert.strictEqual(hydrated, true);
+        assert.strictEqual(host.shadowRoot!.querySelector('style[data-banira-critical]'), null);
+        assert.deepStrictEqual(host.shadowRoot!.adoptedStyleSheets, [sheet]);
+        assert.ok(host.shadowRoot!.querySelector('[part="label"]'), 'prerendered content is preserved');
+    });
 });

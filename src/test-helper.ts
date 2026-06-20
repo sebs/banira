@@ -27,6 +27,28 @@ export interface MountContext {
     document: Document;
     window: DOMWindow;
     jsdom: JSDOM;
+    /**
+     * Shadow-piercing `querySelector`: returns the first element matching
+     * `selector` anywhere in the mounted tree, descending into open shadow roots
+     * — so tests need not hand-walk `shadowRoot`. Returns `null` if none match.
+     */
+    query(selector: string): Element | null;
+    /** Shadow-piercing `querySelectorAll`: every match across open shadow boundaries, in document order. */
+    queryAll(selector: string): Element[];
+}
+
+/** Collects all elements matching `selector`, descending into open shadow roots. */
+function deepQueryAll(root: Document | ShadowRoot | Element, selector: string): Element[] {
+    const out: Element[] = [];
+    const visit = (node: Document | ShadowRoot | Element): void => {
+        out.push(...Array.from(node.querySelectorAll(selector)));
+        for (const el of Array.from(node.querySelectorAll('*'))) {
+            const shadow = (el as Element & { shadowRoot?: ShadowRoot | null }).shadowRoot;
+            if (shadow) visit(shadow);
+        }
+    };
+    visit(root);
+    return out;
 }
 
 /**
@@ -197,7 +219,9 @@ export class TestHelper {
         scriptElement.textContent = code;
         document.head.appendChild(scriptElement);
         await this.waitForDefined(window, tagName);
-        return { document, window, jsdom: dom};
+        const queryAll = (selector: string): Element[] => deepQueryAll(document, selector);
+        const query = (selector: string): Element | null => queryAll(selector)[0] ?? null;
+        return { document, window, jsdom: dom, query, queryAll };
     }
 
     /**

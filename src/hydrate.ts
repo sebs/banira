@@ -47,6 +47,10 @@ export function hydrateShadow(host: HTMLElement, options: HydrateOptions = {}): 
     if (!hydrated && options.template != null) shadow.innerHTML = options.template;
     if (options.styles) {
         shadow.adoptedStyleSheets = Array.isArray(options.styles) ? options.styles : [options.styles];
+        // The prerender may have inlined a critical-CSS <style data-banira-critical>
+        // (see #44); now that the constructable sheet is adopted it's redundant, so
+        // drop it to avoid duplicate rules.
+        for (const style of Array.from(shadow.querySelectorAll('style[data-banira-critical]'))) style.remove();
     }
     return { shadow, hydrated };
 }

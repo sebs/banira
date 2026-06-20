@@ -42,8 +42,14 @@ program
   .option('-p, --project <path>', 'Path to tsconfig.json')
   .option('-o, --output <path>', 'Output directory')
   .option('--import-map [path]', 'Also emit an import map (esm.sh) for bare imports; optional output path')
+  .option('--optimize-css', 'Run inlined CSS through lightningcss (flatten @import, lower nesting, minify)')
   .action((files, options) =>
-    compile(files, { project: options.project, outDir: options.output, importMap: options.importMap })
+    compile(files, {
+      project: options.project,
+      outDir: options.output,
+      importMap: options.importMap,
+      optimizeCss: options.optimizeCss,
+    })
   );
 
 program
