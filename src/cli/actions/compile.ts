@@ -1,4 +1,4 @@
-import { Compiler, ResultAnalyzer } from '../../index.js';
+import { Compiler, ResultAnalyzer, isCssModuleNotFoundDiagnostic } from '../../index.js';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -62,7 +62,10 @@ export function compileFiles(files: string[], options: CompileOptions): CompileO
   const compiler = new Compiler(files, compilerOptions);
   const analyzer = new ResultAnalyzer(compiler.emit());
   const diagnostics = analyzer.diag();
-  return { ok: !diagnostics.hasErrors, errors: diagnostics.errors, outputs: analyzer.outputFiles };
+  // CSS imports are lowered to constructable stylesheets at emit; the
+  // "Cannot find module './x.css'" type error they raise is expected, not a failure.
+  const errors = diagnostics.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d));
+  return { ok: errors.length === 0, errors, outputs: analyzer.outputFiles };
 }
 
 /** Formats compiler error diagnostics as `file (line,col): message` lines. */

@@ -1,8 +1,19 @@
 import { JSDOM, ConstructorOptions } from 'jsdom';
 import { CompilerOptions} from 'typescript';
 import { DOMWindow } from 'jsdom';
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'fs';
+import { dirname } from 'path';
 import { Compiler } from './compiler.js';
 import { bundleModule } from './module-bundler.js';
+import {
+    summarizeA11y,
+    resolveBaselinePath,
+    actualPathFor,
+    buffersEqual,
+    type A11yResult,
+    type RawAxeResults,
+    type ScreenshotResult,
+} from './browser-testing.js';
 
 /**
  * Interface representing the context after mounting a component in JSDOM
@@ -27,6 +38,44 @@ export interface BrowserMountContext {
     page: { waitForFunction: (fn: string, arg?: unknown) => Promise<unknown>; [key: string]: unknown };
     browser: { close: () => Promise<void>; [key: string]: unknown };
     close: () => Promise<void>;
+    /**
+     * Runs axe-core against the mounted component and returns its violations
+     * (#14). axe-core is an optional dependency (`npm i -D axe-core`). It can only
+     * traverse **open** shadow roots, so components under a11y test must use
+     * `attachShadow({ mode: 'open' })`.
+     */
+    checkAccessibility: (options?: A11yOptions) => Promise<A11yResult>;
+    /**
+     * Captures a PNG screenshot of the mounted element (or the full page) and
+     * returns the buffer (#15).
+     */
+    screenshot: (options?: ScreenshotOptions) => Promise<Buffer>;
+    /**
+     * Visual-snapshot assertion (#15): compares a screenshot of the mounted
+     * element against an on-disk baseline, creating the baseline on first run.
+     * For perceptual/tolerant diffing, use Playwright's own `toHaveScreenshot`
+     * on the exposed {@link BrowserMountContext.page}.
+     */
+    matchScreenshot: (name: string, options?: MatchScreenshotOptions) => Promise<ScreenshotResult>;
+}
+
+export interface A11yOptions {
+    /** axe-core run options forwarded to `axe.run` (e.g. `{ runOnly: ['wcag2a'] }`). */
+    axeOptions?: Record<string, unknown>;
+}
+
+export interface ScreenshotOptions {
+    /** CSS selector to screenshot (defaults to the mounted tag). */
+    selector?: string;
+    /** Screenshot the whole page instead of a single element. */
+    fullPage?: boolean;
+}
+
+export interface MatchScreenshotOptions extends ScreenshotOptions {
+    /** Directory baselines live in (default `__screenshots__`). */
+    baselineDir?: string;
+    /** Overwrite the baseline with the current screenshot instead of comparing. */
+    update?: boolean;
 }
 
 /**
@@ -197,6 +246,58 @@ export class TestHelper {
         await page.setContent(`<!DOCTYPE html><html><body><${tagName}></${tagName}></body></html>`);
         await page.addScriptTag({ content: code, type: 'module' });
         await page.waitForFunction((tag: string) => !!customElements.get(tag), tagName);
-        return { page, browser, close: () => browser.close() };
+
+        const checkAccessibility = async (options?: A11yOptions): Promise<A11yResult> => {
+            // axe-core ships its full browser bundle as a string on `.source`.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let axe: any;
+            try {
+                const axeSpecifier: string = 'axe-core';
+                axe = await import(axeSpecifier);
+            } catch {
+                throw new Error(
+                    'Accessibility testing requires axe-core. Install it with `npm i -D axe-core`.'
+                );
+            }
+            const source: string = axe.source ?? axe.default?.source;
+            await page.addScriptTag({ content: source });
+            // axe traverses only OPEN shadow roots; closed roots are invisible to it.
+            const raw = (await page.evaluate(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (opts: Record<string, unknown>) => (globalThis as any).axe.run(document, opts),
+                options?.axeOptions ?? {}
+            )) as RawAxeResults;
+            return summarizeA11y(raw);
+        };
+
+        const screenshot = async (options?: ScreenshotOptions): Promise<Buffer> => {
+            if (options?.fullPage) return (await page.screenshot({ fullPage: true })) as Buffer;
+            const target = await page.$(options?.selector ?? tagName);
+            if (!target) throw new Error(`No element matched "${options?.selector ?? tagName}" to screenshot`);
+            return (await target.screenshot()) as Buffer;
+        };
+
+        const matchScreenshot = async (
+            name: string,
+            options?: MatchScreenshotOptions
+        ): Promise<ScreenshotResult> => {
+            const dir = options?.baselineDir ?? '__screenshots__';
+            const baselinePath = resolveBaselinePath(dir, name);
+            const current = await screenshot(options);
+            if (options?.update || !existsSync(baselinePath)) {
+                mkdirSync(dirname(baselinePath), { recursive: true });
+                writeFileSync(baselinePath, current);
+                return { matched: true, created: !options?.update, baselinePath };
+            }
+            const expected = readFileSync(baselinePath);
+            if (buffersEqual(expected, current)) {
+                return { matched: true, created: false, baselinePath };
+            }
+            const actualPath = actualPathFor(baselinePath);
+            writeFileSync(actualPath, current);
+            return { matched: false, created: false, baselinePath, actualPath };
+        };
+
+        return { page, browser, close: () => browser.close(), checkAccessibility, screenshot, matchScreenshot };
     }
 }

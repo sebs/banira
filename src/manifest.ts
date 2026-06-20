@@ -136,6 +136,12 @@ export interface CemEvent {
     name: string;
     description?: string;
     type?: { text: string };
+    /**
+     * The event's `detail` payload type, when known — from a `new CustomEvent<Detail>(...)`
+     * type argument or a `@fires {Detail} name` tag. Lets downstream generators emit
+     * `CustomEvent<Detail>` instead of a bare `CustomEvent`.
+     */
+    detailType?: { text: string };
     /** Present when the event is marked `@deprecated`; the string is the deprecation note, if any. */
     deprecated?: boolean | string;
 }
@@ -143,6 +149,15 @@ export interface CemEvent {
 export interface NamedDoc {
     name: string;
     description?: string;
+}
+
+/**
+ * The event's type as source text: the constructor with its detail payload when
+ * known (`CustomEvent<{ value: number }>`), otherwise the bare constructor.
+ */
+export function eventTypeText(event: CemEvent): string {
+    const ctor = event.type?.text ?? 'CustomEvent';
+    return event.detailType ? `${ctor}<${event.detailType.text}>` : ctor;
 }
 
 export interface CssCustomProperty {
@@ -170,6 +185,67 @@ function isCustomElementName(name: string): boolean {
 }
 
 /** Splits `name - description` (or `name description`) used by jsdoc tags like @slot/@csspart. */
+/**
+ * Parses a `@fires`/`@event` comment, optionally prefixed with a `{DetailType}`:
+ * `@fires {{ value: number }} change - f(...)`. The leading `{...}` (balanced
+ * braces) becomes the event's `detailType`; the remainder is parsed as name/desc.
+ */
+function parseEventTag(raw: string): CemEvent {
+    const text = raw.trim();
+    let detailType: { text: string } | undefined;
+    let rest = text;
+    if (text.startsWith('{')) {
+        let depth = 0;
+        let end = -1;
+        for (let i = 0; i < text.length; i++) {
+            if (text[i] === '{') depth++;
+            else if (text[i] === '}' && --depth === 0) {
+                end = i;
+                break;
+            }
+        }
+        if (end > 0) {
+            const inner = text.slice(1, end).trim();
+            if (inner) detailType = { text: inner };
+            rest = text.slice(end + 1).trim();
+        }
+    }
+    const { name, description } = parseNameDescription(rest);
+    const event: CemEvent = { name };
+    if (description) event.description = description;
+    if (detailType) event.detailType = detailType;
+    return event;
+}
+
+/**
+ * Parses a `@cssprop`/`@cssproperty` comment, supporting an optional default in
+ * brackets: `@cssprop [--gap=8px] - description`. The `=default` part and the
+ * brackets are optional, so `@cssprop --gap - description` also works.
+ */
+function parseCssProperty(raw: string): CssCustomProperty {
+    const text = raw.trim();
+    const bracket = text.match(/^\[\s*([^\]]*?)\s*\]\s*(?:-\s*)?([\s\S]*)$/);
+    if (bracket) {
+        const [, decl, desc] = bracket;
+        const eq = decl!.indexOf('=');
+        const name = (eq >= 0 ? decl!.slice(0, eq) : decl!).trim();
+        const def = eq >= 0 ? decl!.slice(eq + 1).trim() : undefined;
+        const prop: CssCustomProperty = { name };
+        if (def) prop.default = def;
+        if (desc!.trim()) prop.description = desc!.trim();
+        return prop;
+    }
+    const { name, description } = parseNameDescription(text);
+    const eq = name.indexOf('=');
+    const prop: CssCustomProperty = { name: eq >= 0 ? name.slice(0, eq) : name };
+    if (eq >= 0) {
+        const def = name.slice(eq + 1).trim();
+        if (def) prop.default = def;
+    }
+    if (description) prop.description = description;
+    return prop;
+}
+
 function parseNameDescription(raw: string): NamedDoc {
     const text = raw.trim();
     // `@slot - description` (leading dash, no name) denotes the unnamed/default entry.
@@ -349,8 +425,8 @@ export class ManifestGenerator {
             const comment = getTextOfJSDocComment(tag.comment) ?? '';
             if (tagName === 'slot') slots.push(parseNameDescription(comment));
             else if (tagName === 'csspart') cssParts.push(parseNameDescription(comment));
-            else if (tagName === 'cssprop' || tagName === 'cssproperty') cssProperties.push(parseNameDescription(comment));
-            else if (tagName === 'fires' || tagName === 'event') taggedEvents.push(parseNameDescription(comment));
+            else if (tagName === 'cssprop' || tagName === 'cssproperty') cssProperties.push(parseCssProperty(comment));
+            else if (tagName === 'fires' || tagName === 'event') taggedEvents.push(parseEventTag(comment));
             else if (tagName === 'summary') {
                 const summary = comment.trim();
                 if (summary) decl.summary = summary;
@@ -569,7 +645,10 @@ export class ManifestGenerator {
                 if ((ctor === 'CustomEvent' || ctor === 'Event') && n.arguments && n.arguments.length > 0) {
                     const first = n.arguments[0];
                     if (first && isStringLiteralLike(first)) {
-                        events.set(first.text, { name: first.text, type: { text: ctor } });
+                        const event: CemEvent = { name: first.text, type: { text: ctor } };
+                        const detail = n.typeArguments?.[0];
+                        if (detail) event.detailType = { text: detail.getText() };
+                        events.set(first.text, event);
                     }
                 }
             } else if (isCallExpression(n)) {
@@ -594,7 +673,10 @@ export class ManifestGenerator {
         if (!info) return undefined;
         const arg = call.arguments[info.index];
         if (arg && isStringLiteralLike(arg)) {
-            return { name: arg.text, type: { text: info.ctor } };
+            const event: CemEvent = { name: arg.text, type: { text: info.ctor } };
+            const detail = call.typeArguments?.[0];
+            if (detail) event.detailType = { text: detail.getText() };
+            return event;
         }
         return undefined;
     }
@@ -651,6 +733,7 @@ export class ManifestGenerator {
             const existing = byName.get(e.name);
             if (existing) {
                 if (!existing.description && e.description) existing.description = e.description;
+                if (!existing.detailType && e.detailType) existing.detailType = e.detailType;
             } else {
                 byName.set(e.name, e);
             }

@@ -3,6 +3,7 @@ import { watch as fsWatch, realpathSync } from 'fs';
 import { readFile, stat, realpath } from 'fs/promises';
 import { resolve, join, extname, normalize, sep } from 'path';
 import { transpileToEsm } from '../../transpile-module.js';
+import { HMR_CLIENT_SCRIPT, hmrMessage } from '../../hmr-client.js';
 
 export interface ServeOptions {
   port?: string | number;
@@ -14,6 +15,12 @@ export interface ServeOptions {
    * so the dev loop needs no separate compile step.
    */
   transformTs?: boolean;
+  /**
+   * Inject the custom-element HMR runtime instead of plain full-page reload, so
+   * `hmr:<module>` pushes hot-swap a component's implementation in place (#8).
+   * Falls back to a full reload for any non-module change.
+   */
+  hmr?: boolean;
 }
 
 const MIME: Record<string, string> = {
@@ -37,6 +44,10 @@ const LIVE_RELOAD = `<script>
 new EventSource('/__livereload').onmessage = () => location.reload();
 </script>`;
 
+// HMR variant: installs the custom-element hot-swap runtime, which itself opens
+// the EventSource and applies `hmr:<url>` updates (falling back to full reload).
+const HMR_RELOAD = `<script type="module">${HMR_CLIENT_SCRIPT}</script>`;
+
 // This is a dev server with live reload: every served file may change between
 // requests, so the browser must never serve a cached copy. Without this the
 // recompiled module is fetched from cache after a live-reload refresh and the
@@ -47,6 +58,12 @@ const NO_STORE = 'no-store';
 export interface ReloadableServer extends Server {
   /** Push a reload to every connected live-reload client; returns the count. */
   reload(): number;
+  /**
+   * Push a hot-module update for `moduleUrl` to connected clients (HMR mode),
+   * returning the count. The client re-imports the module and re-registers the
+   * component in place; with `hmr` off this is equivalent to a full {@link reload}.
+   */
+  hmrUpdate(moduleUrl: string): number;
 }
 
 /**
@@ -148,7 +165,8 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
       const type = MIME[ext] ?? 'application/octet-stream';
 
       if (ext === '.html') {
-        const html = (await readFile(realFilePath, 'utf8')).replace(/<\/body>/i, `${LIVE_RELOAD}</body>`);
+        const snippet = options.hmr ? HMR_RELOAD : LIVE_RELOAD;
+        const html = (await readFile(realFilePath, 'utf8')).replace(/<\/body>/i, `${snippet}</body>`);
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': NO_STORE }).end(html);
       } else {
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': NO_STORE }).end(await readFile(realFilePath));
@@ -162,6 +180,14 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
   // notified, so callers can log/observe whether any browser is listening.
   const reload = (): number => {
     for (const client of clients) client.write('data: reload\n\n');
+    return clients.size;
+  };
+
+  // Push a hot-module update. In HMR mode the client swaps the component in
+  // place; otherwise the client treats any message as a full reload.
+  const hmrUpdate = (moduleUrl: string): number => {
+    const payload = options.hmr ? hmrMessage(moduleUrl) : 'reload';
+    for (const client of clients) client.write(`data: ${payload}\n\n`);
     return clients.size;
   };
 
@@ -205,5 +231,6 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
 
   const reloadable = server as ReloadableServer;
   reloadable.reload = reload;
+  reloadable.hmrUpdate = hmrUpdate;
   return reloadable;
 };

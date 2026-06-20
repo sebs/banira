@@ -1,5 +1,6 @@
 import { watch } from './watch.js';
 import { serve } from './serve.js';
+import { resolve, relative, sep } from 'path';
 import type { CompileOptions } from './compile.js';
 import type { ServeOptions } from './serve.js';
 import type { Server } from 'http';
@@ -15,6 +16,15 @@ export interface DevOptions {
   host?: string;
   /** Serve TypeScript transpiled on the fly (see {@link ServeOptions.transformTs}). */
   transformTs?: boolean;
+  /** Hot-swap components in place instead of full-page reload (see {@link ServeOptions.hmr}). */
+  hmr?: boolean;
+}
+
+/** Maps an emitted file path to its served URL relative to the served root. */
+function servedUrl(root: string, outputFile: string): string | undefined {
+  const rel = relative(resolve(root), resolve(outputFile));
+  if (rel.startsWith('..') || rel.includes('\0')) return undefined; // outside the served root
+  return '/' + rel.split(sep).join('/');
 }
 
 export interface DevHandle {
@@ -43,16 +53,28 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   if (options.port !== undefined) serveOptions.port = options.port;
   if (options.host !== undefined) serveOptions.host = options.host;
   if (options.transformTs !== undefined) serveOptions.transformTs = options.transformTs;
+  if (options.hmr !== undefined) serveOptions.hmr = options.hmr;
   const server = serve(root, serveOptions);
 
-  // Drive the browser reload off the compile result, not a second file watcher:
-  // after every successful recompile, push a reload directly to connected tabs.
-  // This is far more reliable than hoping serve's directory watcher notices the
-  // freshly written output, and the log makes it visible that a reload was sent.
+  // Drive the browser update off the compile result, not a second file watcher:
+  // after every successful recompile, push directly to connected tabs. This is
+  // far more reliable than hoping serve's directory watcher notices the freshly
+  // written output, and the log makes it visible that an update was sent.
   const stopWatch = watch(files, compileOptions, (result) => {
     if (!result.ok) return;
-    const n = server.reload();
-    if (n > 0) console.log(`  ↻ reloaded ${n} browser tab(s)`);
+    // In HMR mode, push a module update per emitted .js (hot-swap in place);
+    // any output that maps outside the served root falls back to a full reload.
+    const modules = options.hmr
+      ? result.outputs.filter((f) => f.endsWith('.js')).map((f) => servedUrl(root, f)).filter((u): u is string => !!u)
+      : [];
+    if (modules.length) {
+      let n = 0;
+      for (const url of modules) n = server.hmrUpdate(url);
+      if (n > 0) console.log(`  ↻ hot-updated ${modules.length} module(s) in ${n} browser tab(s)`);
+    } else {
+      const n = server.reload();
+      if (n > 0) console.log(`  ↻ reloaded ${n} browser tab(s)`);
+    }
   });
 
   let resolveClosed!: () => void;

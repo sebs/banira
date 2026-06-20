@@ -110,6 +110,17 @@ describe('toTypeDefinitions', () => {
         assert.match(dts, /namespace JSX/);
         assert.match(dts, /IntrinsicElements/);
     });
+
+    it('includes members inherited from a custom base class (issue #21)', () => {
+        const dts = toTypeDefinitions(manifestFor('fixtures/cem/knob-element.ts'));
+        // own member
+        assert.match(dts, /format:/);
+        // members inherited from ValueElement must not be dropped, since the
+        // interface extends HTMLElement (not the base) — they live nowhere else.
+        assert.match(dts, /value: number;/);
+        assert.match(dts, /min: number;/);
+        assert.match(dts, /setValue\(/);
+    });
 });
 
 describe('diffManifests', () => {

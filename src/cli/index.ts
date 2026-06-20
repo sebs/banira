@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import { compile } from './actions/compile.js';
 import { doc } from './actions/doc.js';
 import { manifest } from './actions/manifest.js';
+import { tokens } from './actions/tokens.js';
 import { editorData } from './actions/editor-data.js';
 import { types } from './actions/types.js';
 import { diff } from './actions/diff.js';
@@ -57,6 +58,14 @@ program
   .action(manifest);
 
 program
+  .command('tokens')
+  .description('Generate a theming / design-tokens document from the components CSS custom properties')
+  .argument('<files...>', 'Component source files to analyze')
+  .option('-o, --output <path>', 'Write the document to a file instead of stdout')
+  .option('--title <title>', 'Document title (default: Design Tokens)')
+  .action((files, options) => tokens(files, { output: options.output, title: options.title }));
+
+program
   .command('editor-data')
   .description('Generate editor IntelliSense data (VS Code custom-data + JetBrains web-types)')
   .argument('<files...>', 'Component source files to analyze')
@@ -97,6 +106,7 @@ program
   .option('--port <number>', 'Port to listen on', '8080')
   .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose)')
   .option('--ts', 'Serve TypeScript transpiled on the fly (no separate compile step)')
+  .option('--hmr', 'Hot-swap custom elements in place instead of full-page reload')
   .action((files, options) => {
     try {
       dev(files, {
@@ -106,6 +116,7 @@ program
         port: options.port,
         host: options.host,
         transformTs: options.ts,
+        hmr: options.hmr,
       });
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);
@@ -120,9 +131,10 @@ program
   .option('-p, --port <number>', 'Port to listen on', '8080')
   .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose on the network)')
   .option('--ts', 'Serve TypeScript transpiled on the fly (no separate compile step)')
+  .option('--hmr', 'Hot-swap custom elements in place instead of full-page reload')
   .action((root, options) => {
     try {
-      serve(root, { port: options.port, host: options.host, transformTs: options.ts });
+      serve(root, { port: options.port, host: options.host, transformTs: options.ts, hmr: options.hmr });
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
@@ -141,7 +153,10 @@ program
   .argument('<tag-name>', 'Custom element tag name (must contain a hyphen)')
   .argument('[dir]', 'Directory to scaffold into', '.')
   .option('--force', 'Overwrite existing files')
-  .action((tagName, dir, options) => init(tagName, dir, { force: options.force }));
+  .option('--form-associated', 'Scaffold a form-associated element (ElementInternals)')
+  .action((tagName, dir, options) =>
+    init(tagName, dir, { force: options.force, formAssociated: options.formAssociated })
+  );
 
 program
   .command('prerender')

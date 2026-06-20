@@ -1,3 +1,4 @@
+import { eventTypeText } from './manifest.js';
 import type {
     Attribute,
     CemEvent,
@@ -92,7 +93,7 @@ function methodsTable(methods: ClassMethod[]): string {
 }
 
 function eventsTable(events: CemEvent[]): string {
-    const rows = events.map((e) => [code(e.name), code(e.type?.text), withDeprecated(e.description, e.deprecated)]);
+    const rows = events.map((e) => [code(e.name), code(eventTypeText(e)), withDeprecated(e.description, e.deprecated)]);
     return section('Events', table(['Event', 'Type', 'Description'], rows));
 }
 

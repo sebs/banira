@@ -48,7 +48,7 @@ describe("Compiler", () => {
             assert.deepStrictEqual(
                 compiler.options.module,
                 ts.ModuleKind.ES2015,
-                "Should initialize with ES2015 module kind"
+                "Should initialize with the explicitly configured ES2015 module kind"
             );
         });
     });
@@ -65,8 +65,8 @@ describe("Compiler", () => {
         it("should have correct module kind", () => {
             assert.strictEqual(
                 Compiler.DEFAULT_COMPILER_OPTIONS.module,
-                ts.ModuleKind.ES2015,
-                "Should have ES2015 module kind"
+                ts.ModuleKind.ESNext,
+                "Should have ESNext module kind"
             );
         });
 
@@ -182,11 +182,11 @@ describe("Compiler", () => {
             );
         });
 
-        it("should have exactly one transformer", () => {
+        it("should have the CSS-lowering and js-extension transformers", () => {
             assert.strictEqual(
                 compiler.defaultTransformers.after?.length,
-                1,
-                "Should have one transformer"
+                2,
+                "Should have two after transformers (CSS lowering + .js extension)"
             );
         });
     });

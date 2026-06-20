@@ -99,6 +99,47 @@ describe('serve (static dev server)', () => {
     });
 });
 
+describe('serve (HMR mode, issue #8)', () => {
+    const HMR_PORT = 8139;
+    const hmrBase = `http://127.0.0.1:${HMR_PORT}`;
+    let server: ReloadableServer;
+
+    before(async () => {
+        server = serve('examples/my-circle/demo', { port: HMR_PORT, hmr: true });
+        await new Promise<void>((resolve) => server.once('listening', resolve));
+    });
+
+    after(async () => {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
+
+    it('injects the HMR runtime instead of the plain reload snippet', async () => {
+        const body = await (await fetch(`${hmrBase}/`)).text();
+        assert.match(body, /__baniraHmr/, 'HMR runtime should be injected');
+        assert.match(body, /type="module"/);
+    });
+
+    it('hmrUpdate pushes an hmr:<url> payload to connected clients', async () => {
+        const received = await new Promise<string>((resolveMsg, reject) => {
+            const req = get(`${hmrBase}/__livereload`, (res) => {
+                res.setEncoding('utf8');
+                res.on('data', (chunk: string) => {
+                    if (chunk.includes('hmr:')) {
+                        req.destroy();
+                        resolveMsg(chunk.trim());
+                    }
+                });
+            });
+            req.on('error', reject);
+            setTimeout(() => {
+                const n = server.hmrUpdate('/dist/my-circle.js');
+                assert.strictEqual(n, 1, 'hmrUpdate should report one connected client');
+            }, 100);
+        });
+        assert.match(received, /data: hmr:\/dist\/my-circle\.js/);
+    });
+});
+
 describe('serve (symlink escape)', () => {
     const SYMLINK_PORT = 8138;
     let server: Server;

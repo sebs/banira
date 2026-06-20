@@ -41,7 +41,12 @@ function appendJsToImports(context: ts.TransformationContext): ts.Transformer<ts
      * relative paths that don't already carry the extension.
      */
     const needsJsExtension = (specifier: string): boolean =>
-        specifier.startsWith('.') && !specifier.startsWith('@') && !specifier.endsWith('.js');
+        specifier.startsWith('.') &&
+        !specifier.startsWith('@') &&
+        !specifier.endsWith('.js') &&
+        // Asset imports (e.g. `.css`) are handled by their own lowering; never
+        // rewrite `./styles.css` to `./styles.css.js`.
+        !specifier.endsWith('.css');
 
     /**
      * Returns true for the `import(...)` form of a call expression

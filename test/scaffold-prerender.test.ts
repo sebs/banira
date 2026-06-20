@@ -36,6 +36,32 @@ describe('scaffoldComponent (Tier 5)', () => {
         assert.strictEqual(results.length, 1);
         assert.strictEqual(results[0]!.ok, true, results[0]!.error);
     });
+
+    it('scaffolds a form-associated element with ElementInternals wiring (issue #12)', () => {
+        const files = scaffoldComponent('fancy-input', { formAssociated: true });
+        const component = files.find((f) => f.path === 'fancy-input.ts')!.content;
+        assert.match(component, /static formAssociated = true/);
+        assert.match(component, /this\.attachInternals\(\)/);
+        assert.match(component, /setFormValue\(/);
+        assert.match(component, /formResetCallback\(/);
+        assert.match(component, /setValidity\(/);
+        // documents the Firefox ARIA/role caveat
+        assert.match(component, /Firefox/);
+        // demo wraps the element in a <form>
+        const demo = files.find((f) => f.path === 'index.html')!.content;
+        assert.match(demo, /<form>/);
+        assert.match(demo, /<fancy-input /);
+    });
+
+    it('form-associated scaffold passes its own smoke test', async () => {
+        const dir = mkdtempSync(resolve(tmpdir(), 'banira-scaffold-fa-'));
+        for (const file of scaffoldComponent('fa-widget', { formAssociated: true })) {
+            writeFileSync(resolve(dir, file.path), file.content, 'utf8');
+        }
+        const results = await smokeTestManifest([resolve(dir, 'fa-widget.ts')]);
+        assert.strictEqual(results.length, 1);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+    });
 });
 
 describe('prerenderManifest (Tier 5)', () => {

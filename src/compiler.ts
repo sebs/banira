@@ -1,5 +1,6 @@
 import { createProgram, CompilerOptions, Program, CustomTransformers, getPreEmitDiagnostics, Diagnostic, EmitResult, CompilerHost, ModuleKind, ModuleResolutionKind, ScriptTarget }  from "typescript";
 import transformer from './transformer.js';
+import { lowerCssImports } from './css-transformer.js';
 import { readFile } from "fs/promises";
 import { createVirtualCompilerHost } from "./virtual-fs.js";
 import { resolve, dirname } from "path";
@@ -105,7 +106,10 @@ export class Compiler {
      */
     public static DEFAULT_COMPILER_OPTIONS: CompilerOptions = {
         target: ScriptTarget.ES2015,
-        module: ModuleKind.ES2015,
+        // ESNext modules emit the same `import`/`export` syntax as ES2015 but
+        // also permit import attributes (`with { type: 'css' }`), which the CSS
+        // Module Script lowering accepts. See #10.
+        module: ModuleKind.ESNext,
         outDir: './dist',
         moduleResolution: ModuleResolutionKind.Bundler,
         esModuleInterop: true,
@@ -133,8 +137,10 @@ export class Compiler {
         this.fileNames = fileNames;
         this.options = options;
         this.host = host;
+        // Lower CSS imports to constructable stylesheets first, so the import is
+        // gone before the .js-extension transformer would otherwise mangle it.
         this.defaultTransformers = {
-            after: [transformer()]
+            after: [lowerCssImports(), transformer()]
         }
     }
 

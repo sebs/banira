@@ -1,3 +1,4 @@
+import { eventTypeText } from './manifest.js';
 import type { ClassField, ClassMethod, CustomElementDeclaration, Package } from './manifest.js';
 
 export interface TypeShimOptions {
@@ -42,12 +43,40 @@ function methodMember(method: ClassMethod): string {
     return `${doc}  ${method.name}(${params}): ${ret};`;
 }
 
+/**
+ * Typed `addEventListener`/`removeEventListener` overloads for the element's
+ * documented events, so `el.addEventListener('change', e => e.detail…)` knows the
+ * payload shape. Only emitted for events whose type is known.
+ */
+function eventListenerOverloads(decl: CustomElementDeclaration, name: string): string[] {
+    const events = decl.events ?? [];
+    if (!events.length) return [];
+    const lines: string[] = [];
+    for (const e of events) {
+        const doc = docComment(e.description, e.deprecated, '  ');
+        const evType = eventTypeText(e);
+        lines.push(
+            `${doc}  addEventListener(type: '${e.name}', listener: (this: ${name}, ev: ${evType}) => void, options?: boolean | AddEventListenerOptions): void;`
+        );
+        lines.push(
+            `  removeEventListener(type: '${e.name}', listener: (this: ${name}, ev: ${evType}) => void, options?: boolean | EventListenerOptions): void;`
+        );
+    }
+    return lines;
+}
+
 function declarationInterface(decl: CustomElementDeclaration): string {
     const name = interfaceName(decl);
+    // Include members inherited from the user's own base classes (tagged with
+    // `inheritedFrom`). The interface always `extends HTMLElement`, never the
+    // base, so skipping them would drop the inherited API entirely. The analyzer
+    // flattens only the user's class chain — DOM built-ins are not in `members`
+    // and members are deduped by name (override wins), so emitting all is safe.
     const members = (decl.members ?? [])
-        .filter((m) => !m.inheritedFrom)
         .map((m) => (m.kind === 'field' ? fieldMember(m) : methodMember(m)));
-    const body = members.length ? `\n${members.join('\n')}\n` : '';
+    const listeners = eventListenerOverloads(decl, name);
+    const lines = [...members, ...listeners];
+    const body = lines.length ? `\n${lines.join('\n')}\n` : '';
     const doc = docComment(decl.description ?? decl.summary, decl.deprecated, '');
     return `${doc}export interface ${name} extends HTMLElement {${body}}`;
 }
