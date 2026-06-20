@@ -61,6 +61,7 @@
   "devDependencies": {
     "@types/jsdom": "28.0.3",
     "@types/node": "25.9.3",
+    "ajv": "8.20.0",
     "tsx": "4.22.4",
     "typedoc": "0.28.19"
   }

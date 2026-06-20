@@ -6,6 +6,7 @@ import {
     ManifestGenerator,
     manifestToMarkdown,
     validateManifest,
+    validateManifestSchema,
     toVsCodeHtmlData,
     toVsCodeCssData,
     toWebTypes,
@@ -64,6 +65,48 @@ describe('validateManifest', () => {
 
     it('reports a missing schemaVersion as an error', () => {
         const issues = validateManifest({ schemaVersion: '', modules: [] } as Package);
+        assert.ok(issues.some((i) => i.severity === 'error' && i.path === 'schemaVersion'));
+    });
+});
+
+describe('validateManifestSchema (official CEM JSON Schema)', () => {
+    it('returns no issues for a spec-conformant manifest', async () => {
+        assert.deepStrictEqual(await validateManifestSchema(rich()), []);
+    });
+
+    it('flags a module missing the required `path` with a path-level error', async () => {
+        const broken = {
+            schemaVersion: '2.1.0',
+            modules: [{ kind: 'javascript-module', declarations: [], exports: [] }],
+        } as unknown as Package;
+        const issues = await validateManifestSchema(broken);
+        assert.ok(
+            issues.some((i) => i.severity === 'error' && i.path === 'modules[0].path'),
+            `expected a modules[0].path error, got: ${JSON.stringify(issues)}`
+        );
+    });
+
+    it('flags a value outside an enum with the allowed values', async () => {
+        const broken = {
+            schemaVersion: '2.1.0',
+            modules: [
+                {
+                    kind: 'not-a-module-kind',
+                    path: 'x.js',
+                    declarations: [],
+                    exports: [],
+                },
+            ],
+        } as unknown as Package;
+        const issues = await validateManifestSchema(broken);
+        assert.ok(
+            issues.some((i) => i.severity === 'error' && i.path === 'modules[0].kind'),
+            `expected a modules[0].kind error, got: ${JSON.stringify(issues)}`
+        );
+    });
+
+    it('reports the top-level missing schemaVersion against the schema', async () => {
+        const issues = await validateManifestSchema({ modules: [] } as unknown as Package);
         assert.ok(issues.some((i) => i.severity === 'error' && i.path === 'schemaVersion'));
     });
 });

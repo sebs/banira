@@ -58,6 +58,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | toVsCodeHtmlData / toVsCodeCssData / toWebTypes | Generate editor IntelliSense data (VS Code custom-data, JetBrains web-types) from a manifest |
 | toTypeDefinitions | Generates a `.d.ts` typing the custom elements from a manifest |
 | validateManifest | Structurally validates a manifest against the CEM 2.1.0 shape |
+| validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
 | diffManifests | Diffs two manifests and suggests a semver release type |
 
 ## CLI
@@ -128,6 +129,11 @@ members are omitted.
 | `-o, --output <path>` | Write the output to a file instead of stdout |
 | `--md` | Emit Markdown API documentation instead of JSON |
 | `--validate` | Validate the generated manifest and print a report (exit 1 on errors) |
+
+`--validate` runs banira's fast structural checks. Install the optional
+[`ajv`](https://ajv.js.org/) dependency (`npm i -D ajv`) to additionally validate
+the manifest against the official CEM JSON Schema for guaranteed spec-conformance,
+with precise path-level errors.
 
 ```bash
 # Markdown API tables for a README

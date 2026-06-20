@@ -46,6 +46,8 @@ export { collectDesignTokens, designTokensToMarkdown } from './design-tokens.js'
 export type { DesignToken, ComponentTokens, DesignTokensOptions } from './design-tokens.js';
 export { validateManifest, formatValidationIssues } from './manifest-validate.js';
 export type { ValidationIssue } from './manifest-validate.js';
+export { validateManifestSchema, SchemaValidatorUnavailableError } from './manifest-schema.js';
+export { CEM_SCHEMA } from './cem-schema.js';
 export { toVsCodeHtmlData, toVsCodeCssData, toWebTypes } from './editor-data.js';
 export type { VsCodeHtmlData, VsCodeCssData, WebTypes, WebTypesOptions } from './editor-data.js';
 export { toTypeDefinitions } from './type-shims.js';
