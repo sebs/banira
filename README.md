@@ -62,6 +62,8 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
 | linkManifestField | Point a package.json's `customElements` field at a generated manifest |
 | diffManifests | Diffs two manifests and suggests a semver release type |
+| createPrerenderer / declarativeShadowDom | SSR primitive: register components once, then `renderToString(tag, { attributes, children })` to Declarative Shadow DOM |
+| createEleventyPlugin | Eleventy plugin that prerenders matching component tags to DSD at build time |
 | parseDesignTokens / designTokensToCss | Parse a W3C Design Tokens (DTCG) document and emit `:root` CSS custom properties (aliases resolved) |
 | tokensToCssProperties / enrichManifestCssProperties | Map imported tokens to manifest `cssProperties`, or backfill missing defaults/descriptions on matching component tokens |
 | scaffoldTheme | Generate a light/dark theme contract (`theme.css`), a `<theme-toggle>` component, and a demo page |
@@ -375,6 +377,34 @@ root serialized. Writes to stdout unless `-o` is given.
 
 ```bash
 banira prerender src/my-button.ts -o prerendered.html
+```
+
+For programmatic SSR, `createPrerenderer(files)` compiles and registers the
+components once and returns `renderToString(tag, { attributes, children })`,
+which meta-frameworks (Enhance/WebC/11ty/Rocket) can call to serialize a
+component to Declarative Shadow DOM on demand:
+
+```js
+import { createPrerenderer } from 'banira';
+const r = await createPrerenderer(['src/my-circle.ts']);
+const html = await r.renderToString('my-circle', { attributes: { size: '40' }, children: 'Caption' });
+r.close();
+```
+
+### Eleventy plugin
+
+`createEleventyPlugin({ files })` wires that renderer into an
+[Eleventy](https://www.11ty.dev/) build (the role
+[WebC](https://github.com/11ty/webc) plays for 11ty): it adds a transform that
+rewrites matching custom-element tags in the generated HTML into Declarative
+Shadow DOM, preserving attributes and slotted children.
+
+```js
+// .eleventy.js
+import { createEleventyPlugin } from 'banira';
+export default function (eleventyConfig) {
+  eleventyConfig.addPlugin(createEleventyPlugin({ files: ['src/my-circle.ts'] }));
+}
 ```
 
 ## Development

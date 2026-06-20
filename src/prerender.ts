@@ -1,7 +1,9 @@
 import type { CompilerOptions } from 'typescript';
+import { JSDOM } from 'jsdom';
 import { Compiler } from './compiler.js';
 import { ManifestGenerator } from './manifest.js';
 import { TestHelper } from './test-helper.js';
+import { bundleModule } from './module-bundler.js';
 
 export interface PrerenderResult {
     tagName: string;
@@ -17,12 +19,113 @@ export interface PrerenderOptions {
     readyTimeout?: number;
 }
 
-/** Wraps shadow-root markup in a Declarative Shadow DOM template for `tagName`. */
-export function declarativeShadowDom(tagName: string, shadowHtml: string, attributes: Record<string, string> = {}): string {
-    const attrs = Object.entries(attributes)
+/** Serializes attributes into an HTML attribute string (leading space per attribute). */
+function attributeString(attributes: Record<string, string>): string {
+    return Object.entries(attributes)
         .map(([k, v]) => ` ${k}="${v.replace(/"/g, '&quot;')}"`)
         .join('');
-    return `<${tagName}${attrs}><template shadowrootmode="open">${shadowHtml}</template></${tagName}>`;
+}
+
+/**
+ * Wraps shadow-root markup in a Declarative Shadow DOM template for `tagName`.
+ * Any `children` (light-DOM HTML) are placed after the template, inside the
+ * host, so they project into the component's slots on the client.
+ */
+export function declarativeShadowDom(
+    tagName: string,
+    shadowHtml: string,
+    attributes: Record<string, string> = {},
+    children: string = ''
+): string {
+    return `<${tagName}${attributeString(attributes)}><template shadowrootmode="open">${shadowHtml}</template>${children}</${tagName}>`;
+}
+
+/** Options for a single {@link Prerenderer.renderToString} call. */
+export interface RenderToStringOptions {
+    /** Attributes to set on the host element. */
+    attributes?: Record<string, string>;
+    /** Light-DOM children (HTML) placed inside the host, projected into slots. */
+    children?: string;
+}
+
+export interface PrerendererOptions {
+    compilerOptions?: CompilerOptions;
+    /** Upper bound (ms) on waiting for a component to register/settle. */
+    readyTimeout?: number;
+}
+
+/**
+ * A reusable server-side renderer over a fixed set of component sources: the
+ * components are compiled and registered once, then {@link renderToString} can
+ * be called repeatedly (by tag) to produce Declarative Shadow DOM markup. This
+ * is the stable primitive meta-frameworks (Enhance/WebC/11ty/Rocket) call.
+ */
+export interface Prerenderer {
+    /** The custom-element tag names registered in this renderer. */
+    readonly tags: string[];
+    /** Renders one element to DSD markup (host + `<template shadowrootmode>` + light-DOM children). */
+    renderToString(tagName: string, options?: RenderToStringOptions): Promise<string>;
+    /** Tears down the underlying JSDOM window. Call when finished. */
+    close(): void;
+}
+
+/**
+ * Compiles and registers the components in `files` into a single JSDOM window
+ * and returns a {@link Prerenderer} whose `renderToString(tag, { attributes,
+ * children })` serializes any of them to Declarative Shadow DOM on demand —
+ * the SSR entry point for meta-framework adapters (see {@link createEleventyPlugin}).
+ */
+export async function createPrerenderer(files: string[], options: PrerendererOptions = {}): Promise<Prerenderer> {
+    const compilerOptions = options.compilerOptions ?? Compiler.DEFAULT_COMPILER_OPTIONS;
+    const readyTimeout = options.readyTimeout ?? 1000;
+
+    const pkg = new ManifestGenerator(files, compilerOptions).generate();
+    const tags = pkg.modules
+        .flatMap((m) => m.declarations)
+        .map((d) => d.tagName)
+        .filter((t): t is string => Boolean(t));
+
+    const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
+        runScripts: 'dangerously',
+        resources: 'usable',
+    });
+    const { window } = dom;
+    const { document } = window;
+
+    for (const file of files) {
+        const script = document.createElement('script');
+        script.textContent = bundleModule(file, compilerOptions);
+        document.head.appendChild(script);
+    }
+
+    const waitDefined = async (tagName: string): Promise<void> => {
+        await Promise.race([
+            window.customElements.whenDefined(tagName),
+            new Promise<void>((resolve) => window.setTimeout(resolve, readyTimeout)),
+        ]);
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+    };
+
+    const renderToString = async (tagName: string, opts: RenderToStringOptions = {}): Promise<string> => {
+        const attributes = opts.attributes ?? {};
+        const children = opts.children ?? '';
+        await waitDefined(tagName);
+
+        const element = document.createElement(tagName);
+        for (const [k, v] of Object.entries(attributes)) element.setAttribute(k, v);
+        if (children) element.innerHTML = children;
+        document.body.appendChild(element);
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 0)); // let render settle
+
+        const shadow = (element as Element & { shadowRoot?: ShadowRoot | null }).shadowRoot;
+        const markup = shadow
+            ? declarativeShadowDom(tagName, shadow.innerHTML.trim(), attributes, children)
+            : `<${tagName}${attributeString(attributes)}>${children}</${tagName}>`;
+        element.remove();
+        return markup;
+    };
+
+    return { tags, renderToString, close: () => window.close() };
 }
 
 /**

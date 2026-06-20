@@ -89,5 +89,13 @@ export {
 } from './scoped-registry.js';
 export type { RegistryLike, RegistryScope, ScopedShadowHost } from './scoped-registry.js';
 export { installHmr, HMR_CLIENT_SCRIPT, hmrMessage } from './hmr-client.js';
-export { prerenderManifest, declarativeShadowDom } from './prerender.js';
-export type { PrerenderResult, PrerenderOptions } from './prerender.js';
+export { prerenderManifest, declarativeShadowDom, createPrerenderer } from './prerender.js';
+export type {
+    PrerenderResult,
+    PrerenderOptions,
+    Prerenderer,
+    PrerendererOptions,
+    RenderToStringOptions,
+} from './prerender.js';
+export { createEleventyPlugin, transformHtml } from './eleventy.js';
+export type { EleventyPluginOptions, EleventyConfigLike } from './eleventy.js';
