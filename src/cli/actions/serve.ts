@@ -4,6 +4,7 @@ import { readFile, stat, realpath } from 'fs/promises';
 import { resolve, join, extname, normalize, sep } from 'path';
 import { transpileToEsm } from '../../transpile-module.js';
 import { HMR_CLIENT_SCRIPT, hmrMessage } from '../../hmr-client.js';
+import { buildImportMap, findModuleFiles, importMapScript, readPackageJson } from '../../import-map.js';
 
 export interface ServeOptions {
   port?: string | number;
@@ -21,6 +22,30 @@ export interface ServeOptions {
    * Falls back to a full reload for any non-module change.
    */
   hmr?: boolean;
+  /**
+   * Scan the served modules for bare imports and inject a
+   * `<script type="importmap">` (pinned to esm.sh) into served HTML, so vanilla
+   * components can use bare specifiers with no bundler (#27).
+   */
+  importMap?: boolean;
+}
+
+/**
+ * Inserts an import map (built from the served root's modules) ahead of the
+ * first `<script>` in the page, since an import map must precede any module
+ * script that relies on it. A no-op when no bare specifiers are found.
+ */
+function injectImportMap(html: string, root: string): string {
+  const files = findModuleFiles(root, ['.js', '.mjs', '.ts']);
+  // Prefer the served root's package.json (the demo's deps), else the cwd's.
+  const packageJson = readPackageJson(root);
+  const map = buildImportMap(files, packageJson ? { packageJson } : {});
+  if (Object.keys(map.imports).length === 0) return html;
+  const tag = `${importMapScript(map)}\n`;
+  const scriptIndex = html.search(/<script\b/i);
+  if (scriptIndex >= 0) return html.slice(0, scriptIndex) + tag + html.slice(scriptIndex);
+  if (/<\/head>/i.test(html)) return html.replace(/<\/head>/i, `${tag}</head>`);
+  return html.replace(/<body[^>]*>/i, (match) => `${match}\n${tag}`);
 }
 
 const MIME: Record<string, string> = {
@@ -166,7 +191,8 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
 
       if (ext === '.html') {
         const snippet = options.hmr ? HMR_RELOAD : LIVE_RELOAD;
-        const html = (await readFile(realFilePath, 'utf8')).replace(/<\/body>/i, `${snippet}</body>`);
+        let html = (await readFile(realFilePath, 'utf8')).replace(/<\/body>/i, `${snippet}</body>`);
+        if (options.importMap) html = injectImportMap(html, root);
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': NO_STORE }).end(html);
       } else {
         res.writeHead(200, { 'Content-Type': type, 'Cache-Control': NO_STORE }).end(await readFile(realFilePath));

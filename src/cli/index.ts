@@ -39,7 +39,10 @@ program
   .argument('<files...>', 'TypeScript files to compile')
   .option('-p, --project <path>', 'Path to tsconfig.json')
   .option('-o, --output <path>', 'Output directory')
-  .action((files, options) => compile(files, { project: options.project, outDir: options.output }));
+  .option('--import-map [path]', 'Also emit an import map (esm.sh) for bare imports; optional output path')
+  .action((files, options) =>
+    compile(files, { project: options.project, outDir: options.output, importMap: options.importMap })
+  );
 
 program
   .command('doc')
@@ -126,6 +129,7 @@ program
   .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose)')
   .option('--ts', 'Serve TypeScript transpiled on the fly (no separate compile step)')
   .option('--hmr', 'Hot-swap custom elements in place instead of full-page reload')
+  .option('--import-map', 'Inject a <script type="importmap"> (esm.sh) for bare imports into served HTML')
   .action((files, options) => {
     try {
       dev(files, {
@@ -136,6 +140,7 @@ program
         host: options.host,
         transformTs: options.ts,
         hmr: options.hmr,
+        importMap: options.importMap,
       });
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);
@@ -151,9 +156,16 @@ program
   .option('--host <host>', 'Host/interface to bind (default 127.0.0.1; use 0.0.0.0 to expose on the network)')
   .option('--ts', 'Serve TypeScript transpiled on the fly (no separate compile step)')
   .option('--hmr', 'Hot-swap custom elements in place instead of full-page reload')
+  .option('--import-map', 'Inject a <script type="importmap"> (esm.sh) for bare imports into served HTML')
   .action((root, options) => {
     try {
-      serve(root, { port: options.port, host: options.host, transformTs: options.ts, hmr: options.hmr });
+      serve(root, {
+        port: options.port,
+        host: options.host,
+        transformTs: options.ts,
+        hmr: options.hmr,
+        importMap: options.importMap,
+      });
     } catch (error) {
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);

@@ -66,6 +66,18 @@ export type { SmokeResult, SmokeOptions } from './smoke-test.js';
 export { scaffoldComponent, scaffoldTheme } from './scaffold.js';
 export type { ScaffoldFile, ScaffoldOptions, ThemeScaffoldOptions } from './scaffold.js';
 export {
+    isBareSpecifier,
+    packageNameOf,
+    scanSpecifiers,
+    collectBareSpecifiers,
+    generateImportMap,
+    buildImportMap,
+    readPackageJson,
+    importMapScript,
+    findModuleFiles,
+} from './import-map.js';
+export type { ImportMap, ImportMapOptions, PackageJsonLike } from './import-map.js';
+export {
     supportsScopedRegistries,
     createScopedRegistry,
     defineComponent,

@@ -18,6 +18,8 @@ export interface DevOptions {
   transformTs?: boolean;
   /** Hot-swap components in place instead of full-page reload (see {@link ServeOptions.hmr}). */
   hmr?: boolean;
+  /** Inject an import map for bare imports into served HTML (see {@link ServeOptions.importMap}). */
+  importMap?: boolean;
 }
 
 /** Maps an emitted file path to its served URL relative to the served root. */
@@ -54,6 +56,7 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   if (options.host !== undefined) serveOptions.host = options.host;
   if (options.transformTs !== undefined) serveOptions.transformTs = options.transformTs;
   if (options.hmr !== undefined) serveOptions.hmr = options.hmr;
+  if (options.importMap !== undefined) serveOptions.importMap = options.importMap;
   const server = serve(root, serveOptions);
 
   // Drive the browser update off the compile result, not a second file watcher:

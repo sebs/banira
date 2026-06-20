@@ -1,12 +1,20 @@
-import { Compiler, ResultAnalyzer, isCssModuleNotFoundDiagnostic } from '../../index.js';
+import { Compiler, ResultAnalyzer, isCssModuleNotFoundDiagnostic, buildImportMap, isBareSpecifier } from '../../index.js';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { writeFile, mkdir } from 'fs/promises';
+import { resolve, dirname, join } from 'path';
 import { action } from './run.js';
 
 export interface CompileOptions {
   project?: string;
   outDir?: string;
+  /**
+   * Emit an import map for the components' bare imports. `true` writes
+   * `import-map.json` (into `--output` when given, else the cwd); a string is
+   * used as the output path. Bare specifiers are pinned to esm.sh at the
+   * version declared in `package.json`.
+   */
+  importMap?: boolean | string;
 }
 
 export interface CompileOutcome {
@@ -82,8 +90,27 @@ export function formatErrors(errors: ts.Diagnostic[]): string {
     .join('\n');
 }
 
+/**
+ * True for a TS2307 "Cannot find module 'X'" diagnostic where X is a bare
+ * specifier. With `--import-map` such modules are resolved at runtime from a
+ * CDN and are deliberately not installed, so the diagnostic is expected — the
+ * same treatment {@link isCssModuleNotFoundDiagnostic} gives lowered CSS imports.
+ */
+function isBareModuleNotFoundDiagnostic(diagnostic: ts.Diagnostic): boolean {
+  if (diagnostic.code !== 2307) return false;
+  const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+  const match = /Cannot find module '([^']+)'/.exec(message);
+  return match ? isBareSpecifier(match[1]!) : false;
+}
+
 export const compile = action('Compilation failed', async (files: string[], options: CompileOptions) => {
-  const { ok, errors, outputs } = compileFiles(files, options);
+  const outcome = compileFiles(files, options);
+  const outputs = outcome.outputs;
+  // With --import-map, unresolved bare imports are expected (CDN-resolved at runtime).
+  const errors = options.importMap
+    ? outcome.errors.filter((d) => !isBareModuleNotFoundDiagnostic(d))
+    : outcome.errors;
+  const ok = errors.length === 0;
 
   if (!ok) {
     console.error('Compilation errors:');
@@ -95,5 +122,20 @@ export const compile = action('Compilation failed', async (files: string[], opti
   if (outputs.length > 0) {
     console.log('Generated files:');
     outputs.forEach((file) => console.log(`  ${file}`));
+  }
+
+  if (options.importMap) {
+    const map = buildImportMap(files, { recursive: true });
+    const count = Object.keys(map.imports).length / 2; // bare + trailing-slash entry per package
+    const defaultDir = options.outDir ? resolve(options.outDir) : process.cwd();
+    const outPath =
+      typeof options.importMap === 'string' ? resolve(options.importMap) : join(defaultDir, 'import-map.json');
+    await mkdir(dirname(outPath), { recursive: true });
+    await writeFile(outPath, JSON.stringify(map, null, 2) + '\n', 'utf8');
+    console.log(`Import map written to ${outPath} (${count} package${count === 1 ? '' : 's'})`);
+    const unpinned = Object.entries(map.imports).filter(([key, url]) => !key.endsWith('/') && !/@/.test(url.replace(/^https?:\/\//, '')));
+    if (unpinned.length > 0) {
+      console.log(`  Unpinned (no version in package.json): ${unpinned.map(([k]) => k).join(', ')}`);
+    }
   }
 });

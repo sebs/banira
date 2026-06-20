@@ -63,6 +63,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | parseDesignTokens / designTokensToCss | Parse a W3C Design Tokens (DTCG) document and emit `:root` CSS custom properties (aliases resolved) |
 | tokensToCssProperties / enrichManifestCssProperties | Map imported tokens to manifest `cssProperties`, or backfill missing defaults/descriptions on matching component tokens |
 | scaffoldTheme | Generate a light/dark theme contract (`theme.css`), a `<theme-toggle>` component, and a demo page |
+| buildImportMap / generateImportMap | Scan components' bare imports and build an import map pinning each package to esm.sh (`compile --import-map`, `serve --import-map`) |
 
 ## CLI
 
@@ -78,10 +79,23 @@ Compile one or more TypeScript files with banira's compiler defaults.
 |---|---|
 | `-p, --project <path>` | Path to a `tsconfig.json` whose options override the defaults |
 | `-o, --output <path>` | Directory to write the emitted JavaScript to |
+| `--import-map [path]` | Also emit an import map for the components' bare imports (see below) |
 
 ```bash
 banira compile src/my-button.ts -o dist
+# also write dist/import-map.json pinning bare imports to esm.sh
+banira compile src/my-button.ts -o dist --import-map
 ```
+
+With `--import-map`, banira walks the components' local module graph for bare
+imports (e.g. `import { html } from 'lit'`), pins each package to
+[esm.sh](https://esm.sh/) at the version declared in `package.json`, and writes
+an [import map](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap)
+(`import-map.json` by default; pass a path to override). This lets vanilla
+components use bare specifiers with **no bundler** — add the file's contents as a
+`<script type="importmap">` before your module scripts. Unresolved bare imports
+are expected in this mode (they resolve from the CDN at runtime), so they don't
+fail the build.
 
 ### `banira doc <file>`
 
@@ -209,6 +223,13 @@ you opt in with `--host`.
 | `-p, --port <number>` | Port to listen on (default `8080`) |
 | `--host <host>` | Host/interface to bind (default `127.0.0.1`; use `0.0.0.0` to expose on the network) |
 | `--ts` | Serve TypeScript transpiled on the fly (no separate compile step) |
+| `--hmr` | Hot-swap custom elements in place instead of full-page reload |
+| `--import-map` | Inject a `<script type="importmap">` (esm.sh) for the served modules' bare imports |
+
+With `--import-map`, banira scans the served modules for bare imports, pins them
+to esm.sh (version from the served root's or the project's `package.json`), and
+injects the import map ahead of the first `<script>` in each served HTML page —
+so bare specifiers resolve in the browser with no bundler.
 
 With `--ts`, a `.ts` request is served as an ES module and a request for `foo.js`
 falls back to a sibling `foo.ts` when no compiled `foo.js` exists — so you can
