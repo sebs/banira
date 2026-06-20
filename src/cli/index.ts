@@ -188,7 +188,9 @@ program
   .command('test')
   .description('Manifest-driven smoke test: mount each element and assert it registers')
   .argument('<files...>', 'Component source files to test')
-  .action((files) => test(files));
+  .option('--reflection', 'Also check attribute↔property reflection round-trip (advisory warnings)')
+  .option('--slots', 'Also assert declared @slots project and flag undeclared shadow slots (advisory)')
+  .action((files, options) => test(files, { reflection: options.reflection, slots: options.slots }));
 
 program
   .command('init')

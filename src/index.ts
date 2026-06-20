@@ -66,7 +66,8 @@ export type { TypeShimOptions } from './type-shims.js';
 export { diffManifests, formatManifestDiff } from './manifest-diff.js';
 export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-diff.js';
 export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
-export type { SmokeResult, SmokeOptions } from './smoke-test.js';
+export type { SmokeResult, SmokeOptions, ReflectionIssue, SlotIssue } from './smoke-test.js';
+export { checkReflection, checkSlots } from './smoke-checks.js';
 export { scaffoldComponent, scaffoldTheme } from './scaffold.js';
 export type { ScaffoldFile, ScaffoldOptions, ThemeScaffoldOptions } from './scaffold.js';
 export {

@@ -61,6 +61,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | validateManifest | Structurally validates a manifest against the CEM 2.1.0 shape |
 | validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
 | linkManifestField | Point a package.json's `customElements` field at a generated manifest |
+| checkReflection / checkSlots | Smoke-test add-ons: attribute↔property reflection round-trip and `@slot` contract assertions |
 | diffManifests | Diffs two manifests and suggests a semver release type |
 | createPrerenderer / declarativeShadowDom | SSR primitive: register components once, then `renderToString(tag, { attributes, children })` to Declarative Shadow DOM |
 | createEleventyPlugin | Eleventy plugin that prerenders matching component tags to DSD at build time |
@@ -313,8 +314,18 @@ and upgrades to an `HTMLElement` — catching the most common breakages (a
 component that throws on construction, or never calls `customElements.define`)
 with no per-component test code. Exits non-zero if any element fails.
 
+| Option | Description |
+|---|---|
+| `--reflection` | Also round-trip each observed attribute ↔ its backing property and warn on either direction that doesn't reflect |
+| `--slots` | Also inject sample slotted content and warn on declared `@slot`s with no matching `<slot>` (and shadow `<slot>`s with no `@slot`) |
+
+`--reflection` and `--slots` are **advisory**: their findings print as warnings
+and do not fail the command (registration failures still do), since not every
+attribute is meant to reflect.
+
 ```bash
 banira test src/*.ts
+banira test src/*.ts --reflection --slots
 ```
 
 ### `banira init <tag-name> [dir]`
