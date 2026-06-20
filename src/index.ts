@@ -99,3 +99,5 @@ export type {
 } from './prerender.js';
 export { createEleventyPlugin, transformHtml } from './eleventy.js';
 export type { EleventyPluginOptions, EleventyConfigLike } from './eleventy.js';
+export { hydrateShadow } from './hydrate.js';
+export type { HydrateOptions, HydrateResult } from './hydrate.js';

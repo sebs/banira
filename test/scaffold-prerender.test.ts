@@ -10,6 +10,7 @@ import {
     scaffoldTheme,
     parseDesignTokens,
     prerenderManifest,
+    createPrerenderer,
     declarativeShadowDom,
     ManifestGenerator,
 } from '../src/index.js';
@@ -155,6 +156,41 @@ describe('scaffoldTheme (issue #50)', () => {
         const results = await smokeTestManifest([resolve(dir, 'theme-toggle.ts')]);
         assert.strictEqual(results.length, 1);
         assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+    });
+});
+
+describe('scaffoldComponent hydrate variant (issue #32)', () => {
+    it('generates an adopt-or-render component that adopts an existing shadow root', () => {
+        const component = scaffoldComponent('hy-card', { hydrate: true }).find((f) => f.path === 'hy-card.ts')!.content;
+        // adopt the prerendered root if present, else create one
+        assert.match(component, /if \(!this\.shadowRoot\) this\.attachShadow\(\{ mode: 'open' \}\)/);
+        // skip the initial render when the shadow root is already populated (prerendered)
+        assert.match(component, /const prerendered = shadow\.firstChild !== null;/);
+        assert.match(component, /if \(!prerendered\) this\.render\(\);/);
+        // the constructable stylesheet is adopted on hydration
+        assert.match(component, /shadow\.adoptedStyleSheets = \[sheet\];/);
+    });
+
+    it('hydrate scaffold passes its own smoke test (client-only mount renders)', async () => {
+        const dir = mkdtempSync(resolve(tmpdir(), 'banira-hydrate-'));
+        for (const file of scaffoldComponent('hy-widget', { hydrate: true })) {
+            writeFileSync(resolve(dir, file.path), file.content, 'utf8');
+        }
+        const results = await smokeTestManifest([resolve(dir, 'hy-widget.ts')]);
+        assert.strictEqual(results.length, 1);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+    });
+
+    it('prerenders to DSD that the component can later adopt', async () => {
+        const dir = mkdtempSync(resolve(tmpdir(), 'banira-hydrate-'));
+        for (const file of scaffoldComponent('hy-box', { hydrate: true })) {
+            writeFileSync(resolve(dir, file.path), file.content, 'utf8');
+        }
+        const renderer = await createPrerenderer([resolve(dir, 'hy-box.ts')]);
+        const html = await renderer.renderToString('hy-box', { attributes: { value: 'Hi' } });
+        renderer.close();
+        assert.match(html, /<hy-box value="Hi"><template shadowrootmode="open">/);
+        assert.match(html, /<span part="label">Hi<\/span>/);
     });
 });
 

@@ -21,6 +21,14 @@ export interface ScaffoldOptions {
      * pass one or the other.
      */
     aria?: boolean;
+    /**
+     * Scaffold a component that hydrates a prerendered Declarative Shadow DOM
+     * root (adopt-or-render): if `banira prerender` already produced the shadow
+     * markup, it is adopted without re-rendering (no flash); otherwise the
+     * component renders normally. The constructable stylesheet is adopted either
+     * way. Distinct from `formAssociated`/`aria`; pass one.
+     */
+    hydrate?: boolean;
 }
 
 /** A valid custom-element tag name: lowercase, starts with a letter, contains a hyphen. */
@@ -292,7 +300,78 @@ customElements.define('${tagName}', ${className});
 `;
 }
 
-function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'aria'): string {
+function hydrateSource(tagName: string, className: string): string {
+    return `/**
+ * ${className} — a vanilla web component that **hydrates** a prerendered
+ * Declarative Shadow DOM root instead of re-rendering it, so a server-rendered
+ * page "wakes up" without a flash. Prerender it with \`banira prerender\`, ship
+ * the DSD markup, and this script adopts it on load.
+ *
+ * @summary Describe what ${tagName} does.
+ * @csspart label - The label element.
+ * @cssprop --${tagName}-color - Text colour.
+ * @fires ${tagName}-change - Fired when the value changes, with \`detail: { value }\`.
+ */
+// Shared constructable stylesheet (deduped across instances/modules). It is NOT
+// part of the serialized DSD markup, so it is adopted on hydration to style the
+// prerendered tree.
+const sheet = new CSSStyleSheet();
+sheet.replaceSync(\`:host { display: inline-block; color: var(--${tagName}-color, currentColor); }\`);
+
+class ${className} extends HTMLElement {
+    private _value: string = '';
+
+    constructor() {
+        super();
+        // Adopt a prerendered DSD shadow root if the parser already attached one;
+        // otherwise create an empty one to render into on connect.
+        if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
+    }
+
+    static get observedAttributes(): string[] {
+        return ['value'];
+    }
+
+    get value(): string {
+        return this._value;
+    }
+
+    set value(next: string) {
+        this._value = next;
+        const label = this.shadowRoot?.querySelector('[part="label"]');
+        if (label) label.textContent = next;
+        this.dispatchEvent(new CustomEvent('${tagName}-change', { detail: { value: next } }));
+    }
+
+    connectedCallback(): void {
+        const shadow = this.shadowRoot!;
+        // A non-empty shadow root means the markup was prerendered (DSD) — adopt
+        // it as-is, reading the current value from it. An empty root means a
+        // client-only mount, so render from scratch.
+        const prerendered = shadow.firstChild !== null;
+        this._value =
+            this.getAttribute('value') ??
+            (prerendered ? shadow.querySelector('[part="label"]')?.textContent ?? '' : '');
+        if (!prerendered) this.render();
+        // Adopt the constructable stylesheet either way (see note above).
+        shadow.adoptedStyleSheets = [sheet];
+    }
+
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+        if (oldValue === newValue) return;
+        if (name === 'value') this.value = newValue ?? '';
+    }
+
+    private render(): void {
+        this.shadowRoot!.innerHTML = \`<span part="label">\${this._value}</span><slot></slot>\`;
+    }
+}
+
+customElements.define('${tagName}', ${className});
+`;
+}
+
+function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'aria' | 'hydrate'): string {
     let body: string;
     if (variant === 'form-associated') {
         body = `    <form>
@@ -339,13 +418,16 @@ export function scaffoldComponent(tagName: string, options: ScaffoldOptions = {}
     }
     const className = classNameFor(tagName);
     let source: string;
-    let variant: 'plain' | 'form-associated' | 'aria';
+    let variant: 'plain' | 'form-associated' | 'aria' | 'hydrate';
     if (options.formAssociated) {
         source = formAssociatedSource(tagName, className);
         variant = 'form-associated';
     } else if (options.aria) {
         source = ariaSource(tagName, className);
         variant = 'aria';
+    } else if (options.hydrate) {
+        source = hydrateSource(tagName, className);
+        variant = 'hydrate';
     } else {
         source = componentSource(tagName, className);
         variant = 'plain';

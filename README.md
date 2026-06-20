@@ -64,6 +64,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | diffManifests | Diffs two manifests and suggests a semver release type |
 | createPrerenderer / declarativeShadowDom | SSR primitive: register components once, then `renderToString(tag, { attributes, children })` to Declarative Shadow DOM |
 | createEleventyPlugin | Eleventy plugin that prerenders matching component tags to DSD at build time |
+| hydrateShadow | Client hydration helper: adopt a prerendered DSD shadow root (no flash) or render + adopt styles |
 | parseDesignTokens / designTokensToCss | Parse a W3C Design Tokens (DTCG) document and emit `:root` CSS custom properties (aliases resolved) |
 | tokensToCssProperties / enrichManifestCssProperties | Map imported tokens to manifest `cssProperties`, or backfill missing defaults/descriptions on matching component tokens |
 | scaffoldTheme | Generate a light/dark theme contract (`theme.css`), a `<theme-toggle>` component, and a demo page |
@@ -329,11 +330,14 @@ unless `--force` is given.
 | `--force` | Overwrite existing files |
 | `--form-associated` | Scaffold a form-associated element (`static formAssociated = true` + `ElementInternals` form/validation wiring) |
 | `--aria` | Scaffold an ARIA role/state-reflecting element (`ElementInternals.role`/`ariaChecked`, keyboard support; records the default role in the manifest via `@role`) |
+| `--hydrate` | Scaffold a component that hydrates a prerendered Declarative Shadow DOM root (adopt-or-render; no flash) |
 
 ```bash
 banira init my-button src
 # a checkbox-role toggle that exposes its semantics via ElementInternals
 banira init my-toggle src --aria
+# a component that adopts its prerendered DSD root instead of re-rendering
+banira init my-card src --hydrate
 ```
 
 ### `banira tokens-css <tokens.json>`
@@ -390,6 +394,12 @@ const r = await createPrerenderer(['src/my-circle.ts']);
 const html = await r.renderToString('my-circle', { attributes: { size: '40' }, children: 'Caption' });
 r.close();
 ```
+
+The client half is `hydrateShadow(host, { template, styles })`: in a component's
+`connectedCallback` it **adopts** a prerendered DSD shadow root as-is (no
+re-render, no flash) when present, or creates one and renders `template`
+otherwise — adopting the constructable stylesheet either way (DSD markup ships
+without it). `banira init --hydrate` scaffolds a component using this pattern.
 
 ### Eleventy plugin
 
