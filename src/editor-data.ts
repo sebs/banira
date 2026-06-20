@@ -16,6 +16,8 @@ function customElements(pkg: Package): CustomElementDeclaration[] {
 export interface VsCodeHtmlAttribute {
     name: string;
     description?: string;
+    /** Allowed values for autocomplete, from a string-literal union attribute. */
+    values?: { name: string }[];
 }
 
 export interface VsCodeHtmlTag {
@@ -44,6 +46,7 @@ export function toVsCodeHtmlData(pkg: Package): VsCodeHtmlData {
                 const attr: VsCodeHtmlAttribute = { name: a.name };
                 const d = describe(a.description, a.deprecated);
                 if (d) attr.description = d;
+                if (a.values?.length) attr.values = a.values.map((name) => ({ name }));
                 return attr;
             }),
         };

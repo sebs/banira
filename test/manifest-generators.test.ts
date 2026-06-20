@@ -186,3 +186,35 @@ describe('diffManifests', () => {
         assert.strictEqual(diffManifests(withExtra, base).release, 'major');
     });
 });
+
+describe('string-literal union attributes (issue #25)', () => {
+    const union = () => manifestFor('fixtures/union-element.ts');
+
+    it('captures the allowed values from a union-typed attribute', () => {
+        const decl = union().modules.flatMap((m) => m.declarations)[0]!;
+        const size = (decl.attributes ?? []).find((a) => a.name === 'size');
+        assert.deepStrictEqual(size?.values, ['sm', 'md', 'lg']);
+        assert.strictEqual(size?.type?.text, '"sm" | "md" | "lg"');
+    });
+
+    it('leaves plain string/boolean attributes without a values list', () => {
+        const decl = union().modules.flatMap((m) => m.declarations)[0]!;
+        assert.strictEqual((decl.attributes ?? []).find((a) => a.name === 'label')?.values, undefined);
+        assert.strictEqual((decl.attributes ?? []).find((a) => a.name === 'disabled')?.values, undefined);
+    });
+
+    it('emits the union in the generated .d.ts', () => {
+        const dts = toTypeDefinitions(union());
+        assert.match(dts, /size: "sm" \| "md" \| "lg";/);
+        assert.match(dts, /variant: "primary" \| "secondary" \| "ghost";/);
+    });
+
+    it('emits VS Code custom-data values for the union attribute', () => {
+        const data = toVsCodeHtmlData(union());
+        const tag = data.tags.find((t) => t.name === 'union-button');
+        const size = tag?.attributes.find((a) => a.name === 'size');
+        assert.deepStrictEqual(size?.values, [{ name: 'sm' }, { name: 'md' }, { name: 'lg' }]);
+        const label = tag?.attributes.find((a) => a.name === 'label');
+        assert.strictEqual(label?.values, undefined);
+    });
+});

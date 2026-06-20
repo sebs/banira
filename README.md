@@ -56,7 +56,8 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | ManifestGenerator | Produces a [Custom Elements Manifest](https://github.com/webcomponents/custom-elements-manifest) (`custom-elements.json`) from vanilla components |
 | manifestToMarkdown | Renders a manifest as Markdown API documentation |
 | toVsCodeHtmlData / toVsCodeCssData / toWebTypes | Generate editor IntelliSense data (VS Code custom-data, JetBrains web-types) from a manifest |
-| toTypeDefinitions | Generates a `.d.ts` typing the custom elements from a manifest |
+| toTypeDefinitions | Generates a `.d.ts` typing the custom elements from a manifest (string-literal union attributes become union types) |
+| toStories / manifestToStories | Generate Storybook CSF (`*.stories.js`) with `argTypes` from a manifest |
 | validateManifest | Structurally validates a manifest against the CEM 2.1.0 shape |
 | validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
 | linkManifestField | Point a package.json's `customElements` field at a generated manifest |
@@ -200,6 +201,31 @@ typed for consumers — no runtime import required.
 ```bash
 banira types src/*.ts -o dist/elements.d.ts
 ```
+
+An attribute backed by a string-literal union property (`size: 'sm' | 'md' | 'lg'`)
+is emitted as that union in the `.d.ts` (and as autocomplete `values` in the
+editor-data and `options` in the Storybook stories), instead of a bare `string`.
+
+### `banira stories <files...>`
+
+Generate Storybook [Component Story Format](https://storybook.js.org/docs/api/csf)
+files (`*.stories.js`) — one per component — with an `argTypes` controls panel
+derived from each element's attributes (string-literal unions become `select`
+options) and events (mapped to actions), plus a default story. No hand-written
+story code required.
+
+| Option | Description |
+|---|---|
+| `-o, --out-dir <dir>` | Directory to write the stories to (default `.`) |
+| `--import-path <path>` | Module imported per story so the element registers (default `./{tag}.js`) |
+
+```bash
+banira stories src/*.ts -o stories
+```
+
+Pair with [`@storybook/web-components`](https://storybook.js.org/docs/web-components/get-started/install);
+in `.storybook/preview.js`, call `setCustomElementsManifest(manifest)` (from a
+`banira manifest`-generated `custom-elements.json`) for richer auto-docs.
 
 ### `banira diff <baseline> <current>`
 

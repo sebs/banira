@@ -57,6 +57,8 @@ export { validateManifestSchema, SchemaValidatorUnavailableError } from './manif
 export { CEM_SCHEMA } from './cem-schema.js';
 export { linkManifestField } from './package-link.js';
 export type { LinkManifestResult } from './package-link.js';
+export { toStories, manifestToStories, storiesFileName } from './stories.js';
+export type { StoriesOptions } from './stories.js';
 export { toVsCodeHtmlData, toVsCodeCssData, toWebTypes } from './editor-data.js';
 export type { VsCodeHtmlData, VsCodeCssData, WebTypes, WebTypesOptions } from './editor-data.js';
 export { toTypeDefinitions } from './type-shims.js';

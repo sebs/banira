@@ -96,6 +96,12 @@ export interface Attribute {
     type?: { text: string };
     default?: string;
     fieldName?: string;
+    /**
+     * The allowed values when the backing property is a string-literal union
+     * (`'sm' | 'md' | 'lg'`). Lets downstream generators emit enums: `.d.ts`
+     * unions, VS Code custom-data `values`, and Storybook `options`.
+     */
+    values?: string[];
     /** Present when the attribute is marked `@deprecated`; the string is the deprecation note, if any. */
     deprecated?: boolean | string;
 }
@@ -189,6 +195,26 @@ const LIFECYCLE_MEMBERS = new Set([
 /** A valid custom-element tag name: lowercase, starts with a letter, contains a hyphen. */
 function isCustomElementName(name: string): boolean {
     return /^[a-z][a-z0-9._]*-[a-z0-9._-]*$/.test(name);
+}
+
+/**
+ * Extracts the allowed values from a string-literal union type's text as the
+ * TypeScript checker renders it (`"sm" | "md" | "lg"`). Returns the literal
+ * values when every member is a string literal (`undefined`/`null` members are
+ * tolerated for optional properties); `undefined` otherwise (e.g. `string`,
+ * mixed unions, or fewer than two literals).
+ */
+function stringLiteralUnionValues(typeText: string | undefined): string[] | undefined {
+    if (!typeText || !typeText.includes('|')) return undefined;
+    const parts = typeText.split('|').map((p) => p.trim());
+    const values: string[] = [];
+    for (const part of parts) {
+        if (part === 'undefined' || part === 'null') continue;
+        const match = /^(["'])((?:[^\\]|\\.)*?)\1$/.exec(part);
+        if (!match) return undefined; // a non-string-literal member → not an enum
+        values.push(match[2]!.replace(/\\(["'\\])/g, '$1'));
+    }
+    return values.length >= 2 ? values : undefined;
 }
 
 /** Splits `name - description` (or `name description`) used by jsdoc tags like @slot/@csspart. */
@@ -586,7 +612,11 @@ export class ManifestGenerator {
             const field = members.find((m): m is ClassField => m.kind === 'field' && m.name === attrName);
             if (field) {
                 attr.fieldName = field.name;
-                if (field.type) attr.type = field.type;
+                if (field.type) {
+                    attr.type = field.type;
+                    const values = stringLiteralUnionValues(field.type.text);
+                    if (values) attr.values = values;
+                }
                 if (field.default !== undefined) attr.default = field.default;
                 if (field.description) attr.description = field.description;
                 if (field.deprecated !== undefined) attr.deprecated = field.deprecated;

@@ -10,6 +10,7 @@ import { manifest } from './actions/manifest.js';
 import { tokens } from './actions/tokens.js';
 import { tokensCss } from './actions/tokens-css.js';
 import { theme } from './actions/theme.js';
+import { stories } from './actions/stories.js';
 import { editorData } from './actions/editor-data.js';
 import { types } from './actions/types.js';
 import { diff } from './actions/diff.js';
@@ -89,6 +90,14 @@ program
   .option('--tag <tag-name>', 'Tag name for the toggle component (default theme-toggle)')
   .option('--tokens <tokens.json>', 'Seed the light :root token set from a DTCG document')
   .action((dir, options) => theme(dir, { force: options.force, tag: options.tag, tokens: options.tokens }));
+
+program
+  .command('stories')
+  .description('Generate Storybook CSF (*.stories.js) with argTypes from the components')
+  .argument('<files...>', 'Component source files to analyze')
+  .option('-o, --out-dir <dir>', 'Directory to write the stories to', '.')
+  .option('--import-path <path>', 'Module imported per story so the element registers (default ./{tag}.js)')
+  .action((files, options) => stories(files, { outDir: options.outDir, importPath: options.importPath }));
 
 program
   .command('editor-data')
