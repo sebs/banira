@@ -64,7 +64,12 @@ function criticalStyles(shadow: { adoptedStyleSheets?: ArrayLike<{ cssRules: Arr
             /* ignore unreadable sheet */
         }
     }
-    return css ? `<style data-banira-critical>${css}</style>` : '';
+    if (!css) return '';
+    // A CSS string value can contain `</style>` (e.g. `content: "</style>…"`),
+    // which would otherwise close the inlined <style> and inject markup. Escape
+    // the `</` — `\/` is an inert CSS escape for `/`, so the rendered CSS is
+    // unchanged but the HTML parser no longer sees a closing tag.
+    return `<style data-banira-critical>${css.replace(/<\//g, '<\\/')}</style>`;
 }
 
 /**
