@@ -132,8 +132,12 @@ export function checkSlots(element: DomElement, slots: NamedDoc[]): SlotIssue[] 
     }
 
     // Inject one sample node per declared slot so we can assert it projects.
+    // Escape the slot name (it's author-controlled jsdoc) so an odd `@slot` name
+    // can't break out of the injected attribute.
+    const escapeAttr = (s: string): string =>
+        s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     element.innerHTML = declared
-        .map((name) => (name === '' ? '<span>default</span>' : `<span slot="${name}">x</span>`))
+        .map((name) => (name === '' ? '<span>default</span>' : `<span slot="${escapeAttr(name)}">x</span>`))
         .join('');
 
     const slotEls = Array.from(shadow.querySelectorAll('slot'));
