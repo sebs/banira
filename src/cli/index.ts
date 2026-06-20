@@ -60,7 +60,10 @@ program
   .option('-o, --output <path>', 'Write the output to a file instead of stdout')
   .option('--md', 'Emit Markdown API documentation instead of JSON')
   .option('--validate', 'Validate the generated manifest and print a report (exit 1 on errors)')
-  .action(manifest);
+  .option('--link-package', "Point the nearest package.json's customElements field at the written manifest")
+  .action((files, options) =>
+    manifest(files, { output: options.output, md: options.md, validate: options.validate, linkPackage: options.linkPackage })
+  );
 
 program
   .command('tokens')

@@ -59,6 +59,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | toTypeDefinitions | Generates a `.d.ts` typing the custom elements from a manifest |
 | validateManifest | Structurally validates a manifest against the CEM 2.1.0 shape |
 | validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
+| linkManifestField | Point a package.json's `customElements` field at a generated manifest |
 | diffManifests | Diffs two manifests and suggests a semver release type |
 | parseDesignTokens / designTokensToCss | Parse a W3C Design Tokens (DTCG) document and emit `:root` CSS custom properties (aliases resolved) |
 | tokensToCssProperties / enrichManifestCssProperties | Map imported tokens to manifest `cssProperties`, or backfill missing defaults/descriptions on matching component tokens |
@@ -151,15 +152,23 @@ through; `@internal` / `@ignore` members are omitted.
 | `-o, --output <path>` | Write the output to a file instead of stdout |
 | `--md` | Emit Markdown API documentation instead of JSON |
 | `--validate` | Validate the generated manifest and print a report (exit 1 on errors) |
+| `--link-package` | Point the nearest `package.json`'s `customElements` field at the written manifest |
 
 `--validate` runs banira's fast structural checks. Install the optional
 [`ajv`](https://ajv.js.org/) dependency (`npm i -D ajv`) to additionally validate
 the manifest against the official CEM JSON Schema for guaranteed spec-conformance,
 with precise path-level errors.
 
+`--link-package` sets `"customElements": "<path>"` in the nearest `package.json`
+(the [convention](https://github.com/webcomponents/custom-elements-manifest) IDEs
+and Storybook use to auto-discover a package's manifest), preserving the file's
+indentation. It's a no-op when the field already points there.
+
 ```bash
 # Markdown API tables for a README
 banira manifest src/*.ts --md -o API.md
+# write the manifest and link it from package.json
+banira manifest src/*.ts -o custom-elements.json --link-package
 ```
 
 ### `banira editor-data <files...>`
