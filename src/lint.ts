@@ -58,7 +58,7 @@ function findHostImportant(cssText: string, out: string[]): void {
     let match: RegExpExecArray | null;
     while ((match = ruleRe.exec(cssText)) !== null) {
         const selector = match[1]!.trim();
-        if (selector.includes(':host') && /!important/i.test(match[2]!)) out.push(selector);
+        if (selector.includes(':host') && /!\s*important/i.test(match[2]!)) out.push(selector);
     }
 }
 
@@ -95,7 +95,7 @@ function probeShadow(shadow: DomShadowRoot): Probe {
             continue;
         }
         for (const rule of Array.from(rules)) {
-            if (rule.selectorText?.includes(':host') && /!important/i.test(rule.cssText)) {
+            if (rule.selectorText?.includes(':host') && /!\s*important/i.test(rule.cssText)) {
                 hostImportant.push(rule.selectorText);
             }
         }
