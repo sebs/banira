@@ -5,6 +5,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
+import { JSDOM } from 'jsdom';
 import { lowerCssImports, isCssModuleNotFoundDiagnostic } from '../src/index.js';
 import { compileFiles } from '../src/cli/actions/compile.js';
 
@@ -21,16 +22,24 @@ function transform(source: string, css: string): string {
 describe('lowerCssImports (issues #9, #10)', () => {
     it('lowers a bare CSS import to a constructable stylesheet', () => {
         const out = transform(`import styles from './x.css';\n`, '.a{color:red}');
-        assert.match(out, /const styles = new CSSStyleSheet\(\)/);
-        assert.match(out, /styles\.replaceSync\("\.a\{color:red\}"\)/);
+        assert.match(out, /const styles = __baniraAdoptStyles\("\.a\{color:red\}"\)/);
+        // the helper caches sheets on globalThis keyed by the CSS text
+        assert.match(out, /globalThis\.__baniraStyleSheets/);
+        assert.match(out, /\.replaceSync\(css\)/);
         assert.doesNotMatch(out, /import styles/);
     });
 
     it('lowers the CSS Module Script `with { type: \'css\' }` form the same way', () => {
         const out = transform(`import sheet from './x.css' with { type: 'css' };\n`, '.b{}');
-        assert.match(out, /const sheet = new CSSStyleSheet\(\)/);
-        assert.match(out, /sheet\.replaceSync/);
+        assert.match(out, /const sheet = __baniraAdoptStyles\("\.b\{\}"\)/);
         assert.doesNotMatch(out, /import sheet/);
+    });
+
+    it('emits the shared-cache helper only once even for multiple CSS imports', () => {
+        const out = transform(`import a from './a.css';\nimport b from './b.css';\n`, '.x{}');
+        assert.strictEqual(out.match(/const __baniraAdoptStyles =/g)?.length, 1);
+        assert.match(out, /const a = __baniraAdoptStyles\(/);
+        assert.match(out, /const b = __baniraAdoptStyles\(/);
     });
 
     it('leaves a CSS import whose file cannot be read untouched', () => {
@@ -65,5 +74,25 @@ describe('lowerCssImports (issues #9, #10)', () => {
         const outDir = mkdtempSync(resolve(tmpdir(), 'banira-css-'));
         const { ok, errors } = compileFiles([resolve(cssDir, 'sheet-box.ts')], { outDir });
         assert.strictEqual(ok, true, errors.map((e) => e.messageText).join('\n'));
+    });
+
+    it('dedupes the sheet across modules: same CSS → one shared CSSStyleSheet (issue #30)', () => {
+        // Two independently-lowered "modules" importing the same stylesheet.
+        const css = '.a{color:red}';
+        const moduleA = transform(`import a from './x.css';\n`, css);
+        const moduleB = transform(`import b from './y.css';\n`, css);
+        const moduleC = transform(`import c from './z.css';\n`, '.b{color:blue}');
+
+        const { window } = new JSDOM('<!doctype html>', { runScripts: 'outside-only' });
+        // Each module runs in its own scope (IIFE), sharing the window as globalThis.
+        const run = (code: string, name: string, out: string) =>
+            window.eval(`(() => { ${code}\n window.${out} = ${name}; })()`);
+        run(moduleA, 'a', '__a');
+        run(moduleB, 'b', '__b');
+        run(moduleC, 'c', '__c');
+
+        const w = window as unknown as Record<string, unknown>;
+        assert.strictEqual(w.__a, w.__b, 'identical CSS across modules should share one sheet');
+        assert.notStrictEqual(w.__a, w.__c, 'different CSS should produce a distinct sheet');
     });
 });

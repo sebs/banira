@@ -24,26 +24,139 @@ const defaultReadCss = (absolutePath: string): string | undefined => {
     }
 };
 
+/** Name of the per-module helper that resolves a constructable sheet from the shared cache. */
+const HELPER_NAME = '__baniraAdoptStyles';
+
 /**
- * Lowers a CSS import into a singleton constructable stylesheet so every
- * component instance shares one parse instead of an inline `<style>`:
+ * Builds the shared-cache helper, prepended once to any module with a lowered
+ * CSS import:
+ *
+ * ```js
+ * const __baniraAdoptStyles = (css) => {
+ *     const cache = globalThis.__baniraStyleSheets || (globalThis.__baniraStyleSheets = new Map());
+ *     let sheet = cache.get(css);
+ *     if (!sheet) { sheet = new CSSStyleSheet(); sheet.replaceSync(css); cache.set(css, sheet); }
+ *     return sheet;
+ * };
+ * ```
+ *
+ * It memoizes constructable stylesheets in a `Map` on `globalThis` keyed by the
+ * CSS text, so two modules importing the same `theme.css` adopt the *same*
+ * `CSSStyleSheet` (#9). Built with the synthetic-node factory so it is safe for
+ * the emit resolver (a node parsed from a separate source file is not).
+ */
+function helperStatement(factory: ts.NodeFactory): ts.Statement {
+    const css = factory.createIdentifier('css');
+    const cache = factory.createIdentifier('cache');
+    const sheet = factory.createIdentifier('sheet');
+    const globalRef = (): ts.Expression =>
+        factory.createPropertyAccessExpression(factory.createIdentifier('globalThis'), '__baniraStyleSheets');
+
+    // const cache = globalThis.__baniraStyleSheets || (globalThis.__baniraStyleSheets = new Map());
+    const cacheDecl = factory.createVariableStatement(
+        undefined,
+        factory.createVariableDeclarationList(
+            [
+                factory.createVariableDeclaration(
+                    cache,
+                    undefined,
+                    undefined,
+                    factory.createBinaryExpression(
+                        globalRef(),
+                        ts.SyntaxKind.BarBarToken,
+                        factory.createParenthesizedExpression(
+                            factory.createAssignment(
+                                globalRef(),
+                                factory.createNewExpression(factory.createIdentifier('Map'), undefined, [])
+                            )
+                        )
+                    )
+                ),
+            ],
+            ts.NodeFlags.Const
+        )
+    );
+
+    // let sheet = cache.get(css);
+    const sheetDecl = factory.createVariableStatement(
+        undefined,
+        factory.createVariableDeclarationList(
+            [
+                factory.createVariableDeclaration(
+                    sheet,
+                    undefined,
+                    undefined,
+                    factory.createCallExpression(factory.createPropertyAccessExpression(cache, 'get'), undefined, [css])
+                ),
+            ],
+            ts.NodeFlags.Let
+        )
+    );
+
+    // if (!sheet) { sheet = new CSSStyleSheet(); sheet.replaceSync(css); cache.set(css, sheet); }
+    const ifMissing = factory.createIfStatement(
+        factory.createPrefixUnaryExpression(ts.SyntaxKind.ExclamationToken, sheet),
+        factory.createBlock(
+            [
+                factory.createExpressionStatement(
+                    factory.createAssignment(
+                        sheet,
+                        factory.createNewExpression(factory.createIdentifier('CSSStyleSheet'), undefined, [])
+                    )
+                ),
+                factory.createExpressionStatement(
+                    factory.createCallExpression(factory.createPropertyAccessExpression(sheet, 'replaceSync'), undefined, [css])
+                ),
+                factory.createExpressionStatement(
+                    factory.createCallExpression(factory.createPropertyAccessExpression(cache, 'set'), undefined, [css, sheet])
+                ),
+            ],
+            true
+        )
+    );
+
+    const arrow = factory.createArrowFunction(
+        undefined,
+        undefined,
+        [factory.createParameterDeclaration(undefined, undefined, css)],
+        undefined,
+        factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+        factory.createBlock([cacheDecl, sheetDecl, ifMissing, factory.createReturnStatement(sheet)], true)
+    );
+
+    return factory.createVariableStatement(
+        undefined,
+        factory.createVariableDeclarationList(
+            [factory.createVariableDeclaration(factory.createIdentifier(HELPER_NAME), undefined, undefined, arrow)],
+            ts.NodeFlags.Const
+        )
+    );
+}
+
+/**
+ * Lowers a CSS import into a shared, deduped constructable stylesheet so every
+ * component instance — and every *module* — shares one parse instead of an
+ * inline `<style>`:
  *
  * ```ts
  * import styles from './styles.css';              // #9: bare CSS import
  * import sheet from './styles.css' with { type: 'css' };  // #10: CSS Module Script syntax
  * ```
  *
- * both become, at the top of the emitted module:
+ * become, in the emitted module:
  *
  * ```js
- * const styles = new CSSStyleSheet();
- * styles.replaceSync("…css…");
+ * const __baniraAdoptStyles = (css) => { … cache on globalThis … };
+ * const styles = __baniraAdoptStyles("…css…");
  * ```
  *
- * The binding is module-level, so all instances that `adoptedStyleSheets = [styles]`
- * share the one sheet. `adoptedStyleSheets` is Baseline widely available; the CSS
- * Module Script `with { type: 'css' }` syntax is not (Safari), which is why even
- * the standard form is shimmed here.
+ * The binding is module-level (all instances that `adoptedStyleSheets = [styles]`
+ * share the one sheet), and the helper's cache lives on `globalThis` keyed by the
+ * CSS text, so two different modules importing the same stylesheet adopt the
+ * **same** `CSSStyleSheet` — the documented `adoptedStyleSheets` dedupe win.
+ * `adoptedStyleSheets` is Baseline widely available; the CSS Module Script
+ * `with { type: 'css' }` syntax is not (Safari), which is why even the standard
+ * form is shimmed here.
  *
  * Imports with no default binding, or whose CSS file can't be read, are left as-is.
  */
@@ -59,16 +172,19 @@ export function lowerCssImports(options: CssLoweringOptions = {}): ts.Transforme
         for (const statement of sourceFile.statements) {
             const lowered = tryLower(statement);
             if (lowered) {
-                statements.push(...lowered);
+                statements.push(lowered);
                 changed = true;
             } else {
                 statements.push(statement);
             }
         }
 
+        // Prepend the shared-cache helper once, ahead of its first use.
+        if (changed) statements.unshift(helperStatement(factory));
+
         return changed ? factory.updateSourceFile(sourceFile, statements) : sourceFile;
 
-        function tryLower(statement: ts.Statement): ts.Statement[] | undefined {
+        function tryLower(statement: ts.Statement): ts.Statement | undefined {
             if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) return undefined;
             const specifier = statement.moduleSpecifier.text;
             if (!isCssSpecifier(specifier)) return undefined;
@@ -79,8 +195,8 @@ export function lowerCssImports(options: CssLoweringOptions = {}): ts.Transforme
             const css = readCss(resolve(baseDir, specifier));
             if (css === undefined) return undefined;
 
-            // const <name> = new CSSStyleSheet();
-            const sheetConst = factory.createVariableStatement(
+            // const <name> = __baniraAdoptStyles("…css…");
+            return factory.createVariableStatement(
                 undefined,
                 factory.createVariableDeclarationList(
                     [
@@ -88,23 +204,14 @@ export function lowerCssImports(options: CssLoweringOptions = {}): ts.Transforme
                             name,
                             undefined,
                             undefined,
-                            factory.createNewExpression(factory.createIdentifier('CSSStyleSheet'), undefined, [])
+                            factory.createCallExpression(factory.createIdentifier(HELPER_NAME), undefined, [
+                                factory.createStringLiteral(css),
+                            ])
                         ),
                     ],
                     ts.NodeFlags.Const
                 )
             );
-
-            // <name>.replaceSync("…css…");
-            const replace = factory.createExpressionStatement(
-                factory.createCallExpression(
-                    factory.createPropertyAccessExpression(factory.createIdentifier(name.text), 'replaceSync'),
-                    undefined,
-                    [factory.createStringLiteral(css)]
-                )
-            );
-
-            return [sheetConst, replace];
         }
     };
 }
