@@ -15,7 +15,7 @@ export interface CompileOptions {
    * version declared in `package.json`.
    */
   importMap?: boolean | string;
-  /** Run inlined CSS through lightningcss (flatten @import, lower nesting, minify). Optional dep. */
+  /** Run inlined CSS through lightningcss (lower nesting, minify). Optional dep. */
   optimizeCss?: boolean;
 }
 

@@ -12,8 +12,9 @@ export interface CssLoweringOptions {
     readCss?: (absolutePath: string) => string | undefined;
     /**
      * Run the inlined CSS through [lightningcss](https://lightningcss.dev/)
-     * before `replaceSync` — flatten `@import`, lower CSS nesting for the target
-     * browsers, and minify (#10). lightningcss is an optional dependency, loaded
+     * before `replaceSync` — lower CSS nesting for the target browsers and
+     * minify (#10). (`@import` is left as-is: this uses lightningcss `transform`,
+     * which does not resolve/bundle imports.) lightningcss is an optional dependency, loaded
      * lazily (like Playwright/axe); a clear error is thrown if it's missing.
      */
     optimizeCss?: boolean;

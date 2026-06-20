@@ -87,7 +87,7 @@ Compile one or more TypeScript files with banira's compiler defaults.
 | `-p, --project <path>` | Path to a `tsconfig.json` whose options override the defaults |
 | `-o, --output <path>` | Directory to write the emitted JavaScript to |
 | `--import-map [path]` | Also emit an import map for the components' bare imports (see below) |
-| `--optimize-css` | Run inlined CSS through [lightningcss](https://lightningcss.dev/) (flatten `@import`, lower nesting, minify) before it's adopted |
+| `--optimize-css` | Run inlined CSS through [lightningcss](https://lightningcss.dev/) (lower nesting, minify) before it's adopted |
 
 ```bash
 banira compile src/my-button.ts -o dist
