@@ -137,9 +137,12 @@ export async function createPrerenderer(files: string[], options: PrerendererOpt
         .map((d) => d.tagName)
         .filter((t): t is string => Boolean(t));
 
+    // `runScripts: 'dangerously'` executes the inline component scripts (required
+    // to register the elements). External resources are deliberately NOT loaded
+    // (no `resources: 'usable'`) so a component can't trigger outbound requests
+    // during prerender (SSRF). See security-findings #5.
     const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
         runScripts: 'dangerously',
-        resources: 'usable',
     });
     const { window } = dom;
     const { document } = window;

@@ -133,10 +133,14 @@ export class TestHelper {
      * Default JSDOM options for component testing
      * @private
      */
+    // `runScripts: "dangerously"` is required to execute the injected component
+    // script (it's inline, so it runs regardless of `resources`). `resources` is
+    // deliberately left at the default (do NOT fetch external <script>/<link>/<img>)
+    // so mounting a component can't make outbound requests (SSRF). Pass
+    // `{ resources: 'usable' }` to the constructor to opt back in. See security-findings #5.
     private jsdomOptions: ConstructorOptions = {
         url: "http://localhost",
-        runScripts: "dangerously",
-        resources: 'usable'
+        runScripts: "dangerously"
     };
 
     /**
