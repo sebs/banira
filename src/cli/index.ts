@@ -11,6 +11,7 @@ import { tokens } from './actions/tokens.js';
 import { tokensCss } from './actions/tokens-css.js';
 import { theme } from './actions/theme.js';
 import { stories } from './actions/stories.js';
+import { lint } from './actions/lint.js';
 import { editorData } from './actions/editor-data.js';
 import { types } from './actions/types.js';
 import { diff } from './actions/diff.js';
@@ -183,6 +184,15 @@ program
       process.exit(1);
     }
   });
+
+program
+  .command('lint')
+  .description('Audit components against the Gold Standard Checklist + documentation coverage')
+  .argument('<files...>', 'Component source files to lint')
+  .option('--json', 'Emit findings as JSON')
+  .option('--strict', 'Treat warnings as errors (exit 1 if any finding)')
+  .option('--rules <ids>', 'Comma-separated rule ids to run (default: all)')
+  .action((files, options) => lint(files, { json: options.json, strict: options.strict, rules: options.rules }));
 
 program
   .command('test')

@@ -62,6 +62,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
 | linkManifestField | Point a package.json's `customElements` field at a generated manifest |
 | checkReflection / checkSlots | Smoke-test add-ons: attribute↔property reflection round-trip and `@slot` contract assertions |
+| lintManifest | Audit components against the Gold Standard Checklist + documentation coverage (`banira lint`) |
 | diffManifests | Diffs two manifests and suggests a semver release type |
 | createPrerenderer / declarativeShadowDom | SSR primitive: register components once, then `renderToString(tag, { attributes, children })` to Declarative Shadow DOM |
 | createEleventyPlugin | Eleventy plugin that prerenders matching component tags to DSD at build time |
@@ -304,6 +305,32 @@ directory.
 
 ```bash
 banira dev src/my-button.ts -o demo/dist -r demo
+```
+
+### `banira lint <files...>`
+
+Audit each component against a subset of the
+[Gold Standard Checklist for Web Components](https://github.com/webcomponents/gold-standard/wiki)
+plus documentation-coverage of its public surface. banira mounts each element in
+JSDOM and combines the shadow probe with manifest data to run independent,
+id'd rules: `reflection` (attributes reflect to/from their property),
+`host-overridable` (no `!important` on `:host`), and the doc-coverage rules
+`undocumented-event` / `undocumented-attribute` / `undocumented-part` /
+`undocumented-slot` (dispatched events, observed attributes, exposed `part="…"`
+elements, and rendered `<slot>`s that lack `@fires` / jsdoc / `@csspart` /
+`@slot`).
+
+| Option | Description |
+|---|---|
+| `--strict` | Treat warnings as errors and exit non-zero if any finding (for CI) |
+| `--rules <ids>` | Comma-separated rule ids to run (default: all) |
+| `--json` | Emit findings as JSON |
+
+Findings are warnings by default (exit 0); `--strict` makes them fail the build.
+
+```bash
+banira lint src/*.ts
+banira lint src/*.ts --strict
 ```
 
 ### `banira test <files...>`

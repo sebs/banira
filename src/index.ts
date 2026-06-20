@@ -68,6 +68,8 @@ export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-d
 export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
 export type { SmokeResult, SmokeOptions, ReflectionIssue, SlotIssue } from './smoke-test.js';
 export { checkReflection, checkSlots } from './smoke-checks.js';
+export { lintManifest, formatLintResults, LINT_RULES } from './lint.js';
+export type { LintIssue, LintResult, LintOptions, LintSeverity } from './lint.js';
 export { scaffoldComponent, scaffoldTheme } from './scaffold.js';
 export type { ScaffoldFile, ScaffoldOptions, ThemeScaffoldOptions } from './scaffold.js';
 export {
