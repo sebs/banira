@@ -238,13 +238,32 @@ function cssComment(description: string): string {
 }
 
 /**
+ * A token value safe to emit as a CSS declaration: none of the structural CSS
+ * characters (`{` `}` `;`) — which would break out of the declaration and inject
+ * arbitrary rules — nor `<` (which could break out of a `<style>` if the sheet is
+ * inlined). Composite/alias values are already normalized by `parseDesignTokens`.
+ */
+function isSafeTokenValue(value: string): boolean {
+    return !/[{};<]/.test(value);
+}
+
+/**
  * Emits a CSS rule declaring the imported tokens as custom properties, e.g.
  * `:root { --color-primary: #36f; }`. Descriptions become trailing comments.
+ * Tokens whose value contains CSS-structural characters are dropped (with a
+ * comment) rather than allowed to inject rules; an unsafe `selector` is rejected.
  */
 export function designTokensToCss(tokens: ImportedToken[], options: { selector?: string } = {}): string {
     const selector = options.selector ?? ':root';
+    if (/[{}<>]/.test(selector)) {
+        throw new Error(`Unsafe CSS selector: ${JSON.stringify(selector)}`);
+    }
     const body = tokens
-        .map((t) => `  ${t.name}: ${t.value};${t.description ? cssComment(t.description) : ''}`)
+        .map((t) =>
+            isSafeTokenValue(t.value)
+                ? `  ${t.name}: ${t.value};${t.description ? cssComment(t.description) : ''}`
+                : `  /* ${t.name}: dropped — unsafe value */`
+        )
         .join('\n');
     return body ? `${selector} {\n${body}\n}\n` : `${selector} {\n}\n`;
 }
