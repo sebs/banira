@@ -7,6 +7,8 @@ import { tmpdir } from 'os';
 import {
     smokeTestManifest,
     scaffoldComponent,
+    scaffoldTheme,
+    parseDesignTokens,
     prerenderManifest,
     declarativeShadowDom,
     ManifestGenerator,
@@ -103,6 +105,56 @@ describe('scaffoldComponent (Tier 5)', () => {
         const pkg = new ManifestGenerator([resolve(dir, 'role-widget.ts')]).generate();
         const decl = pkg.modules[0]!.declarations[0]!;
         assert.strictEqual((decl as { role?: string }).role, 'checkbox');
+    });
+});
+
+describe('scaffoldTheme (issue #50)', () => {
+    it('generates a theme contract, a toggle component, and a demo', () => {
+        const files = scaffoldTheme();
+        assert.deepStrictEqual(files.map((f) => f.path).sort(), ['index.html', 'theme-toggle.ts', 'theme.css']);
+
+        const css = files.find((f) => f.path === 'theme.css')!.content;
+        assert.match(css, /:root \{/);
+        assert.match(css, /\[data-theme="dark"\] \{/);
+        assert.match(css, /@media \(prefers-color-scheme: dark\)/);
+        // explicit light choice wins over the OS preference
+        assert.match(css, /:root:not\(\[data-theme="light"\]\)/);
+
+        const component = files.find((f) => f.path === 'theme-toggle.ts')!.content;
+        assert.match(component, /class ThemeToggle extends HTMLElement/);
+        assert.match(component, /document\.documentElement\.setAttribute\('data-theme'/);
+        assert.match(component, /localStorage/);
+        assert.match(component, /prefers-color-scheme: dark/);
+
+        const demo = files.find((f) => f.path === 'index.html')!.content;
+        assert.match(demo, /<theme-toggle/);
+        assert.match(demo, /href="\.\/theme\.css"/);
+    });
+
+    it('honors a custom tag name', () => {
+        const files = scaffoldTheme({ tagName: 'color-scheme-switch' });
+        assert.ok(files.some((f) => f.path === 'color-scheme-switch.ts'));
+        assert.match(files.find((f) => f.path === 'index.html')!.content, /<color-scheme-switch/);
+    });
+
+    it('rejects an invalid tag name', () => {
+        assert.throws(() => scaffoldTheme({ tagName: 'NoHyphen' }), /not a valid custom element name/);
+    });
+
+    it('seeds the :root token set from a DTCG document', () => {
+        const tokens = parseDesignTokens({ color: { $type: 'color', bg: { $value: '#ffffff' } } });
+        const css = scaffoldTheme({ tokens }).find((f) => f.path === 'theme.css')!.content;
+        assert.match(css, /--color-bg: #ffffff;/);
+    });
+
+    it('the toggle component passes its own smoke test', async () => {
+        const dir = mkdtempSync(resolve(tmpdir(), 'banira-theme-'));
+        for (const file of scaffoldTheme()) {
+            writeFileSync(resolve(dir, file.path), file.content, 'utf8');
+        }
+        const results = await smokeTestManifest([resolve(dir, 'theme-toggle.ts')]);
+        assert.strictEqual(results.length, 1);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
     });
 });
 

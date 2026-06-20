@@ -2,7 +2,15 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { ManifestGenerator, collectDesignTokens, designTokensToMarkdown } from '../src/index.js';
+import {
+    ManifestGenerator,
+    collectDesignTokens,
+    designTokensToMarkdown,
+    parseDesignTokens,
+    designTokensToCss,
+    tokensToCssProperties,
+    enrichManifestCssProperties,
+} from '../src/index.js';
 import type { Package } from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -56,5 +64,100 @@ describe('design tokens (issue #11)', () => {
         const md = designTokensToMarkdown(empty);
         assert.match(md, /# Design Tokens/);
         assert.match(md, /No CSS custom properties/);
+    });
+});
+
+describe('DTCG import (issue #49)', () => {
+    const doc = {
+        color: {
+            $type: 'color',
+            primary: { $value: '#3366ff', $description: 'Brand primary' },
+            accent: { $value: '{color.primary}' },
+        },
+        space: {
+            $type: 'dimension',
+            sm: { $value: '4px' },
+            md: { $value: { value: 8, unit: 'px' } },
+        },
+        shadow: {
+            // composite token — not expressible as a single CSS value, should be skipped
+            card: { $type: 'shadow', $value: { offsetX: '0', offsetY: '2px', blur: '4px', color: '#0003' } },
+        },
+    };
+
+    it('flattens groups into dashed custom-property names and inherits $type', () => {
+        const tokens = parseDesignTokens(doc);
+        const primary = tokens.find((t) => t.path === 'color.primary');
+        assert.strictEqual(primary?.name, '--color-primary');
+        assert.strictEqual(primary?.value, '#3366ff');
+        assert.strictEqual(primary?.type, 'color');
+        assert.strictEqual(primary?.description, 'Brand primary');
+    });
+
+    it('resolves {alias} references to the target value', () => {
+        const tokens = parseDesignTokens(doc);
+        assert.strictEqual(tokens.find((t) => t.path === 'color.accent')?.value, '#3366ff');
+    });
+
+    it('renders dimension objects as value+unit and skips composite tokens', () => {
+        const tokens = parseDesignTokens(doc);
+        assert.strictEqual(tokens.find((t) => t.path === 'space.md')?.value, '8px');
+        assert.strictEqual(
+            tokens.find((t) => t.path.startsWith('shadow')),
+            undefined
+        );
+    });
+
+    it('throws on a circular reference', () => {
+        assert.throws(
+            () => parseDesignTokens({ a: { $value: '{b}' }, b: { $value: '{a}' } }),
+            /circular token reference/
+        );
+    });
+
+    it('emits a :root stylesheet (selector overridable)', () => {
+        const css = designTokensToCss(parseDesignTokens(doc));
+        assert.match(css, /^:root \{/);
+        assert.match(css, /--color-primary: #3366ff;/);
+        assert.match(css, /--space-md: 8px;/);
+        const scoped = designTokensToCss(parseDesignTokens(doc), { selector: '.theme' });
+        assert.match(scoped, /^\.theme \{/);
+    });
+
+    it('maps tokens to manifest cssProperties', () => {
+        const props = tokensToCssProperties(parseDesignTokens(doc));
+        const primary = props.find((p) => p.name === '--color-primary');
+        assert.strictEqual(primary?.default, '#3366ff');
+        assert.strictEqual(primary?.description, 'Brand primary');
+    });
+
+    it('enriches matching component cssProperties in place, leaving authored values', () => {
+        const pkg: Package = {
+            schemaVersion: '2.1.0',
+            modules: [
+                {
+                    kind: 'javascript-module',
+                    path: 'x.js',
+                    declarations: [
+                        {
+                            kind: 'class',
+                            name: 'X',
+                            customElement: true,
+                            tagName: 'x-el',
+                            cssProperties: [
+                                { name: '--color-primary' }, // no default -> filled from tokens
+                                { name: '--space-sm', default: '0.25rem' }, // authored default -> kept
+                            ],
+                        },
+                    ],
+                    exports: [],
+                },
+            ],
+        };
+        const enriched = enrichManifestCssProperties(pkg, parseDesignTokens(doc));
+        assert.strictEqual(enriched, 1);
+        const props = pkg.modules[0]!.declarations[0]!.cssProperties!;
+        assert.strictEqual(props.find((p) => p.name === '--color-primary')?.default, '#3366ff');
+        assert.strictEqual(props.find((p) => p.name === '--space-sm')?.default, '0.25rem');
     });
 });

@@ -1,3 +1,5 @@
+import { designTokensToCss, type ImportedToken } from './design-tokens.js';
+
 export interface ScaffoldFile {
     /** Path relative to the target directory. */
     path: string;
@@ -351,5 +353,246 @@ export function scaffoldComponent(tagName: string, options: ScaffoldOptions = {}
     return [
         { path: `${tagName}.ts`, content: source },
         { path: 'index.html', content: demoSource(tagName, variant) },
+    ];
+}
+
+// ---------------------------------------------------------------------------
+// Theme contract + <theme-toggle> scaffold (#29)
+// ---------------------------------------------------------------------------
+
+export interface ThemeScaffoldOptions {
+    /** Tag name for the theme-switch component (default `theme-toggle`). */
+    tagName?: string;
+    /**
+     * Seed the light `:root` token set from these imported DTCG tokens (see
+     * `parseDesignTokens`) instead of the built-in default palette. The dark
+     * block is then scaffolded as guidance for you to fill in, since a single
+     * token document describes one theme.
+     */
+    tokens?: ImportedToken[];
+}
+
+/** Default light theme palette — semantic color tokens plus a few non-color basics. */
+const LIGHT_PALETTE: ReadonlyArray<readonly [string, string]> = [
+    ['--color-bg', '#ffffff'],
+    ['--color-surface', '#f5f5f7'],
+    ['--color-fg', '#1a1a1a'],
+    ['--color-muted', '#6b7280'],
+    ['--color-primary', '#3366ff'],
+    ['--color-border', '#e5e7eb'],
+];
+
+/** Dark overrides for the color tokens (the contract's other half). */
+const DARK_PALETTE: ReadonlyArray<readonly [string, string]> = [
+    ['--color-bg', '#0b0d12'],
+    ['--color-surface', '#161a22'],
+    ['--color-fg', '#f3f4f6'],
+    ['--color-muted', '#9ca3af'],
+    ['--color-primary', '#6699ff'],
+    ['--color-border', '#2a2f3a'],
+];
+
+/** Theme-independent tokens, declared once on `:root`. */
+const STATIC_TOKENS: ReadonlyArray<readonly [string, string]> = [
+    ['--space-md', '1rem'],
+    ['--radius-md', '8px'],
+    ['--font-sans', 'system-ui, -apple-system, sans-serif'],
+];
+
+function varsBlock(entries: ReadonlyArray<readonly [string, string]>, indent: string): string {
+    return entries.map(([name, value]) => `${indent}${name}: ${value};`).join('\n');
+}
+
+const THEME_HEADER = `/* Theme contract — light is the default. Dark applies when the user selects it
+   (data-theme="dark") or, with no explicit choice, when the OS prefers dark.
+   An explicit data-theme="light" always wins over the OS preference. */`;
+
+function themeCss(tokens?: ImportedToken[]): string {
+    if (tokens && tokens.length > 0) {
+        const root = designTokensToCss(tokens, { selector: ':root' }).trimEnd();
+        const darkGuidance = tokens.map((t) => `    /* ${t.name}: <dark value>; */`).join('\n');
+        return `${THEME_HEADER}
+${root}
+
+[data-theme="dark"] {
+    /* Override the tokens above with their dark values, e.g.: */
+${darkGuidance}
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Repeat the [data-theme="dark"] overrides here. */
+  }
+}
+`;
+    }
+
+    const light = varsBlock([...LIGHT_PALETTE, ...STATIC_TOKENS], '  ');
+    const dark = varsBlock(DARK_PALETTE, '  ');
+    const darkNested = varsBlock(DARK_PALETTE, '    ');
+    return `${THEME_HEADER}
+:root {
+${light}
+}
+
+[data-theme="dark"] {
+${dark}
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+${darkNested}
+  }
+}
+`;
+}
+
+function themeToggleSource(tagName: string, className: string): string {
+    return `/**
+ * ${className} — a <${tagName}> that switches the document between light and
+ * dark themes by setting \`data-theme\` on the root <html> element, persisting
+ * the choice in localStorage so it survives reloads. With no stored choice the
+ * OS preference (\`prefers-color-scheme\`) wins, matching theme.css.
+ *
+ * Pair it with the generated theme.css and add this to your <head> to apply the
+ * stored theme before first paint (no flash):
+ *   <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+ *
+ * @summary A light/dark theme switch.
+ * @csspart button - The toggle button.
+ * @fires ${tagName}-change - Fired after the theme changes, with \`detail: { theme: 'light' | 'dark' }\`.
+ */
+type Theme = 'light' | 'dark';
+const STORAGE_KEY = 'theme';
+
+class ${className} extends HTMLElement {
+    private readonly button: HTMLButtonElement;
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.innerHTML = \`
+            <style>
+                button {
+                    font: inherit;
+                    cursor: pointer;
+                    color: var(--color-fg, currentColor);
+                    background: var(--color-surface, transparent);
+                    border: 1px solid var(--color-border, currentColor);
+                    border-radius: var(--radius-md, 6px);
+                    padding: 0.4em 0.8em;
+                }
+            </style>
+            <button part="button" type="button" aria-pressed="false"><slot>Toggle theme</slot></button>
+        \`;
+        this.button = this.shadowRoot!.querySelector('button')!;
+        this.button.addEventListener('click', () => this.toggle());
+    }
+
+    connectedCallback(): void {
+        this.sync();
+    }
+
+    /** The active theme: an explicit stored choice, otherwise the OS preference. */
+    get theme(): Theme {
+        const stored = this.read();
+        if (stored === 'light' || stored === 'dark') return stored;
+        const mql = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+        return mql && mql.matches ? 'dark' : 'light';
+    }
+
+    set theme(next: Theme) {
+        document.documentElement.setAttribute('data-theme', next);
+        try {
+            globalThis.localStorage?.setItem(STORAGE_KEY, next);
+        } catch {
+            // storage may be unavailable (private mode, sandboxed iframe) — ignore.
+        }
+        this.sync();
+        this.dispatchEvent(new CustomEvent('${tagName}-change', { detail: { theme: next }, bubbles: true }));
+    }
+
+    private toggle(): void {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+    }
+
+    private read(): string | null {
+        try {
+            return globalThis.localStorage?.getItem(STORAGE_KEY) ?? null;
+        } catch {
+            return null;
+        }
+    }
+
+    private sync(): void {
+        const dark = this.theme === 'dark';
+        this.button.setAttribute('aria-pressed', String(dark));
+        this.button.title = dark ? 'Switch to light theme' : 'Switch to dark theme';
+    }
+}
+
+customElements.define('${tagName}', ${className});
+`;
+}
+
+function themeDemoSource(tagName: string): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Theme demo</title>
+    <!-- Apply the stored theme before first paint to avoid a flash. -->
+    <script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+    <link rel="stylesheet" href="./theme.css" />
+    <script type="module" src="./dist/${tagName}.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: var(--space-md, 1rem);
+            background: var(--color-bg, #fff);
+            color: var(--color-fg, #000);
+            font-family: var(--font-sans, system-ui, sans-serif);
+        }
+        .card {
+            margin-top: var(--space-md, 1rem);
+            padding: var(--space-md, 1rem);
+            background: var(--color-surface, #f5f5f7);
+            border: 1px solid var(--color-border, #ddd);
+            border-radius: var(--radius-md, 8px);
+        }
+        a { color: var(--color-primary, #3366ff); }
+    </style>
+</head>
+<body>
+    <${tagName}>Toggle theme</${tagName}>
+    <div class="card">
+        <h1>Themed content</h1>
+        <p>This card is styled entirely with theme tokens. <a href="#">A link</a> uses the primary color.</p>
+    </div>
+</body>
+</html>
+`;
+}
+
+/**
+ * Generates a theming starter: a `theme.css` light/dark contract (token sets via
+ * custom properties, switched by `data-theme` and `prefers-color-scheme`), a
+ * `<theme-toggle>` component that flips `data-theme` and persists the choice, and
+ * a demo page wiring them together. Pass `{ tokens }` (from `parseDesignTokens`)
+ * to seed the light `:root` set from a DTCG document.
+ *
+ * @throws Error if `tagName` is not a valid custom element name.
+ */
+export function scaffoldTheme(options: ThemeScaffoldOptions = {}): ScaffoldFile[] {
+    const tagName = options.tagName ?? 'theme-toggle';
+    if (!isCustomElementName(tagName)) {
+        throw new Error(`"${tagName}" is not a valid custom element name (must be lowercase and contain a hyphen)`);
+    }
+    const className = classNameFor(tagName);
+    return [
+        { path: 'theme.css', content: themeCss(options.tokens) },
+        { path: `${tagName}.ts`, content: themeToggleSource(tagName, className) },
+        { path: 'index.html', content: themeDemoSource(tagName) },
     ];
 }

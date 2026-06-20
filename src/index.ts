@@ -44,6 +44,13 @@ export { manifestToMarkdown } from './manifest-markdown.js';
 export type { MarkdownOptions } from './manifest-markdown.js';
 export { collectDesignTokens, designTokensToMarkdown } from './design-tokens.js';
 export type { DesignToken, ComponentTokens, DesignTokensOptions } from './design-tokens.js';
+export {
+    parseDesignTokens,
+    designTokensToCss,
+    tokensToCssProperties,
+    enrichManifestCssProperties,
+} from './design-tokens.js';
+export type { ImportedToken } from './design-tokens.js';
 export { validateManifest, formatValidationIssues } from './manifest-validate.js';
 export type { ValidationIssue } from './manifest-validate.js';
 export { validateManifestSchema, SchemaValidatorUnavailableError } from './manifest-schema.js';
@@ -56,8 +63,8 @@ export { diffManifests, formatManifestDiff } from './manifest-diff.js';
 export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-diff.js';
 export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
 export type { SmokeResult, SmokeOptions } from './smoke-test.js';
-export { scaffoldComponent } from './scaffold.js';
-export type { ScaffoldFile, ScaffoldOptions } from './scaffold.js';
+export { scaffoldComponent, scaffoldTheme } from './scaffold.js';
+export type { ScaffoldFile, ScaffoldOptions, ThemeScaffoldOptions } from './scaffold.js';
 export {
     supportsScopedRegistries,
     createScopedRegistry,

@@ -60,6 +60,9 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | validateManifest | Structurally validates a manifest against the CEM 2.1.0 shape |
 | validateManifestSchema | Validates a manifest against the official CEM JSON Schema (requires the optional `ajv` dependency) |
 | diffManifests | Diffs two manifests and suggests a semver release type |
+| parseDesignTokens / designTokensToCss | Parse a W3C Design Tokens (DTCG) document and emit `:root` CSS custom properties (aliases resolved) |
+| tokensToCssProperties / enrichManifestCssProperties | Map imported tokens to manifest `cssProperties`, or backfill missing defaults/descriptions on matching component tokens |
+| scaffoldTheme | Generate a light/dark theme contract (`theme.css`), a `<theme-toggle>` component, and a demo page |
 
 ## CLI
 
@@ -267,6 +270,37 @@ unless `--force` is given.
 banira init my-button src
 # a checkbox-role toggle that exposes its semantics via ElementInternals
 banira init my-toggle src --aria
+```
+
+### `banira tokens-css <tokens.json>`
+
+Compile a [W3C Design Tokens (DTCG)](https://tr.designtokens.org/format/)
+document into a `:root` CSS custom-property stylesheet. Groups become dashed
+name segments (`color.primary` → `--color-primary`), `$type` is inherited from
+parent groups, and `{alias}` references are resolved. Writes to stdout unless
+`-o` is given; `--selector` overrides `:root`.
+
+```bash
+banira tokens-css design.tokens.json -o tokens.css
+```
+
+### `banira theme [dir]`
+
+Scaffold a theming starter: a `theme.css` light/dark contract (token sets via
+custom properties, switched by `data-theme` and `prefers-color-scheme`), a
+`<theme-toggle>` component that flips `data-theme` and persists the choice, and
+a demo page. With `--tokens <file>` the light `:root` set is seeded from a DTCG
+document. Existing files are left untouched unless `--force` is given.
+
+| Option | Description |
+|---|---|
+| `--force` | Overwrite existing files |
+| `--tag <tag-name>` | Tag name for the toggle component (default `theme-toggle`) |
+| `--tokens <tokens.json>` | Seed the light `:root` token set from a DTCG document |
+
+```bash
+banira theme src/theme
+banira theme src/theme --tokens design.tokens.json --tag color-scheme-switch
 ```
 
 ### `banira prerender <files...>`

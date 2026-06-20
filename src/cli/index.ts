@@ -8,6 +8,8 @@ import { compile } from './actions/compile.js';
 import { doc } from './actions/doc.js';
 import { manifest } from './actions/manifest.js';
 import { tokens } from './actions/tokens.js';
+import { tokensCss } from './actions/tokens-css.js';
+import { theme } from './actions/theme.js';
 import { editorData } from './actions/editor-data.js';
 import { types } from './actions/types.js';
 import { diff } from './actions/diff.js';
@@ -64,6 +66,23 @@ program
   .option('-o, --output <path>', 'Write the document to a file instead of stdout')
   .option('--title <title>', 'Document title (default: Design Tokens)')
   .action((files, options) => tokens(files, { output: options.output, title: options.title }));
+
+program
+  .command('tokens-css')
+  .description('Compile a W3C Design Tokens (DTCG) tokens.json into :root CSS custom properties')
+  .argument('<tokens.json>', 'DTCG design tokens document')
+  .option('-o, --output <path>', 'Write the stylesheet to a file instead of stdout')
+  .option('--selector <selector>', 'CSS selector for the custom properties (default :root)')
+  .action((file, options) => tokensCss(file, { output: options.output, selector: options.selector }));
+
+program
+  .command('theme')
+  .description('Scaffold a light/dark theme contract, a <theme-toggle> component, and a demo page')
+  .argument('[dir]', 'Directory to scaffold into', '.')
+  .option('--force', 'Overwrite existing files')
+  .option('--tag <tag-name>', 'Tag name for the toggle component (default theme-toggle)')
+  .option('--tokens <tokens.json>', 'Seed the light :root token set from a DTCG document')
+  .action((dir, options) => theme(dir, { force: options.force, tag: options.tag, tokens: options.tokens }));
 
 program
   .command('editor-data')
