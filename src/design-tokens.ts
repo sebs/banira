@@ -132,12 +132,18 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Upper bound on token-group nesting, so a pathological document can't overflow the stack. */
+const MAX_TOKEN_DEPTH = 100;
+
 /**
  * Walks a DTCG document collecting every token (a node carrying `$value`),
  * tracking the dotted path and the `$type` inherited from ancestor groups.
  */
 function collectRawTokens(node: unknown, path: string[], inheritedType: string | undefined, out: RawToken[]): void {
     if (!isPlainObject(node)) return;
+    if (path.length > MAX_TOKEN_DEPTH) {
+        throw new Error(`DTCG token nesting too deep (> ${MAX_TOKEN_DEPTH} levels)`);
+    }
     const type = typeof node.$type === 'string' ? node.$type : inheritedType;
     if ('$value' in node) {
         const raw: RawToken = { path, rawValue: node.$value };
@@ -184,6 +190,7 @@ function resolveTokenValue(
 ): string | undefined {
     if (memo.has(pathStr)) return memo.get(pathStr);
     if (stack.has(pathStr)) throw new Error(`circular token reference at {${pathStr}}`);
+    if (stack.size > MAX_TOKEN_DEPTH) throw new Error(`token alias chain too deep (> ${MAX_TOKEN_DEPTH})`);
     const raw = byPath.get(pathStr);
     if (!raw) return undefined; // dangling reference
 
