@@ -42,6 +42,16 @@ export function packageNameOf(specifier: string): string {
     return parts[0]!;
 }
 
+/**
+ * A valid npm package name: an optional `@scope/` then url-safe segment chars.
+ * Rejects names with whitespace/control chars or an embedded `@version`/tag — so
+ * a forged specifier like `lit@evil-tag` can't pin the browser to an
+ * attacker-chosen version on the CDN.
+ */
+export function isValidPackageName(name: string): boolean {
+    return /^(?:@[a-z0-9._~-]+\/)?[a-z0-9._~-]+$/i.test(name);
+}
+
 /** Extracts every static/dynamic module specifier from a source file's text. */
 export function scanSpecifiers(source: string, fileName = 'module.ts'): string[] {
     const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
@@ -137,7 +147,9 @@ function versionFor(pkg: string, packageJson?: PackageJsonLike): string | undefi
  */
 export function generateImportMap(specifiers: string[], options: ImportMapOptions = {}): ImportMap {
     const cdn = (options.cdn ?? 'https://esm.sh').replace(/\/$/, '');
-    const packages = [...new Set(specifiers.filter(isBareSpecifier).map(packageNameOf))].sort();
+    const packages = [...new Set(specifiers.filter(isBareSpecifier).map(packageNameOf))]
+        .filter(isValidPackageName) // skip forged/malformed names rather than build a CDN URL from them
+        .sort();
 
     const imports: Record<string, string> = {};
     for (const pkg of packages) {
