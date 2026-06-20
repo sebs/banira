@@ -53,6 +53,13 @@ export function linkManifestField(manifestPath: string, startDir?: string): Link
     const pkg = JSON.parse(raw) as Record<string, unknown>;
     const field = relative(dirname(packageJsonPath), absManifest).split(sep).join('/');
 
+    // The manifest must live inside the package it's linked from: a field that
+    // escapes the package root with `..` would point a published `customElements`
+    // entry at an out-of-package file.
+    if (field.startsWith('../') || field === '..') {
+        throw new Error(`Manifest ${absManifest} is outside the package at ${dirname(packageJsonPath)}`);
+    }
+
     if (pkg.customElements === field) {
         return { packageJsonPath, field, changed: false };
     }
