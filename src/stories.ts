@@ -4,6 +4,8 @@ export interface StoriesOptions {
     /**
      * Module specifier imported at the top of each story so the element registers
      * itself. Defaults to `./<tag>.js`. `{tag}` is substituted with the tag name.
+     * Treated as trusted build config — it becomes the generated `import` target,
+     * so don't derive it from untrusted input (security-findings #29).
      */
     importPath?: string;
 }
@@ -56,6 +58,11 @@ export function storiesFileName(decl: CustomElementDeclaration): string {
  * element's attributes (string-literal unions become `select` options) and
  * events (mapped to Storybook actions), plus a default story that applies the
  * args as attributes. Zero hand-written story code required.
+ *
+ * All interpolated identifiers go through `JSON.stringify`, so the output is safe
+ * as a standalone `.js` file even for unusual tag/attribute/event names. (Do not
+ * inline the result into an HTML `<script>` — a name containing `</script>` would
+ * then break out; security-findings #26.)
  */
 export function toStories(decl: CustomElementDeclaration, options: StoriesOptions = {}): string {
     const tag = decl.tagName!;

@@ -54,6 +54,8 @@ function makeCssOptimizer(options: CssLoweringOptions): ((css: string, filename:
     return (css: string, filename: string): string => {
         if (!transform) {
             // A non-literal specifier keeps TypeScript from requiring the optional dep at build time.
+            // Resolved by normal node resolution from banira's location; in a project with a
+            // closer `lightningcss` in node_modules that copy would be loaded (security-findings #24).
             const specifier = 'lightningcss';
             try {
                 transform = (createRequire(import.meta.url)(specifier) as any).transform;

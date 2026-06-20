@@ -91,9 +91,13 @@ export function declarativeShadowDom(
 
 /** Options for a single {@link Prerenderer.renderToString} call. */
 export interface RenderToStringOptions {
-    /** Attributes to set on the host element. */
+    /** Attributes to set on the host element (names validated, values HTML-escaped on output). */
     attributes?: Record<string, string>;
-    /** Light-DOM children (HTML) placed inside the host, projected into slots. */
+    /**
+     * Light-DOM children placed inside the host, projected into slots. This is
+     * **raw HTML**, inserted verbatim — escape any untrusted/user-supplied text
+     * before passing it here, or it becomes an injection vector (security-findings #14).
+     */
     children?: string;
 }
 
