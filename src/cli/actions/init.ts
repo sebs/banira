@@ -10,8 +10,15 @@ import { action } from './run.js';
  */
 export const init = action(
   'Failed to scaffold component',
-  async (tagName: string, dir: string = '.', options: { force?: boolean; formAssociated?: boolean } = {}) => {
-    const files = scaffoldComponent(tagName, { formAssociated: Boolean(options.formAssociated) });
+  async (
+    tagName: string,
+    dir: string = '.',
+    options: { force?: boolean; formAssociated?: boolean; aria?: boolean } = {}
+  ) => {
+    const files = scaffoldComponent(tagName, {
+      formAssociated: Boolean(options.formAssociated),
+      aria: Boolean(options.aria),
+    });
     const targetDir = resolve(dir);
     await mkdir(targetDir, { recursive: true });
 

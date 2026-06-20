@@ -121,8 +121,9 @@ banira manifest src/*.ts -o custom-elements.json
 Attributes are read from `observedAttributes`, properties/methods from public
 class members, events from `new CustomEvent(...)`, and slots / CSS parts / CSS
 custom properties from class jsdoc tags (`@slot`, `@csspart`, `@cssprop`, `@fires`).
-Members marked `@deprecated` carry the note through; `@internal` / `@ignore`
-members are omitted.
+A class-level `@role` tag records the element's default ARIA role (typically set
+via `ElementInternals.role`). Members marked `@deprecated` carry the note
+through; `@internal` / `@ignore` members are omitted.
 
 | Option | Description |
 |---|---|
@@ -256,8 +257,16 @@ an observed attribute/property, an event, and the `@slot` / `@csspart` /
 demo HTML page wired for `banira serve`. Existing files are left untouched
 unless `--force` is given.
 
+| Option | Description |
+|---|---|
+| `--force` | Overwrite existing files |
+| `--form-associated` | Scaffold a form-associated element (`static formAssociated = true` + `ElementInternals` form/validation wiring) |
+| `--aria` | Scaffold an ARIA role/state-reflecting element (`ElementInternals.role`/`ariaChecked`, keyboard support; records the default role in the manifest via `@role`) |
+
 ```bash
 banira init my-button src
+# a checkbox-role toggle that exposes its semantics via ElementInternals
+banira init my-toggle src --aria
 ```
 
 ### `banira prerender <files...>`

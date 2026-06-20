@@ -79,6 +79,13 @@ export interface CustomElementDeclaration {
     slots?: NamedDoc[];
     cssParts?: NamedDoc[];
     cssProperties?: CssCustomProperty[];
+    /**
+     * The element's default ARIA role, from a class-level `@role` jsdoc tag.
+     * Typically set on the element via `ElementInternals.role`; recorded here so
+     * consumers know the implicit role without parsing the source. Not part of
+     * the CEM spec, but additive — manifests carrying it remain schema-valid.
+     */
+    role?: string;
     /** Present when the class is marked `@deprecated`; the string is the deprecation note, if any. */
     deprecated?: boolean | string;
 }
@@ -430,6 +437,9 @@ export class ManifestGenerator {
             else if (tagName === 'summary') {
                 const summary = comment.trim();
                 if (summary) decl.summary = summary;
+            } else if (tagName === 'role') {
+                const role = comment.trim();
+                if (role) decl.role = role;
             }
         }
 

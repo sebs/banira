@@ -11,6 +11,14 @@ export interface ScaffoldOptions {
      * validation, instead of the plain starter component.
      */
     formAssociated?: boolean;
+    /**
+     * Scaffold a custom element that reflects its ARIA role/state through
+     * `ElementInternals` (the Accessibility Object Model) — a `checkbox`-role
+     * toggle with `internals.role`/`ariaChecked` wiring and keyboard support,
+     * instead of the plain starter component. Distinct from `formAssociated`;
+     * pass one or the other.
+     */
+    aria?: boolean;
 }
 
 /** A valid custom-element tag name: lowercase, starts with a letter, contains a hyphen. */
@@ -179,14 +187,122 @@ customElements.define('${tagName}', ${className});
 `;
 }
 
-function demoSource(tagName: string, formAssociated: boolean): string {
-    const body = formAssociated
-        ? `    <form>
+function ariaSource(tagName: string, className: string): string {
+    return `/**
+ * ${className} — a vanilla web component that reflects its ARIA semantics
+ * through \`ElementInternals\` (the Accessibility Object Model), so it needs no
+ * \`role\`/\`aria-*\` attributes in the light DOM.
+ *
+ * The implicit role and the checked/disabled state are exposed to assistive
+ * technology via \`internals.role\`, \`internals.ariaChecked\` and
+ * \`internals.ariaDisabled\`. Keyboard activation (Space/Enter) and focusability
+ * are wired up so the control behaves like a native checkbox.
+ *
+ * Caveat: Firefox does not yet reflect ARIA set through \`ElementInternals\`
+ * (see https://bugzilla.mozilla.org/show_bug.cgi?id=1693577). Until it does,
+ * mirror the state to host attributes (e.g. \`this.setAttribute('aria-checked', …)\`)
+ * if you need Firefox to expose the role/state to assistive technology.
+ *
+ * @summary Describe what ${tagName} does.
+ * @role checkbox
+ * @csspart box - The check indicator.
+ * @cssprop [--${tagName}-color=currentColor] - Text colour.
+ * @fires ${tagName}-change - Fired when the checked state changes, with \`detail: { checked }\`.
+ */
+class ${className} extends HTMLElement {
+    static get observedAttributes(): string[] {
+        return ['checked', 'disabled'];
+    }
+
+    private readonly internals: ElementInternals;
+    private _checked: boolean = false;
+
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.internals = this.attachInternals();
+        // The implicit ARIA role, exposed to assistive tech without a role attribute.
+        this.internals.role = 'checkbox';
+        this.render();
+        this.addEventListener('click', () => this.toggle());
+        this.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                this.toggle();
+            }
+        });
+    }
+
+    connectedCallback(): void {
+        if (!this.hasAttribute('tabindex')) this.tabIndex = 0;
+        this.reflectAria();
+    }
+
+    /** Whether the control is checked; reflected to \`aria-checked\` via internals. */
+    get checked(): boolean {
+        return this._checked;
+    }
+
+    set checked(next: boolean) {
+        this._checked = next;
+        this.reflectAria();
+        this.dispatchEvent(new CustomEvent('${tagName}-change', { detail: { checked: next } }));
+        this.render();
+    }
+
+    /** Whether the control is disabled; reflected to \`aria-disabled\` via internals. */
+    get disabled(): boolean {
+        return this.hasAttribute('disabled');
+    }
+
+    private toggle(): void {
+        if (this.disabled) return;
+        this.checked = !this._checked;
+    }
+
+    /** Reflects the current state to assistive technology through \`ElementInternals\`. */
+    private reflectAria(): void {
+        this.internals.ariaChecked = String(this._checked);
+        this.internals.ariaDisabled = String(this.disabled);
+    }
+
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+        if (oldValue === newValue) return;
+        if (name === 'checked') this.checked = newValue !== null;
+        else this.reflectAria();
+    }
+
+    private render(): void {
+        if (!this.shadowRoot) return;
+        this.shadowRoot.innerHTML = \`
+            <style>
+                :host { display: inline-flex; align-items: center; gap: 0.5em; cursor: pointer; color: var(--${tagName}-color, currentColor); }
+                :host([disabled]) { opacity: 0.5; cursor: not-allowed; }
+                [part="box"] { inline-size: 1em; block-size: 1em; border: 1px solid currentColor; display: inline-grid; place-items: center; }
+            </style>
+            <span part="box">\${this._checked ? '✓' : ''}</span>
+            <slot></slot>
+        \`;
+    }
+}
+
+customElements.define('${tagName}', ${className});
+`;
+}
+
+function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'aria'): string {
+    let body: string;
+    if (variant === 'form-associated') {
+        body = `    <form>
         <label>Field: <${tagName} name="field" value="Hello" required></${tagName}></label>
         <button type="submit">Submit</button>
         <button type="reset">Reset</button>
-    </form>`
-        : `    <${tagName} value="Hello">world</${tagName}>`;
+    </form>`;
+    } else if (variant === 'aria') {
+        body = `    <${tagName}>Accept the terms</${tagName}>`;
+    } else {
+        body = `    <${tagName} value="Hello">world</${tagName}>`;
+    }
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -208,7 +324,10 @@ ${body}
  * `@slot` / `@csspart` / `@cssprop` / `@fires` jsdoc tags banira's manifest and
  * doc tooling read) plus a demo HTML page wired for `banira serve`. With
  * `{ formAssociated: true }` it scaffolds a form-associated element instead
- * (`static formAssociated = true` + `ElementInternals` form/validation wiring).
+ * (`static formAssociated = true` + `ElementInternals` form/validation wiring),
+ * and `{ aria: true }` scaffolds an ARIA role/state-reflecting element
+ * (`ElementInternals.role`/`ariaChecked` wiring). `formAssociated` and `aria`
+ * are distinct starters; pass one or the other.
  *
  * @throws Error if `tagName` is not a valid custom element name.
  */
@@ -217,11 +336,20 @@ export function scaffoldComponent(tagName: string, options: ScaffoldOptions = {}
         throw new Error(`"${tagName}" is not a valid custom element name (must be lowercase and contain a hyphen)`);
     }
     const className = classNameFor(tagName);
-    const source = options.formAssociated
-        ? formAssociatedSource(tagName, className)
-        : componentSource(tagName, className);
+    let source: string;
+    let variant: 'plain' | 'form-associated' | 'aria';
+    if (options.formAssociated) {
+        source = formAssociatedSource(tagName, className);
+        variant = 'form-associated';
+    } else if (options.aria) {
+        source = ariaSource(tagName, className);
+        variant = 'aria';
+    } else {
+        source = componentSource(tagName, className);
+        variant = 'plain';
+    }
     return [
         { path: `${tagName}.ts`, content: source },
-        { path: 'index.html', content: demoSource(tagName, Boolean(options.formAssociated)) },
+        { path: 'index.html', content: demoSource(tagName, variant) },
     ];
 }
