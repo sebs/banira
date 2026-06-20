@@ -73,4 +73,24 @@ describe("Virtual FileSystem", () => {
             'Output file should contain the compiled function'
         );
     });
+
+    it("emits a .js.map with the original source and links it (issue #47)", () => {
+        // The default compiler options turn source maps on; use them here.
+        const mapHost = createVirtualCompilerHost({ files: { [testFile]: testContent }, cwd: "/" });
+        const mapCompiler = new Compiler([testFile], Compiler.DEFAULT_COMPILER_OPTIONS, mapHost);
+        mapCompiler.emit("/dist/maps");
+
+        const js = mapHost.volume.readFileSync("/dist/maps/test.js", "utf8") as string;
+        assert.match(js, /\/\/# sourceMappingURL=test\.js\.map/);
+
+        const map = JSON.parse(mapHost.volume.readFileSync("/dist/maps/test.js.map", "utf8") as string);
+        assert.ok(
+            map.sources?.some((s: string) => s.endsWith("test.ts")),
+            "map should reference the original .ts source"
+        );
+        assert.ok(
+            map.sourcesContent?.[0]?.includes("Hello, World!"),
+            "inlineSources should embed the original TypeScript in the map"
+        );
+    });
 });

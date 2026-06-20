@@ -112,7 +112,7 @@ describe('import map — generation', () => {
 });
 
 describe('serve --import-map injection', () => {
-    const PORT = 8151;
+    const PORT = 8161;
     let server: ReloadableServer;
     let dir: string;
 

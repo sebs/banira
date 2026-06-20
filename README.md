@@ -87,6 +87,10 @@ banira compile src/my-button.ts -o dist
 banira compile src/my-button.ts -o dist --import-map
 ```
 
+Compilation emits a `.js.map` source map next to each `.js`, with the original
+TypeScript embedded, so breakpoints in devtools land on the `.ts` even when the
+source isn't served alongside the output.
+
 With `--import-map`, banira walks the components' local module graph for bare
 imports (e.g. `import { html } from 'lit'`), pins each package to
 [esm.sh](https://esm.sh/) at the version declared in `package.json`, and writes
@@ -233,7 +237,9 @@ so bare specifiers resolve in the browser with no bundler.
 
 With `--ts`, a `.ts` request is served as an ES module and a request for `foo.js`
 falls back to a sibling `foo.ts` when no compiled `foo.js` exists — so you can
-point a page at `./my-button.js` and skip the build during development.
+point a page at `./my-button.js` and skip the build during development. The
+served module carries an inline source map (with the original TypeScript
+embedded), so breakpoints resolve to the `.ts` in devtools.
 
 ```bash
 # terminal 1: rebuild on change

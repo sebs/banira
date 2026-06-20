@@ -14,6 +14,19 @@ describe('transpileToEsm', () => {
         assert.doesNotMatch(js, /: number/);
         assert.match(js, /class Widget/);
     });
+
+    it('emits an inline source map with the original TypeScript embedded (issue #47)', () => {
+        const source = `export class Widget { value: number = 1; }\n`;
+        const js = transpileToEsm(source, 'widget.ts');
+        const match = /sourceMappingURL=data:application\/json;base64,([A-Za-z0-9+/=]+)/.exec(js);
+        assert.ok(match, 'output should carry an inline base64 source map');
+        const map = JSON.parse(Buffer.from(match![1]!, 'base64').toString('utf8'));
+        assert.ok(map.sources?.[0]?.endsWith('widget.ts'), 'map should reference widget.ts');
+        assert.ok(
+            map.sourcesContent?.[0]?.includes('value: number'),
+            'inlineSources should embed the original TypeScript'
+        );
+    });
 });
 
 describe('serve --ts (on-the-fly TypeScript)', () => {

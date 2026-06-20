@@ -116,6 +116,11 @@ export class Compiler {
         skipLibCheck: true,
         strict: false,
         noEmitOnError: false,
+        // Emit external `.js.map` files with the original TypeScript embedded
+        // (`inlineSources`), so breakpoints in the compiled output resolve to the
+        // source even when the `.ts` isn't served alongside it. See #47.
+        sourceMap: true,
+        inlineSources: true,
         // Populate EmitResult.emittedFiles so ResultAnalyzer.outputFiles can
         // report what was written (drives compile/watch/dev output). See #17.
         listEmittedFiles: true,
