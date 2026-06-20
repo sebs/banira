@@ -26,10 +26,31 @@ export interface PrerenderOptions {
     inlineStyles?: boolean;
 }
 
-/** Serializes attributes into an HTML attribute string (leading space per attribute). */
+/** A syntactically valid custom-element tag name (lowercase, starts with a letter, has a hyphen). */
+function isValidTagName(tagName: string): boolean {
+    return /^[a-z][a-z0-9._]*-[a-z0-9._-]*$/.test(tagName);
+}
+
+/** A safe HTML attribute name (no whitespace, quotes, `>`, `/`, `=` or controls). */
+function isValidAttributeName(name: string): boolean {
+    return /^[A-Za-z_:][A-Za-z0-9_:.-]*$/.test(name);
+}
+
+/** HTML-escapes an attribute value for a double-quoted context. */
+function escapeAttributeValue(value: string): string {
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Serializes attributes into an HTML attribute string (leading space per
+ * attribute). Attribute **names** are validated (entries with an unsafe name are
+ * dropped, since they can't be represented without breaking out of the tag) and
+ * values are HTML-escaped — so attacker-influenced attributes can't inject markup.
+ */
 function attributeString(attributes: Record<string, string>): string {
     return Object.entries(attributes)
-        .map(([k, v]) => ` ${k}="${v.replace(/"/g, '&quot;')}"`)
+        .filter(([k]) => isValidAttributeName(k))
+        .map(([k, v]) => ` ${k}="${escapeAttributeValue(v)}"`)
         .join('');
 }
 
@@ -57,6 +78,9 @@ export function declarativeShadowDom(
     attributes: Record<string, string> = {},
     children: string = ''
 ): string {
+    if (!isValidTagName(tagName)) {
+        throw new Error(`Invalid custom element tag name: ${JSON.stringify(tagName)}`);
+    }
     return `<${tagName}${attributeString(attributes)}><template shadowrootmode="open">${shadowHtml}</template>${children}</${tagName}>`;
 }
 
