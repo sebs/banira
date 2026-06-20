@@ -179,7 +179,11 @@ export function readPackageJson(cwd: string = process.cwd()): PackageJsonLike | 
 
 /** Renders an import map as a `<script type="importmap">` tag (pretty-printed). */
 export function importMapScript(map: ImportMap): string {
-    return `<script type="importmap">\n${JSON.stringify(map, null, 2)}\n</script>`;
+    // Escape `<` as the `<` JSON escape so a specifier/URL containing
+    // `</script>` (or `<script>`/`<!--`) can't break out of the script element.
+    // Still valid JSON, so the import map parses unchanged.
+    const json = JSON.stringify(map, null, 2).replace(/</g, '\\u003c');
+    return `<script type="importmap">\n${json}\n</script>`;
 }
 
 /** Enumerates module files (`.js`/`.mjs` by default) under `dir`, skipping `node_modules`. */
