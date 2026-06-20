@@ -94,6 +94,13 @@ const HELPER_NAME = '__baniraAdoptStyles';
  * CSS text, so two modules importing the same `theme.css` adopt the *same*
  * `CSSStyleSheet` (#9). Built with the synthetic-node factory so it is safe for
  * the emit resolver (a node parsed from a separate source file is not).
+ *
+ * The cache is page-global by necessity (cross-module dedup can't use a
+ * module-scoped cache); same-origin script could pre-seed it, but such script can
+ * already set `adoptedStyleSheets` directly, so this grants no new capability —
+ * accepted (security-findings #19). The CSS text is emitted as a JS string
+ * literal in a module served as `text/javascript`, not inline HTML, so a `</`
+ * inside it is inert in the served context (#25).
  */
 function helperStatement(factory: ts.NodeFactory): ts.Statement {
     const css = factory.createIdentifier('css');
