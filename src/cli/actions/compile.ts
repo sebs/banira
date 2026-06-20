@@ -17,6 +17,12 @@ export interface CompileOptions {
   importMap?: boolean | string;
   /** Run inlined CSS through lightningcss (lower nesting, minify). Optional dep. */
   optimizeCss?: boolean;
+  /**
+   * Emit source maps (default `true`). Maps embed the original TypeScript
+   * (`inlineSources`); pass `false` (`--no-source-map`) for production builds
+   * where you don't want to ship source. See security-findings #15.
+   */
+  sourceMap?: boolean;
 }
 
 export interface CompileOutcome {
@@ -57,6 +63,11 @@ export function resolveCompilerOptions(options: CompileOptions): ts.CompilerOpti
 
   if (options.outDir) {
     compilerOptions.outDir = resolve(options.outDir);
+  }
+
+  if (options.sourceMap === false) {
+    compilerOptions.sourceMap = false;
+    compilerOptions.inlineSources = false;
   }
 
   return compilerOptions;

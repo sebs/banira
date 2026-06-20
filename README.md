@@ -100,7 +100,8 @@ loaded lazily — a clear error is shown if it's requested but not installed.
 
 Compilation emits a `.js.map` source map next to each `.js`, with the original
 TypeScript embedded, so breakpoints in devtools land on the `.ts` even when the
-source isn't served alongside the output.
+source isn't served alongside the output. Because the map embeds your source,
+pass `--no-source-map` for production builds where you don't want to ship it.
 
 With `--import-map`, banira walks the components' local module graph for bare
 imports (e.g. `import { html } from 'lit'`), pins each package to

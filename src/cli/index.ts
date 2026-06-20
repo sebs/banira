@@ -43,12 +43,14 @@ program
   .option('-o, --output <path>', 'Output directory')
   .option('--import-map [path]', 'Also emit an import map (esm.sh) for bare imports; optional output path')
   .option('--optimize-css', 'Run inlined CSS through lightningcss (lower nesting, minify)')
+  .option('--no-source-map', 'Do not emit source maps (which embed the original TypeScript)')
   .action((files, options) =>
     compile(files, {
       project: options.project,
       outDir: options.output,
       importMap: options.importMap,
       optimizeCss: options.optimizeCss,
+      sourceMap: options.sourceMap,
     })
   );
 
