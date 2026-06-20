@@ -36,6 +36,7 @@ export async function transformHtml(html: string, renderer: Prerenderer, tags: s
     const dom = new JSDOM(html); // inert: default options do not run scripts
     const { document } = dom.window;
 
+    let changed = false;
     for (const tag of tags) {
         for (const element of Array.from(document.querySelectorAll(tag))) {
             if (element.querySelector('template[shadowrootmode]')) continue; // already prerendered
@@ -45,9 +46,13 @@ export async function transformHtml(html: string, renderer: Prerenderer, tags: s
             const holder = document.createElement('div');
             holder.innerHTML = markup;
             element.replaceWith(...Array.from(holder.childNodes));
+            changed = true;
         }
     }
-    return dom.serialize();
+    // Only re-serialize when we actually replaced something — otherwise return the
+    // page untouched, avoiding a needless parse/serialize round-trip that could
+    // normalize author markup.
+    return changed ? dom.serialize() : html;
 }
 
 /**
