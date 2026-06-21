@@ -90,6 +90,14 @@
             <span class="glyph">&lt;/&gt;</span>
             <div><div class="t">my-button.html</div><div class="d">a doc page, PicoCSS by default</div></div>
           </div>
+          <div class="artifact">
+            <span class="glyph">SB</span>
+            <div><div class="t">my-button.stories.js</div><div class="d">Storybook CSF + controls</div></div>
+          </div>
+          <div class="artifact">
+            <span class="glyph">DSD</span>
+            <div><div class="t">prerendered HTML</div><div class="d">Declarative Shadow DOM, SSR-ready</div></div>
+          </div>
         </div>
       </div>
 
@@ -128,6 +136,49 @@
           <div class="ico">⟳</div>
           <h3>Built for CI</h3>
           <p><code>banira test</code> smoke-mounts every element; <code>banira diff</code> reads the manifest and suggests a semver bump.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ BEYOND THE BASICS (0.5) ░░ -->
+  <section>
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">new in 0.5</p>
+        <h2>From source to ship — the whole pipeline.</h2>
+        <p class="lede" style="margin-top:14px; max-width:58ch;">The manifest is the start. banira now lints, server-renders, themes and ships your components — still vanilla, still no bundler.</p>
+      </div>
+      <div class="why">
+        <div class="why-card">
+          <div class="ico">▤</div>
+          <h3>Server rendering &amp; hydration</h3>
+          <p><code>prerender</code> emits <a href="/cli/prerender/">Declarative Shadow DOM</a> (FOUC-free, critical CSS inlined); <code>createPrerenderer</code> / the Eleventy plugin render on the server and <code>hydrateShadow</code> adopts the markup on the client.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">✓</div>
+          <h3>A Gold Standard linter</h3>
+          <p><a href="/cli/lint/"><code>banira lint</code></a> audits each element for attribute↔property reflection, overridable <code>:host</code> styles, and documented events, attributes, parts &amp; slots — advisory by default, <code>--strict</code> for CI.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">◧</div>
+          <h3>Storybook, generated</h3>
+          <p><a href="/cli/stories/"><code>banira stories</code></a> writes <a href="https://storybook.js.org/docs/api/csf">CSF</a> with an <code>argTypes</code> controls panel from the manifest — string-literal unions become <code>select</code> options, events become actions.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">⛁</div>
+          <h3>No-bundler imports</h3>
+          <p><a href="/cli/compile/"><code>--import-map</code></a> pins bare imports to <a href="https://esm.sh/">esm.sh</a> so vanilla components use <code>import … from 'lit'</code> in the browser with no build — squarely banira's ethos.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">◑</div>
+          <h3>Design tokens &amp; theming</h3>
+          <p><a href="/cli/tokens-css/"><code>tokens-css</code></a> compiles W3C <a href="https://tr.designtokens.org/format/">DTCG</a> tokens to CSS, and <a href="/cli/theme/"><code>theme</code></a> scaffolds a light/dark contract plus a <code>&lt;theme-toggle&gt;</code>.</p>
+        </div>
+        <div class="why-card">
+          <div class="ico">◆</div>
+          <h3>A sharper manifest</h3>
+          <p>String-literal union attributes become enums in the <code>.d.ts</code>, editor data and Storybook; <a href="/cli/manifest/"><code>--validate</code></a> checks the official CEM JSON Schema, and <code>--link-package</code> wires it into <code>package.json</code>.</p>
         </div>
       </div>
     </div>
@@ -243,7 +294,7 @@ customElements.define(<span class="grn">'my-button'</span>, MyButton);</pre>
         <div><div class="phase">phase 0 · done</div><div class="body">TypeDoc API on Pages</div></div>
         <div><div class="phase">phase 1 · done</div><div class="body">Landing + Getting Started</div></div>
         <div><div class="phase">phase 2 · done</div><div class="body">CLI pages + guides</div></div>
-        <div><div class="phase">phase 3</div><div class="body">Live demo on landing</div></div>
+        <div><div class="phase">phase 3 · done</div><div class="body">Live demo on landing</div></div>
         <div><div class="phase muted">phase 4 · maybe</div><div class="body" style="color:var(--muted);">In-browser playground</div></div>
       </div>
     </div>
