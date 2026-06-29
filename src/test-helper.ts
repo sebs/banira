@@ -37,15 +37,13 @@ export interface MountContext {
     queryAll(selector: string): Element[];
 }
 
-/**
- * Removes the script-reachable network APIs from a JSDOM window so mounted
- * component code can't make outbound requests. jsdom's `resources` option only
- * gates jsdom's own subresource fetching; XHR/WebSocket/EventSource are still
- * handed to scripts, so they must be deleted explicitly. See security-findings #1.
- */
-function stripNetworkGlobals(window: DOMWindow): void {
-    const w = window as unknown as Record<string, unknown>;
-    for (const name of ['XMLHttpRequest', 'WebSocket', 'fetch', 'EventSource']) {
+const NET_GLOBALS = ['XMLHttpRequest', 'WebSocket', 'fetch', 'EventSource'];
+const securedRealms = new WeakSet<object>();
+
+/** Delete the script-reachable network constructors from one window/realm. */
+function stripNetworkGlobals(win: DOMWindow): void {
+    const w = win as unknown as Record<string, unknown>;
+    for (const name of NET_GLOBALS) {
         try {
             delete w[name];
         } catch {
@@ -53,6 +51,89 @@ function stripNetworkGlobals(window: DOMWindow): void {
         }
         w[name] = undefined;
     }
+}
+
+/** Secure every nested browsing context currently reachable from `win`. */
+function secureChildFrames(win: DOMWindow): void {
+    let count = 0;
+    try {
+        count = (win as unknown as { length: number }).length;
+    } catch {
+        count = 0;
+    }
+    for (let i = 0; i < count; i++) {
+        let child: DOMWindow | undefined;
+        try {
+            child = (win as unknown as Record<number, DOMWindow>)[i];
+        } catch {
+            child = undefined;
+        }
+        if (child) installNetworkBlock(child);
+    }
+}
+
+/** Wrap a prototype method so `after` runs once the original returns. */
+function wrapMethod(proto: object, name: string, after: () => void): void {
+    const target = proto as Record<string, unknown>;
+    const orig = target[name];
+    if (typeof orig !== 'function') return;
+    const fn = orig as (...a: unknown[]) => unknown;
+    target[name] = function (this: unknown, ...args: unknown[]): unknown {
+        const res = fn.apply(this, args);
+        after();
+        return res;
+    };
+}
+
+/** Wrap a prototype accessor's setter so `after` runs once the original setter returns. */
+function wrapSetter(proto: object, name: string, after: () => void): void {
+    const desc = Object.getOwnPropertyDescriptor(proto, name);
+    if (!desc || typeof desc.set !== 'function') return;
+    const origSet = desc.set;
+    Object.defineProperty(proto, name, {
+        ...desc,
+        set(this: unknown, value: unknown): void {
+            origSet.call(this, value);
+            after();
+        },
+    });
+}
+
+/**
+ * Remove the script-reachable network APIs (XMLHttpRequest/WebSocket/fetch/
+ * EventSource) from a JSDOM window AND from every nested browsing context it can
+ * create. Stripping only the top window is insufficient: a child `<iframe>`
+ * realm exposes fresh, un-stripped constructors (reachable via `contentWindow`,
+ * `contentDocument.defaultView`, `window.frames[i]` and `window[i]` — all the
+ * same Window object). We strip each child realm at insertion time by wrapping
+ * the DOM-insertion methods/setters (connection + HTML-string paths) and recurse
+ * so grandchildren are covered. jsdom is not a security sandbox; this is
+ * best-effort defense-in-depth for mounting components that may be untrusted (the
+ * MCP `--local-only` path). See security-findings #1.
+ */
+function installNetworkBlock(win: DOMWindow): void {
+    const realm = win as unknown as object;
+    if (securedRealms.has(realm)) return;
+    securedRealms.add(realm);
+    stripNetworkGlobals(win);
+    const after = (): void => secureChildFrames(win);
+    const node = win.Node.prototype;
+    wrapMethod(node, 'appendChild', after);
+    wrapMethod(node, 'insertBefore', after);
+    wrapMethod(node, 'replaceChild', after);
+    for (const proto of [win.Element.prototype, win.Document.prototype, win.DocumentFragment.prototype]) {
+        wrapMethod(proto, 'append', after);
+        wrapMethod(proto, 'prepend', after);
+        wrapMethod(proto, 'replaceChildren', after);
+    }
+    for (const m of ['after', 'before', 'replaceWith']) wrapMethod(win.Element.prototype, m, after);
+    wrapMethod(win.Element.prototype, 'insertAdjacentHTML', after);
+    wrapSetter(win.Element.prototype, 'innerHTML', after);
+    wrapSetter(win.Element.prototype, 'outerHTML', after);
+    if (win.ShadowRoot) wrapSetter(win.ShadowRoot.prototype, 'innerHTML', after);
+    wrapMethod(win.Document.prototype, 'write', after);
+    wrapMethod(win.Document.prototype, 'writeln', after);
+    secureChildFrames(win);
 }
 
 /** Collects all elements matching `selector`, descending into open shadow roots. */
@@ -249,7 +330,7 @@ export class TestHelper {
         const { window } = dom;
         const { document } = window;
 
-        if (this.blockNetwork) stripNetworkGlobals(window);
+        if (this.blockNetwork) installNetworkBlock(window);
 
         const scriptElement = document.createElement('script');
         scriptElement.textContent = code;
