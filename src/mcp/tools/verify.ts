@@ -27,11 +27,24 @@ import { DIAG_ITEM_SCHEMA } from '../schemas.js';
  */
 
 /** Resolve compiler options from the defaults + a `--project` tsconfig + a `strict` override. */
-function resolveCompilerOptions(project: string | undefined, strict: boolean): ts.CompilerOptions {
+function resolveCompilerOptions(
+  project: string | undefined,
+  strict: boolean,
+  opts: McpServerOptions
+): ts.CompilerOptions {
   let compilerOptions: ts.CompilerOptions = { ...Compiler.DEFAULT_COMPILER_OPTIONS };
 
   if (project) {
     const configPath = resolve(project);
+    // Under --local-only the caller-supplied tsconfig is a file read like any
+    // other and must stay inside the confinement root — otherwise `project`
+    // becomes an arbitrary-file-read (and parse-error info-leak) channel.
+    if (opts.localOnly) {
+      const root = resolve(opts.project ? dirname(opts.project) : process.cwd());
+      if (configPath !== root && !configPath.startsWith(root + sep)) {
+        throw new Error(`--local-only: refusing to read tsconfig outside ${root}: ${configPath}`);
+      }
+    }
     if (!existsSync(configPath)) throw new Error(`tsconfig.json not found at ${configPath}`);
     const { config } = ts.parseConfigFileTextToJson(configPath, readFileSync(configPath, 'utf8'));
     const result = ts.convertCompilerOptionsFromJson(config?.compilerOptions, dirname(configPath));
@@ -114,7 +127,8 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
       const files = resolveInputFiles(args, opts);
       const compilerOptions = resolveCompilerOptions(
         typeof args.project === 'string' ? args.project : undefined,
-        args.strict === true
+        args.strict === true,
+        opts
       );
       // withVirtualFs reads inputs from real disk but emits into an in-memory
       // memfs volume — nothing is written to the working tree.
@@ -302,7 +316,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
     },
     async (args) => {
       const files = resolveInputFiles(args, opts);
-      const compilerOptions = resolveCompilerOptions(typeof args.project === 'string' ? args.project : undefined, false);
+      const compilerOptions = resolveCompilerOptions(typeof args.project === 'string' ? args.project : undefined, false, opts);
       if (typeof args.outDir === 'string') compilerOptions.outDir = resolve(args.outDir);
       if (args.sourceMap === false) {
         compilerOptions.sourceMap = false;
