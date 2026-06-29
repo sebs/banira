@@ -15,6 +15,13 @@ import { resolveInputFiles } from '../files.js';
 
 const isRemote = (url: string): boolean => /^https?:\/\//i.test(url);
 
+// A custom-element tag name (the manifest/scaffold naming rule). `tagName` is
+// interpolated into the generated page as a live element tag (`<tagName>`), so a
+// non-conforming value is HTML injection — e.g. `img src=x onerror=...` is not
+// neutralised by escaping (it has no escapable characters). Validate instead of
+// escape. See security-findings #4.
+const TAG_NAME_RE = /^[a-z][a-z0-9._]*-[a-z0-9._-]*$/;
+
 interface ResolvedStylesheet {
   stylesheet?: Stylesheet;
   stylesheetMode: 'href' | 'inline' | 'none';
@@ -102,6 +109,11 @@ export function registerDocsTools(registries: Registries, opts: McpServerOptions
     async (args) => {
       const file = resolveInputFiles({ files: [String(args.file)] }, opts)[0]!;
       const tagName = typeof args.tagName === 'string' ? args.tagName : basename(file, extname(file));
+      if (!TAG_NAME_RE.test(tagName)) {
+        throw new Error(
+          `Invalid tagName "${tagName}": must be a custom-element name (lowercase, containing a hyphen). Pass an explicit valid tagName.`
+        );
+      }
       const scriptSrc = typeof args.scriptSrc === 'string' ? args.scriptSrc : undefined;
       if (scriptSrc && opts.localOnly && isRemote(scriptSrc)) {
         throw new Error('--local-only: refusing a remote scriptSrc (use a local/relative path).');
