@@ -154,7 +154,8 @@ export function registerAuthoringTools(registries: Registries, opts: McpServerOp
       annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
     },
     (args) => {
-      const tagName = String(args.tagName);
+      // Required string in the input schema (ajv-validated upstream).
+      const tagName = args.tagName as string;
       const variant = (typeof args.variant === 'string' ? args.variant : 'plain') as Variant;
       // scaffoldComponent throws on an invalid tag name → the dispatcher reports isError.
       const files = scaffoldComponent(tagName, variantOptions(variant));

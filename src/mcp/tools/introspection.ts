@@ -246,8 +246,11 @@ export function registerIntrospectionTools(registries: Registries, opts: McpServ
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async (args) => {
-      const file = resolveInputFiles({ files: [String(args.file)] }, opts)[0]!;
-      const tagName = String(args.tagName);
+      // `file`/`tagName` are required strings in the input schema, validated by
+      // ajv before this handler runs — use them as-is rather than String()-coercing
+      // (which would silently turn a schema/code mismatch into "[object Object]").
+      const file = resolveInputFiles({ files: [args.file as string] }, opts)[0]!;
+      const tagName = args.tagName as string;
       const dg = new DocGen(tagName);
       const ctx = await dg.parseDoc(file);
       // No doc comment is not an error — just no demos.

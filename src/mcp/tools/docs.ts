@@ -107,7 +107,8 @@ export function registerDocsTools(registries: Registries, opts: McpServerOptions
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (args) => {
-      const file = resolveInputFiles({ files: [String(args.file)] }, opts)[0]!;
+      // `file` is a required string in the input schema (ajv-validated upstream).
+      const file = resolveInputFiles({ files: [args.file as string] }, opts)[0]!;
       const tagName = typeof args.tagName === 'string' ? args.tagName : basename(file, extname(file));
       if (!TAG_NAME_RE.test(tagName)) {
         throw new Error(
