@@ -11,3 +11,6 @@ examples/my-circle/demo/doc.html
 
 # Assembled Pages site (built in CI from site/ + generated docs/)
 _site
+
+# Local security-review notes — kept out of the repo
+security-findings.md
