@@ -257,7 +257,10 @@ function parseEventTag(raw: string): CemEvent {
  */
 function parseCssProperty(raw: string): CssCustomProperty {
     const text = raw.trim();
-    const bracket = text.match(/^\[\s*([^\]]*?)\s*\]\s*(?:-\s*)?([\s\S]*)$/);
+    // Greedy [^\]]* (not \s*([^\]]*?)\s*) avoids catastrophic backtracking when the
+    // closing ] is absent — the surrounding whitespace is trimmed in code below.
+    // See security-findings #24 (ReDoS).
+    const bracket = text.match(/^\[([^\]]*)\]\s*(?:-\s*)?([\s\S]*)$/);
     if (bracket) {
         const [, decl, desc] = bracket;
         const eq = decl!.indexOf('=');
