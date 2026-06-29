@@ -377,9 +377,16 @@ export class ManifestGenerator {
                 if (tag && isStringLiteralLike(tag) && ctor && isIdentifier(ctor)) {
                     const callee = node.expression;
                     const isDefineCall = isPropertyAccessExpression(callee) && callee.name.text === 'define';
-                    if (isDefineCall) {
+                    // Only admit valid custom-element names. Besides matching what the
+                    // browser would accept, this keeps a hostile tag-name string literal
+                    // (e.g. `define('x"><img onerror=...>', C)`) out of the manifest, where
+                    // it would otherwise reach unescaped tag-name sinks (the doc page and
+                    // manifest markdown). See security-findings #20.
+                    if (!isCustomElementName(tag.text)) {
+                        // not a registrable custom element — ignore
+                    } else if (isDefineCall) {
                         map.set(ctor.text, tag.text);
-                    } else if (isCustomElementName(tag.text) && this.identifierIsCustomElementClass(ctor)) {
+                    } else if (this.identifierIsCustomElementClass(ctor)) {
                         map.set(ctor.text, tag.text);
                     }
                 }
