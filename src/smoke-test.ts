@@ -33,6 +33,12 @@ export interface SmokeOptions {
     reflection?: boolean;
     /** Also assert declared `@slot`s project and flag undeclared shadow slots (#40). */
     slots?: boolean;
+    /**
+     * Strip script-reachable network APIs (XHR/WebSocket/fetch) from the mount
+     * window so untrusted component code can't make outbound requests. Forwarded
+     * to {@link TestHelper.blockNetwork}. See security-findings #1.
+     */
+    blockNetwork?: boolean;
 }
 
 /**
@@ -56,6 +62,7 @@ export async function smokeTestManifest(files: string[], options: SmokeOptions =
             try {
                 const helper = new TestHelper();
                 if (options.readyTimeout !== undefined) helper.readyTimeout = options.readyTimeout;
+                if (options.blockNetwork) helper.blockNetwork = true;
                 const context = await helper.compileAndMountAsScript(decl.tagName, module.path, compilerOptions);
                 const defined = context.window.customElements.get(decl.tagName);
                 const element = context.document.querySelector(decl.tagName);

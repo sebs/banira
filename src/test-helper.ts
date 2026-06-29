@@ -37,6 +37,24 @@ export interface MountContext {
     queryAll(selector: string): Element[];
 }
 
+/**
+ * Removes the script-reachable network APIs from a JSDOM window so mounted
+ * component code can't make outbound requests. jsdom's `resources` option only
+ * gates jsdom's own subresource fetching; XHR/WebSocket/EventSource are still
+ * handed to scripts, so they must be deleted explicitly. See security-findings #1.
+ */
+function stripNetworkGlobals(window: DOMWindow): void {
+    const w = window as unknown as Record<string, unknown>;
+    for (const name of ['XMLHttpRequest', 'WebSocket', 'fetch', 'EventSource']) {
+        try {
+            delete w[name];
+        } catch {
+            /* fall through to the assignment below */
+        }
+        w[name] = undefined;
+    }
+}
+
 /** Collects all elements matching `selector`, descending into open shadow roots. */
 function deepQueryAll(root: Document | ShadowRoot | Element, selector: string): Element[] {
     const out: Element[] = [];
@@ -136,12 +154,24 @@ export class TestHelper {
     // `runScripts: "dangerously"` is required to execute the injected component
     // script (it's inline, so it runs regardless of `resources`). `resources` is
     // deliberately left at the default (do NOT fetch external <script>/<link>/<img>)
-    // so mounting a component can't make outbound requests (SSRF). Pass
-    // `{ resources: 'usable' }` to the constructor to opt back in. See security-findings #5.
+    // so jsdom won't auto-load subresources. NOTE: that only governs jsdom's *own*
+    // resource loading — it does NOT stop script-initiated XHR/WebSocket, which
+    // jsdom still exposes to the mounted code. Set `blockNetwork` to strip those
+    // globals when mounting code you don't fully trust. See security-findings #1.
     private jsdomOptions: ConstructorOptions = {
         url: "http://localhost",
         runScripts: "dangerously"
     };
+
+    /**
+     * When true, the script-reachable network APIs (`XMLHttpRequest`,
+     * `WebSocket`, `fetch`, `EventSource`) are removed from the JSDOM window
+     * before the component script runs, so mounting potentially untrusted code
+     * cannot make outbound requests (SSRF / exfiltration). Off by default;
+     * callers that mount untrusted components (e.g. the MCP `--local-only`
+     * server) opt in.
+     */
+    public blockNetwork: boolean = false;
 
     /**
      * Upper bound (ms) for waiting on a custom element to be defined before
@@ -218,6 +248,8 @@ export class TestHelper {
 
         const { window } = dom;
         const { document } = window;
+
+        if (this.blockNetwork) stripNetworkGlobals(window);
 
         const scriptElement = document.createElement('script');
         scriptElement.textContent = code;

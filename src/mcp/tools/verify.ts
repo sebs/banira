@@ -71,10 +71,12 @@ async function jsdomSingle(
   file: string,
   tagName: string,
   queryList: string[] | undefined,
-  readyTimeout: number | undefined
+  readyTimeout: number | undefined,
+  blockNetwork: boolean
 ): Promise<SingleResult> {
   const helper = new TestHelper();
   if (readyTimeout !== undefined) helper.readyTimeout = readyTimeout;
+  if (blockNetwork) helper.blockNetwork = true;
   const ctx = await helper.compileAndMountAsScript(tagName, file);
   try {
     const registered = !!ctx.window.customElements.get(tagName);
@@ -186,6 +188,15 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
       const engine = typeof args.engine === 'string' ? args.engine : 'jsdom';
       const readyTimeout = typeof args.readyTimeout === 'number' ? args.readyTimeout : undefined;
 
+      // Mounting executes the component's code. Under --local-only, a real
+      // browser (Playwright) has unrestricted network access we cannot strip, so
+      // refuse it outright; the JSDOM paths run with network globals removed.
+      if (opts.localOnly && (engine === 'browser' || engine === 'auto')) {
+        throw new Error(
+          '--local-only: refusing engine "' + engine + '" (a real browser has unrestricted network access). Use engine "jsdom".'
+        );
+      }
+
       // --- Manifest / smoke mode (always JSDOM) ---
       if (Array.isArray(args.files)) {
         const files = resolveInputFiles(args, opts);
@@ -193,6 +204,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
         if (args.reflection === true) smokeOptions.reflection = true;
         if (args.slots === true) smokeOptions.slots = true;
         if (readyTimeout !== undefined) smokeOptions.readyTimeout = readyTimeout;
+        if (opts.localOnly) smokeOptions.blockNetwork = true;
         const results = await smokeTestManifest(files, smokeOptions);
         const components = results.map((r) => ({
           tagName: r.tagName,
@@ -266,7 +278,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
         }
       }
 
-      const single = await jsdomSingle(file, tagName, queryList, readyTimeout);
+      const single = await jsdomSingle(file, tagName, queryList, readyTimeout, opts.localOnly === true);
       const result: Record<string, unknown> = {
         engineUsed: 'jsdom',
         ok: single.ok,
