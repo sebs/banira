@@ -64,6 +64,22 @@ const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(
 /** Upper bound for `readyTimeout` (ms); an unclamped value lets a call hang ~forever. */
 const MAX_READY_TIMEOUT = 60_000;
 
+/** The axe.run option keys we forward; anything else from the caller is dropped. See finding #14. */
+const AXE_OPTION_KEYS = new Set([
+  'runOnly', 'rules', 'reporter', 'resultTypes', 'selectors', 'ancestry', 'xpath',
+  'absolutePaths', 'iframes', 'elementRef', 'frameWaitTime', 'preload', 'performanceTimer', 'pingWaitTime',
+]);
+
+/** Keep only recognised axe.run option keys from a caller-supplied object. */
+function sanitizeAxeOptions(input: unknown): Record<string, unknown> | undefined {
+  if (!input || typeof input !== 'object') return undefined;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    if (AXE_OPTION_KEYS.has(k)) out[k] = v;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** Clamp a caller-supplied ms timeout into [0, MAX_READY_TIMEOUT]. See finding #8. */
 function clampReadyTimeout(value: unknown): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
@@ -264,10 +280,8 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
               summary: { total: 1, passed: 1, failed: 0, warnings: 0 },
             };
             if (args.a11y === true) {
-              const a11yOptions =
-                args.a11yOptions && typeof args.a11yOptions === 'object'
-                  ? { axeOptions: args.a11yOptions as Record<string, unknown> }
-                  : undefined;
+              const axeOptions = sanitizeAxeOptions(args.a11yOptions);
+              const a11yOptions = axeOptions ? { axeOptions } : undefined;
               try {
                 const a11y: A11yResult = await bctx.checkAccessibility(a11yOptions);
                 result.a11y = a11y;
