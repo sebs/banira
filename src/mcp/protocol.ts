@@ -123,8 +123,18 @@ export function decode(line: string): DecodeResult {
  * escapes embedded newlines, so a frame can never contain a raw `\n`.
  */
 export function serveStdio(handle: (message: IncomingMessage) => Promise<JsonRpcResponse | null>): void {
+  // stdout is reserved for JSON-RPC frames. Capture the real writer for frames,
+  // then redirect any *other* writes to process.stdout (e.g. from tsc, jsdom,
+  // lightningcss) to stderr so they can't corrupt the frame stream — console.log
+  // redirection alone doesn't cover direct process.stdout.write. See finding #11.
+  const stdout = process.stdout;
+  const writeFrame = stdout.write.bind(stdout) as (chunk: string) => boolean;
+  type WriteFn = (chunk: unknown, ...rest: unknown[]) => boolean;
+  (stdout as unknown as { write: WriteFn }).write = (chunk, ...rest) =>
+    (process.stderr.write as unknown as WriteFn)(chunk, ...rest);
+
   const write = (response: JsonRpcResponse): void => {
-    process.stdout.write(JSON.stringify(response) + '\n');
+    writeFrame(JSON.stringify(response) + '\n');
   };
   const rl = createInterface({ input: process.stdin });
   rl.on('line', (line) => {
