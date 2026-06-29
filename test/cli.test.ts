@@ -91,7 +91,7 @@ describe("banira CLI", { concurrency: true }, () => {
         ]);
         assert.strictEqual(result.exitCode, 0, "Expected successful type generation");
         assert.match(result.stdout, /interface HTMLElementTagNameMap/);
-        assert.match(result.stdout, /'my-circle':/);
+        assert.match(result.stdout, /"my-circle":/);
     });
 
     it("test runs a manifest-driven smoke test", async () => {
