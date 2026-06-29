@@ -3,6 +3,7 @@ import { ManifestGenerator, findModuleFiles } from '../index.js';
 import type { Registries } from './registry.js';
 import type { McpServerOptions } from './options.js';
 import { authoringGuideMarkdown } from './tools/authoring.js';
+import { MAX_INPUT_FILES } from './files.js';
 
 /**
  * MCP resources — application-driven, browsable documents: the authoring guide
@@ -33,9 +34,15 @@ export function registerResources(registries: Registries, opts: McpServerOptions
     read: (uri) => {
       const root = resolve(opts.project ? dirname(opts.project) : process.cwd());
       // findModuleFiles skips node_modules + dot-dirs; drop .d.ts declaration files.
-      const files = findModuleFiles(root, ['.ts']).filter((f) => !f.endsWith('.d.ts'));
-      const pkg = new ManifestGenerator(files).generate();
-      return [{ uri, mimeType: 'application/json', text: JSON.stringify(pkg, null, 2) }];
+      const all = findModuleFiles(root, ['.ts']).filter((f) => !f.endsWith('.d.ts'));
+      // Bound the program size so a large/hostile tree can't exhaust CPU/memory;
+      // surface the truncation rather than silently capping. See finding #7.
+      const files = all.slice(0, MAX_INPUT_FILES);
+      const body: Record<string, unknown> = { ...new ManifestGenerator(files).generate() };
+      if (files.length < all.length) {
+        body.truncated = { scanned: files.length, total: all.length, limit: MAX_INPUT_FILES };
+      }
+      return [{ uri, mimeType: 'application/json', text: JSON.stringify(body, null, 2) }];
     },
   });
 }

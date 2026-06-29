@@ -18,6 +18,14 @@ export class InputError extends Error {
   }
 }
 
+/**
+ * Upper bound on the number of source files a single tool call (or the
+ * components resource) will feed into a `ts.Program`. Building a program is the
+ * expensive part; without a cap, a `dir` scan over a large or hostile tree is a
+ * CPU/memory DoS. See security-findings #7.
+ */
+export const MAX_INPUT_FILES = 2000;
+
 function isFile(path: string): boolean {
   try {
     return statSync(path).isFile();
@@ -59,6 +67,12 @@ export function resolveInputFiles(args: Record<string, unknown>, opts: McpServer
   }
 
   const unique = [...new Set(out)].sort();
+
+  if (unique.length > MAX_INPUT_FILES) {
+    throw new InputError(
+      `Too many input files (${unique.length} > ${MAX_INPUT_FILES}); narrow the selection with "files" or a more specific "dir".`
+    );
+  }
 
   if (opts.localOnly) {
     // Compare *real* paths (both sides) so neither a symlinked input that points
