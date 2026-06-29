@@ -72,7 +72,17 @@ export interface ScreenshotResult {
     actualPath?: string;
 }
 
-/** Resolves the on-disk baseline PNG path for a named snapshot. */
+/**
+ * Resolves the on-disk baseline PNG path for a named snapshot.
+ *
+ * Trusted-input contract: `dir` is a trusted configuration value (the caller's
+ * chosen baseline directory) and is used verbatim — do NOT derive it from
+ * untrusted input, since the snapshot is then written under it. The snapshot
+ * `name`, by contrast, is sanitized here (non-`[A-Za-z0-9._-]` runs collapse to
+ * `-`), so it cannot contain a path separator and cannot escape `dir`. This is a
+ * trusted-author test API and is not reachable from the MCP server. See
+ * security-findings (baselineDir residual).
+ */
 export function resolveBaselinePath(dir: string, name: string): string {
     const safe = name.replace(/[^a-zA-Z0-9._-]+/g, '-');
     const file = safe.endsWith('.png') ? safe : `${safe}.png`;
