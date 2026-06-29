@@ -84,6 +84,11 @@ export function resolveInputFiles(args: Record<string, unknown>, opts: McpServer
 // One Package per resolved file-set, keyed by the sorted path list and
 // invalidated when any input's mtime changes. `new ManifestGenerator` builds a
 // fresh ts.Program synchronously, so caching keeps repeated reads cheap.
+//
+// Bounded (LRU) because the server is long-lived and a client can request
+// unboundedly many distinct file-sets — an unbounded map would be a memory-
+// exhaustion vector. See security-findings #6.
+const MANIFEST_CACHE_MAX = 64;
 const cache = new Map<string, { mtime: number; pkg: Package }>();
 
 function latestMtime(files: string[]): number {
@@ -104,9 +109,22 @@ export function manifestFor(files: string[]): Package {
   const key = files.join('\n');
   const mtime = latestMtime(files);
   const hit = cache.get(key);
-  if (hit && hit.mtime === mtime) return hit.pkg;
+  if (hit && hit.mtime === mtime) {
+    // Refresh recency so the LRU eviction below keeps hot entries.
+    cache.delete(key);
+    cache.set(key, hit);
+    return hit.pkg;
+  }
   const pkg = new ManifestGenerator(files).generate();
+  cache.delete(key);
   cache.set(key, { mtime, pkg });
+  // Evict the least-recently-used entries beyond the bound (Map preserves
+  // insertion order, so the first key is the oldest).
+  while (cache.size > MANIFEST_CACHE_MAX) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
   return pkg;
 }
 
