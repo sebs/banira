@@ -136,6 +136,22 @@ export function serveStdio(handle: (message: IncomingMessage) => Promise<JsonRpc
   const write = (response: JsonRpcResponse): void => {
     writeFrame(JSON.stringify(response) + '\n');
   };
+
+  // readline buffers a whole line before emitting it, so a single newline-less
+  // frame could grow unbounded in memory. Track the current line's size from raw
+  // chunks and abort once it exceeds the cap. See security-findings #12.
+  const MAX_FRAME_BYTES = 1_000_000;
+  let pendingBytes = 0;
+  process.stdin.on('data', (chunk: Buffer) => {
+    const lastNewline = chunk.lastIndexOf(0x0a);
+    pendingBytes = lastNewline === -1 ? pendingBytes + chunk.length : chunk.length - lastNewline - 1;
+    if (pendingBytes > MAX_FRAME_BYTES) {
+      pendingBytes = 0;
+      write(err(null, INVALID_REQUEST, `Frame exceeds ${MAX_FRAME_BYTES} bytes`));
+      process.stdin.destroy();
+    }
+  });
+
   const rl = createInterface({ input: process.stdin });
   rl.on('line', (line) => {
     const decoded = decode(line);
