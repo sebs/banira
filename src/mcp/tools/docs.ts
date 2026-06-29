@@ -109,7 +109,10 @@ export function registerDocsTools(registries: Registries, opts: McpServerOptions
 
       const { stylesheet, stylesheetMode, usedNetworkDefault } = resolveStylesheet(args, opts);
 
-      const docOptions: DocGenOptions = {};
+      // The agent may point generate_docs at an untrusted component, and the
+      // returned HTML is opened in a browser — so render @demo previews inertly
+      // (sandboxed iframe, no scripts) rather than injecting them live.
+      const docOptions: DocGenOptions = { safeDemos: true };
       if (scriptSrc !== undefined) docOptions.scriptSrc = scriptSrc;
       if (stylesheet !== undefined) docOptions.stylesheet = stylesheet;
 

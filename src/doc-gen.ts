@@ -12,6 +12,15 @@ export interface DocGenOptions {
     scriptSrc?: string;
     /** Page stylesheet: an external `{ href }`, inline `{ inline }` CSS, or `'none'`. Default: PicoCSS CDN. */
     stylesheet?: Stylesheet;
+    /**
+     * Render `@demo` previews inertly: the markup is shown inside a sandboxed
+     * (`sandbox`, no scripts) `<iframe srcdoc>` instead of being injected live
+     * into the page. Use this when documenting components you don't fully trust
+     * (e.g. via the MCP server), so a `@demo` block can't run script in the
+     * generated page. Default false (the live preview the CLI emits for the
+     * author's own component). See security-findings #3.
+     */
+    safeDemos?: boolean;
 }
 
 
@@ -134,7 +143,7 @@ export class DocGen {
         if (!context || !context.docComment) {
             throw new Error('Invalid parser context: docComment is undefined');
         }
-        const formatter = new FormatterDocPage(context, declaration);
+        const formatter = new FormatterDocPage(context, declaration, this.options.safeDemos === true);
         return formatter.createDocPage(this.tagName, this.src, this.title, this.stylesheet);
     }
 

@@ -37,16 +37,21 @@ function descriptionHtml(value: string): string {
 export class FormatterDocPage {
     private context: ParserContext;
     private declaration: CustomElementDeclaration | undefined;
+    private safeDemos: boolean;
 
     /**
      * @param context - Parsed TSDoc for the component (summary, `@demo` blocks).
      * @param declaration - Optional Custom Elements Manifest declaration; when
      *   present its attributes, properties, events, slots, CSS parts and CSS
      *   custom properties are rendered as an API reference.
+     * @param safeDemos - When true, render `@demo` previews inside a sandboxed
+     *   (script-disabled) `<iframe srcdoc>` instead of injecting them live, so a
+     *   demo block from an untrusted component can't execute script in the page.
      */
-    constructor(context: ParserContext, declaration?: CustomElementDeclaration) {
+    constructor(context: ParserContext, declaration?: CustomElementDeclaration, safeDemos = false) {
         this.context = context;
         this.declaration = declaration;
+        this.safeDemos = safeDemos;
     }
 
     get custom(): readonly DocBlock[] {
@@ -118,18 +123,32 @@ export class FormatterDocPage {
      * Renders every `@demo` block: each fenced code example is shown live
      * (so the custom element upgrades) alongside its source.
      *
-     * The preview intentionally injects the demo markup unescaped — that is
-     * what makes it live. Demo code comes from the component author's own
-     * TSDoc, so it is trusted at the same level as the component source
-     * itself. Do not feed untrusted third-party sources through the doc
-     * generator.
+     * The default preview intentionally injects the demo markup unescaped — that
+     * is what makes it live. Demo code comes from the component author's own
+     * TSDoc, so it is trusted at the same level as the component source itself.
+     * Do not feed untrusted third-party sources through the doc generator in this
+     * mode. When `safeDemos` is set the preview is instead rendered inside a
+     * sandboxed (no-scripts) `<iframe srcdoc>`, neutralising any script in the
+     * demo markup — used when documenting components that may be untrusted.
      */
+    /**
+     * The preview element for one demo block. In `safeDemos` mode the markup is
+     * placed in a sandboxed `<iframe srcdoc>` (no `allow-scripts`), so inline
+     * scripts and event handlers in untrusted demo markup never execute; the
+     * `srcdoc` value is attribute-escaped. Otherwise it is injected live.
+     */
+    private demoPreview(code: string): string {
+        return this.safeDemos
+            ? `<iframe class="demo-preview" sandbox title="demo preview (sandboxed)" srcdoc="${escapeHtml(code)}"></iframe>`
+            : `<div class="demo-preview">${code}</div>`;
+    }
+
     private renderDemos(): string {
         const demoBlocks = this.custom.filter(block => block.blockTag.tagName === DEMO_TAG);
         const sections = demoBlocks.flatMap(block =>
             this.collectFencedCode(block.content).map(fenced => `
         <article class="demo">
-            <div class="demo-preview">${fenced.code}</div>
+            ${this.demoPreview(fenced.code)}
             <pre><code class="language-${escapeHtml(fenced.language)}">${escapeHtml(fenced.code)}</code></pre>
         </article>`)
         );
