@@ -171,6 +171,34 @@ export const commands = [
       stylesheet at all.</p>`,
   },
   {
+    name: 'mcp',
+    summary: 'Run banira as a Model Context Protocol (stdio) server, so an AI coding assistant can introspect, verify, document and scaffold your vanilla components against banira’s real data — the manifest and actual compiler/test results — instead of hallucinating component APIs.',
+    args: [],
+    options: [
+      { flag: '--read-only', desc: 'Expose only the read/analysis tools — no file writes or scaffolding. Safe to leave always-on.' },
+      { flag: '--local-only', desc: 'Confine file access to the project (cwd or --project dir) and never emit network-reaching output (e.g. force a local doc stylesheet instead of the CDN).' },
+      { flag: '-p, --project <path>', desc: 'Path to a tsconfig.json whose options override the compiler defaults for the compile/analysis tools.' },
+    ],
+    examples: [
+      { label: 'run the server', cmd: 'banira mcp' },
+      { label: 'always-on, read-only', cmd: 'banira mcp --read-only' },
+      { label: 'inspect it interactively', cmd: 'npx @modelcontextprotocol/inspector npx banira mcp' },
+    ],
+    notes: `<p>Add it to any MCP client's config:</p>
+<pre>{
+  "mcpServers": {
+    "banira": { "command": "npx", "args": ["-y", "banira", "mcp"] }
+  }
+}</pre>
+      <p>It exposes <strong>10 tools</strong> — introspection (<code>get_component_manifest</code>,
+      <code>get_component_api</code>, <code>list_components</code>, <code>get_component_demo</code>), verify
+      (<code>check_component</code>, <code>compile_component</code>, <code>test_component</code>), <code>generate_docs</code>,
+      and authoring (<code>get_authoring_guidelines</code>, <code>scaffold_component</code>) — plus <strong>2 resources</strong>
+      (<code>resource://banira/components</code>, <code>resource://banira/authoring-guide</code>) and <strong>3 prompts</strong>.
+      It speaks newline-delimited JSON-RPC 2.0 (MCP <code>2025-11-25</code>) and adds no heavy dependencies. See the
+      <a href="/docs/mcp-server/">MCP server guide</a> for the full catalog and setup.</p>`,
+  },
+  {
     name: 'diff',
     summary: 'Compare two custom-elements.json files and report API changes with a suggested semver release type — useful as a release gate.',
     args: [

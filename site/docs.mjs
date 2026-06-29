@@ -158,6 +158,78 @@ tags render in a real reference page.</div>
   },
 
   {
+    slug: 'mcp-server',
+    label: 'MCP server',
+    title: 'MCP server — banira.js',
+    desc: 'Expose banira to AI coding assistants over the Model Context Protocol — typed component data and a real verify loop, so the agent stops guessing.',
+    sub: 'Run banira as an MCP server so an AI assistant introspects, verifies and scaffolds your components against real data — not hallucinated APIs.',
+    body: `
+<h2 id="why">Why an MCP server</h2>
+<p>AI coding assistants are good at reading your files but bad at two things: they <strong>hallucinate component APIs</strong>
+(attributes, events, slots that don't exist), and they write generic, framework-shaped code instead of your toolchain's
+conventions. banira already solves the data side — its <a href="/cli/manifest/">manifest</a> is structured, typed metadata,
+and its compiler and test helper produce real diagnostics. The
+<a href="https://modelcontextprotocol.io/">Model Context Protocol</a> exposes all of that to the agent: <strong>typed data</strong>
+to kill hallucination, and a <strong>verify loop</strong> — compile and actually mount the component — to check the agent's work.</p>
+
+<h2 id="setup">Add it to your client</h2>
+<p>The server runs as a local stdio process — no hosted service, nothing leaves your machine. Point any MCP client at it:</p>
+${code('mcp client config', [
+  '{',
+  '  "mcpServers": {',
+  '    "banira": { "command": "npx", "args": ["-y", "banira", "mcp"] }',
+  '  }',
+  '}',
+], { prompt: false })}
+<p>Or run it directly and explore it with the official
+<a href="https://github.com/modelcontextprotocol/inspector">MCP Inspector</a>:</p>
+${code('inspect', ['npx @modelcontextprotocol/inspector npx banira mcp'])}
+
+<h2 id="tools">Tools</h2>
+<p>Ten tools across four groups. Introspection and guidance are read-only; compile/verify and docs do the work.</p>
+<div class="table-wrap"><table class="opt">
+  <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td class="k">get_component_manifest</td><td>The full Custom Elements Manifest for the given file(s).</td></tr>
+    <tr><td class="k">get_component_api</td><td>A compact typed view of one component — attributes, properties, methods, events, slots, parts, custom properties.</td></tr>
+    <tr><td class="k">list_components</td><td>Every custom element in a file or directory, with a summary and per-feature counts.</td></tr>
+    <tr><td class="k">get_component_demo</td><td>A component's <code>@demo</code> blocks as structured <code>{ language, code }</code>.</td></tr>
+    <tr><td class="k">check_component</td><td>Type-check in memory (no files written) and return structured diagnostics, so the agent can self-correct.</td></tr>
+    <tr><td class="k">compile_component</td><td>Compile to browser-ready ES modules, writing <code>.js</code>/<code>.js.map</code>. <span class="dim">(read-only mode omits it)</span></td></tr>
+    <tr><td class="k">test_component</td><td>Mount the component (JSDOM by default) and report whether it registers and upgrades; optional real-browser run.</td></tr>
+    <tr><td class="k">generate_docs</td><td>Produce the HTML documentation page as a string.</td></tr>
+    <tr><td class="k">get_authoring_guidelines</td><td>banira's conventions — the jsdoc tag contract and per-variant starter components.</td></tr>
+    <tr><td class="k">scaffold_component</td><td>Generate a banira-shaped starter component from a spec. <span class="dim">(read-only mode omits it)</span></td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="resources-prompts">Resources &amp; prompts</h2>
+<p><strong>Resources</strong> — <code>resource://banira/components</code> (a manifest of every component in the workspace) and
+<code>resource://banira/authoring-guide</code> (the conventions as Markdown). <strong>Prompts</strong> —
+<code>implement_component_with_attributes</code>, <code>add_event_to_component</code>, and <code>document_and_verify</code>:
+the composable <em>scaffold → check → test → docs</em> flow that makes MCP outperform plain retrieval.</p>
+
+<h2 id="modes">Modes</h2>
+<div class="table-wrap"><table class="opt">
+  <thead><tr><th>Flag</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td class="k">--read-only</td><td>Expose only the read/analysis tools — no writes or scaffolding. Safe to leave always-on.</td></tr>
+    <tr><td class="k">--local-only</td><td>Confine file access to the project and never emit network-reaching output (e.g. a CDN doc stylesheet).</td></tr>
+    <tr><td class="k">-p, --project</td><td>A <code>tsconfig.json</code> whose options override the compiler defaults for the compile/analysis tools.</td></tr>
+  </tbody>
+</table></div>
+<div class="callout">banira implements the MCP base protocol by hand — newline-delimited JSON-RPC 2.0, revision
+<code>2025-11-25</code> — so the server adds no heavy dependencies on top of the toolchain you already have.</div>
+
+<h2 id="next">Next steps</h2>
+<div class="next-grid">
+  <a class="next-card" href="/cli/mcp/"><span class="k">reference</span><div class="t">banira mcp</div><div class="d">The command, its flags and examples.</div></a>
+  <a class="next-card" href="/docs/authoring-components/"><span class="k">guide</span><div class="t">Authoring components</div><div class="d">The jsdoc tags the tools surface to the agent.</div></a>
+</div>
+`,
+  },
+
+  {
     slug: 'ci-and-release',
     label: 'CI & release',
     title: 'CI & release — banira.js',

@@ -270,10 +270,20 @@ export class TestHelper {
         }
 
         const browser = await playwright.chromium.launch();
-        const page = await browser.newPage();
-        await page.setContent(`<!DOCTYPE html><html><body><${tagName}></${tagName}></body></html>`);
-        await page.addScriptTag({ content: code, type: 'module' });
-        await page.waitForFunction((tag: string) => !!customElements.get(tag), tagName);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let page: any;
+        try {
+            page = await browser.newPage();
+            await page.setContent(`<!DOCTYPE html><html><body><${tagName}></${tagName}></body></html>`);
+            await page.addScriptTag({ content: code, type: 'module' });
+            await page.waitForFunction((tag: string) => !!customElements.get(tag), tagName);
+        } catch (error) {
+            // Tear Chromium down if setup fails (e.g. the component never registers,
+            // so waitForFunction times out) — a rejected mount must not leak a
+            // headless browser process.
+            await browser.close();
+            throw error;
+        }
 
         const checkAccessibility = async (options?: A11yOptions): Promise<A11yResult> => {
             // axe-core ships its full browser bundle as a string on `.source`.

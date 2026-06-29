@@ -21,6 +21,7 @@ import { dev } from './actions/dev.js';
 import { test } from './actions/test.js';
 import { init } from './actions/init.js';
 import { prerender } from './actions/prerender.js';
+import { mcp } from './actions/mcp.js';
 
 // Read our own version from package.json at runtime. The CLI is built to
 // dist/cli/index.js, so the package root is two levels up.
@@ -234,5 +235,19 @@ program
   .argument('<files...>', 'Component source files to prerender')
   .option('-o, --output <path>', 'Write the markup to a file instead of stdout')
   .action((files, options) => prerender(files, { output: options.output }));
+
+program
+  .command('mcp')
+  .description('Run banira as a Model Context Protocol (stdio) server')
+  .option('--read-only', 'Expose only read/analysis tools; no file writes or scaffolding')
+  .option('--local-only', 'Restrict file access to the project/cwd and disable network-reaching output')
+  .option('-p, --project <path>', 'Path to tsconfig.json (threaded into compile/analysis tools)')
+  .action((options) =>
+    mcp({
+      readOnly: options.readOnly,
+      localOnly: options.localOnly,
+      project: options.project,
+    })
+  );
 
 program.parse();

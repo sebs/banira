@@ -450,6 +450,56 @@ re-render, no flash) when present, or creates one and renders `template`
 otherwise — adopting the constructable stylesheet either way (DSD markup ships
 without it). `banira init --hydrate` scaffolds a component using this pattern.
 
+### `banira mcp`
+
+Run banira as a [Model Context Protocol](https://modelcontextprotocol.io/) server
+over stdio, so an AI coding assistant can introspect, verify, document and
+scaffold your vanilla web components against banira's **real** data — the Custom
+Elements Manifest and the actual compiler/test results — instead of hallucinating
+component APIs. Add it to any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "banira": { "command": "npx", "args": ["-y", "banira", "mcp"] }
+  }
+}
+```
+
+| Option | Description |
+|---|---|
+| `--read-only` | Expose only the read/analysis tools — no file writes or scaffolding. Safe to leave always-on. |
+| `--local-only` | Confine file access to the project (cwd or `--project` dir) and never emit network-reaching output (e.g. force a local doc stylesheet instead of the CDN). |
+| `-p, --project <path>` | Path to a `tsconfig.json` whose options override the compiler defaults for the compile/analysis tools. |
+
+It exposes **10 tools**, **2 resources** and **3 prompts**:
+
+| Tool | Purpose |
+|---|---|
+| `get_component_manifest` | The full Custom Elements Manifest for the given file(s). |
+| `get_component_api` | A compact typed view of one component — attributes, properties, methods, events, slots, CSS parts and CSS custom properties. |
+| `list_components` | Every custom element in a file/directory, with a summary and per-feature counts. |
+| `get_component_demo` | A component's `@demo` blocks as structured `{ language, code }` usage examples. |
+| `check_component` | Type-check a component **in memory** (no files written) and return structured diagnostics, so the agent can self-correct. |
+| `compile_component` | Compile to browser-ready ES modules, writing `.js`/`.js.map` (omitted under `--read-only`). |
+| `test_component` | Mount the component (JSDOM by default) and report whether it registers and upgrades; optional real-browser run via Playwright. |
+| `generate_docs` | Produce the HTML documentation page as a string. |
+| `get_authoring_guidelines` | banira's conventions: the jsdoc tag contract the manifest reads, plus starter components per variant. |
+| `scaffold_component` | Generate a banira-shaped starter component from a spec (omitted under `--read-only`). |
+
+Resources expose `resource://banira/components` (a manifest of every component in
+the workspace) and `resource://banira/authoring-guide` (the conventions as
+Markdown); prompts wire up `implement_component_with_attributes`,
+`add_event_to_component`, and `document_and_verify` (the composable
+scaffold → check → test → docs flow). The server speaks newline-delimited
+JSON-RPC 2.0 (MCP revision `2025-11-25`) and adds no heavy dependencies. Inspect
+it interactively with the
+[MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+
+```bash
+npx @modelcontextprotocol/inspector npx banira mcp
+```
+
 ### Eleventy plugin
 
 `createEleventyPlugin({ files })` wires that renderer into an
