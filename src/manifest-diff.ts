@@ -19,8 +19,12 @@ export interface ManifestDiff {
 /** Indexes declarations by tagName (falling back to class name) for comparison. */
 function byKey(pkg: Package): Map<string, CustomElementDeclaration> {
     const map = new Map<string, CustomElementDeclaration>();
-    for (const decl of pkg.modules.flatMap((m) => m.declarations)) {
-        map.set(decl.tagName ?? decl.name, decl);
+    // Tolerate a malformed module/declaration shape (the CLI diff JSON.parses
+    // arbitrary files): skip rather than crash on a missing array. See finding #26.
+    for (const module of Array.isArray(pkg.modules) ? pkg.modules : []) {
+        for (const decl of module?.declarations ?? []) {
+            map.set(decl.tagName ?? decl.name, decl);
+        }
     }
     return map;
 }
@@ -74,6 +78,11 @@ function diffCollection<T extends { name: string }>(
  * an empty diff is `patch`.
  */
 export function diffManifests(before: Package, after: Package): ManifestDiff {
+    for (const [label, pkg] of [['before', before], ['after', after]] as const) {
+        if (!pkg || !Array.isArray(pkg.modules)) {
+            throw new Error(`diffManifests: the "${label}" manifest is malformed (expected a { modules: [...] } object).`);
+        }
+    }
     const changes: Change[] = [];
     const oldDecls = byKey(before);
     const newDecls = byKey(after);
