@@ -12,11 +12,33 @@
  * `require('pkg')` and throw a clear error at runtime if reached.
  */
 import { createProgram, ModuleKind, ModuleResolutionKind, type CompilerOptions } from 'typescript';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
+import { realpathSync } from 'fs';
 
 /** Normalize a filesystem path to a stable, forward-slash module id. */
 function toId(p: string): string {
     return resolve(p).replace(/\\/g, '/');
+}
+
+/** Resolve through symlinks, falling back to the lexical path when it doesn't exist. */
+function realPathOrSelf(p: string): string {
+    try {
+        return realpathSync(p);
+    } catch {
+        return p;
+    }
+}
+
+/** Options controlling how {@link bundleModule} resolves the module graph. */
+export interface BundleOptions {
+    /**
+     * Confine the bundled module graph to this directory: if the entry's local
+     * imports pull in a source file outside `confineToRoot`, bundling throws
+     * rather than inlining out-of-tree source. Used by the MCP `--local-only`
+     * mount path so a component can't reach `../../secret.ts`. See
+     * security-findings #22.
+     */
+    confineToRoot?: string;
 }
 
 /**
@@ -27,7 +49,11 @@ function toId(p: string): string {
  * @param compilerOptions - Base compiler options (module kind etc. are overridden).
  * @returns Self-contained JavaScript with no `import`/`export` statements.
  */
-export function bundleModule(fileName: string, compilerOptions: CompilerOptions = {}): string {
+export function bundleModule(
+    fileName: string,
+    compilerOptions: CompilerOptions = {},
+    bundleOptions: BundleOptions = {}
+): string {
     const entry = toId(fileName);
 
     // Drop outDir so emitted paths mirror the source tree (keeps relative
@@ -44,6 +70,21 @@ export function bundleModule(fileName: string, compilerOptions: CompilerOptions 
     };
 
     const program = createProgram([entry], options);
+
+    // Hold the bundled graph to a root: every non-declaration source the program
+    // pulled in (the entry plus its local imports) must stay inside it, so a
+    // relative import can't drag out-of-tree source into the bundle.
+    if (bundleOptions.confineToRoot) {
+        const root = realPathOrSelf(resolve(bundleOptions.confineToRoot));
+        for (const sf of program.getSourceFiles()) {
+            if (sf.isDeclarationFile) continue; // skip lib + .d.ts
+            const real = realPathOrSelf(sf.fileName);
+            if (real !== root && !real.startsWith(root + sep)) {
+                throw new Error(`bundleModule: refusing to bundle "${sf.fileName}" outside ${root} (--local-only).`);
+            }
+        }
+    }
+
     const modules = new Map<string, string>();
     // Custom writeFile captures emitted JS in memory — nothing touches disk.
     program.emit(undefined, (outPath, data) => {

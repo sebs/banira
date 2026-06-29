@@ -26,6 +26,7 @@ export { ManifestGenerator, eventTypeText } from './manifest.js';
 export { lowerCssImports, isCssModuleNotFoundDiagnostic } from './css-transformer.js';
 export type { CssLoweringOptions } from './css-transformer.js';
 export { bundleModule } from './module-bundler.js';
+export type { BundleOptions } from './module-bundler.js';
 export { transpileToEsm } from './transpile-module.js';
 export type {
     Package,

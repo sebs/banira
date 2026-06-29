@@ -255,6 +255,14 @@ export class TestHelper {
     public blockNetwork: boolean = false;
 
     /**
+     * When set, `compileAndMountAsScript` confines the bundled module graph to
+     * this directory — a component's local imports cannot pull source from
+     * outside it into the mounted bundle. Used by the MCP `--local-only` path.
+     * See security-findings #22.
+     */
+    public confineToRoot?: string;
+
+    /**
      * Upper bound (ms) for waiting on a custom element to be defined before
      * giving up, so a component that never registers fails fast instead of
      * hanging. Resolution happens as soon as the element is defined.
@@ -290,7 +298,11 @@ export class TestHelper {
         compilerOptions: CompilerOptions = Compiler.DEFAULT_COMPILER_OPTIONS,
         attributes?: Record<string, string>
     ): Promise<MountContext> {
-        const code = bundleModule(fileName, compilerOptions);
+        const code = bundleModule(
+            fileName,
+            compilerOptions,
+            this.confineToRoot ? { confineToRoot: this.confineToRoot } : undefined
+        );
         return this.mountAsScript(tagName, code, attributes);
     }
 

@@ -97,11 +97,13 @@ async function jsdomSingle(
   tagName: string,
   queryList: string[] | undefined,
   readyTimeout: number | undefined,
-  blockNetwork: boolean
+  blockNetwork: boolean,
+  confineToRoot: string | undefined
 ): Promise<SingleResult> {
   const helper = new TestHelper();
   if (readyTimeout !== undefined) helper.readyTimeout = readyTimeout;
   if (blockNetwork) helper.blockNetwork = true;
+  if (confineToRoot) helper.confineToRoot = confineToRoot;
   const ctx = await helper.compileAndMountAsScript(tagName, file);
   try {
     const registered = !!ctx.window.customElements.get(tagName);
@@ -212,6 +214,9 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
     async (args) => {
       const engine = typeof args.engine === 'string' ? args.engine : 'jsdom';
       const readyTimeout = clampReadyTimeout(args.readyTimeout);
+      // Confinement root for --local-only: also bounds the bundled import graph
+      // so a component can't drag out-of-tree source into the mounted bundle.
+      const confineRoot = opts.localOnly ? resolve(opts.project ? dirname(opts.project) : process.cwd()) : undefined;
 
       // Mounting executes the component's code. Under --local-only, a real
       // browser (Playwright) has unrestricted network access we cannot strip, so
@@ -229,7 +234,10 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
         if (args.reflection === true) smokeOptions.reflection = true;
         if (args.slots === true) smokeOptions.slots = true;
         if (readyTimeout !== undefined) smokeOptions.readyTimeout = readyTimeout;
-        if (opts.localOnly) smokeOptions.blockNetwork = true;
+        if (confineRoot) {
+          smokeOptions.blockNetwork = true;
+          smokeOptions.confineToRoot = confineRoot;
+        }
         const results = await smokeTestManifest(files, smokeOptions);
         const components = results.map((r) => ({
           tagName: r.tagName,
@@ -301,7 +309,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
         }
       }
 
-      const single = await jsdomSingle(file, tagName, queryList, readyTimeout, opts.localOnly === true);
+      const single = await jsdomSingle(file, tagName, queryList, readyTimeout, opts.localOnly === true, confineRoot);
       const result: Record<string, unknown> = {
         engineUsed: 'jsdom',
         ok: single.ok,

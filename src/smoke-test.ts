@@ -39,6 +39,12 @@ export interface SmokeOptions {
      * to {@link TestHelper.blockNetwork}. See security-findings #1.
      */
     blockNetwork?: boolean;
+    /**
+     * Confine each component's bundled module graph to this directory (local
+     * imports can't pull in out-of-tree source). Forwarded to
+     * {@link TestHelper.confineToRoot}. See security-findings #22.
+     */
+    confineToRoot?: string;
 }
 
 /**
@@ -63,6 +69,7 @@ export async function smokeTestManifest(files: string[], options: SmokeOptions =
                 const helper = new TestHelper();
                 if (options.readyTimeout !== undefined) helper.readyTimeout = options.readyTimeout;
                 if (options.blockNetwork) helper.blockNetwork = true;
+                if (options.confineToRoot) helper.confineToRoot = options.confineToRoot;
                 const context = await helper.compileAndMountAsScript(decl.tagName, module.path, compilerOptions);
                 const defined = context.window.customElements.get(decl.tagName);
                 const element = context.document.querySelector(decl.tagName);
