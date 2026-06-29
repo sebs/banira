@@ -6,6 +6,30 @@ export interface TypeShimOptions {
     jsx?: boolean;
 }
 
+const IDENT_RE = /^[A-Za-z_$][\w$]*$/;
+
+/**
+ * A member name safe to emit inside an interface: bare when it's a valid
+ * identifier, otherwise a JSON-quoted+escaped string-literal member. A manifest
+ * member name is verbatim source (a class can have a string-literal/computed
+ * name), so without this a hostile name like `x: 1;}\ndeclare global {...` would
+ * close the interface early and inject top-level declarations. See finding #23.
+ */
+function memberName(name: string): string {
+    return IDENT_RE.test(name) ? name : JSON.stringify(name);
+}
+
+/** A parameter name safe to emit in a signature: the name if a valid identifier, else a positional placeholder. */
+function paramName(name: string, index: number): string {
+    return IDENT_RE.test(name) ? name : `arg${index}`;
+}
+
+/** Neutralise a doc-comment line so it can't terminate the `/* *​/` block or carry control chars. */
+function safeDocLine(line: string): string {
+    // eslint-disable-next-line no-control-regex
+    return line.replace(/\*\//g, '*\\/').replace(/[\u0000-\u001f]/g, " ");
+}
+
 /** A safe TypeScript interface name derived from a custom element declaration. */
 function interfaceName(decl: CustomElementDeclaration): string {
     const base = decl.name && /^[A-Za-z_$][\w$]*$/.test(decl.name)
@@ -23,24 +47,24 @@ function docComment(description: string | undefined, deprecated: boolean | strin
     if (description) lines.push(...description.split(/\r?\n/));
     if (deprecated !== undefined) lines.push(`@deprecated${typeof deprecated === 'string' ? ` ${deprecated}` : ''}`);
     if (lines.length === 0) return '';
-    if (lines.length === 1) return `${indent}/** ${lines[0]} */\n`;
-    return `${indent}/**\n${lines.map((l) => `${indent} * ${l}`).join('\n')}\n${indent} */\n`;
+    if (lines.length === 1) return `${indent}/** ${safeDocLine(lines[0]!)} */\n`;
+    return `${indent}/**\n${lines.map((l) => `${indent} * ${safeDocLine(l)}`).join('\n')}\n${indent} */\n`;
 }
 
 function fieldMember(field: ClassField): string {
     const doc = docComment(field.description, field.deprecated, '  ');
     const ro = field.readonly ? 'readonly ' : '';
     const type = field.type?.text ?? 'unknown';
-    return `${doc}  ${ro}${field.name}: ${type};`;
+    return `${doc}  ${ro}${memberName(field.name)}: ${type};`;
 }
 
 function methodMember(method: ClassMethod): string {
     const doc = docComment(method.description, method.deprecated, '  ');
     const params = (method.parameters ?? [])
-        .map((p) => `${p.rest ? '...' : ''}${p.name}${p.optional && !p.rest ? '?' : ''}: ${p.type?.text ?? 'unknown'}`)
+        .map((p, i) => `${p.rest ? '...' : ''}${paramName(p.name, i)}${p.optional && !p.rest ? '?' : ''}: ${p.type?.text ?? 'unknown'}`)
         .join(', ');
     const ret = method.return?.type?.text ?? 'void';
-    return `${doc}  ${method.name}(${params}): ${ret};`;
+    return `${doc}  ${memberName(method.name)}(${params}): ${ret};`;
 }
 
 /**
@@ -55,11 +79,12 @@ function eventListenerOverloads(decl: CustomElementDeclaration, name: string): s
     for (const e of events) {
         const doc = docComment(e.description, e.deprecated, '  ');
         const evType = eventTypeText(e);
+        const evName = JSON.stringify(e.name);
         lines.push(
-            `${doc}  addEventListener(type: '${e.name}', listener: (this: ${name}, ev: ${evType}) => void, options?: boolean | AddEventListenerOptions): void;`
+            `${doc}  addEventListener(type: ${evName}, listener: (this: ${name}, ev: ${evType}) => void, options?: boolean | AddEventListenerOptions): void;`
         );
         lines.push(
-            `  removeEventListener(type: '${e.name}', listener: (this: ${name}, ev: ${evType}) => void, options?: boolean | EventListenerOptions): void;`
+            `  removeEventListener(type: ${evName}, listener: (this: ${name}, ev: ${evType}) => void, options?: boolean | EventListenerOptions): void;`
         );
     }
     return lines;
@@ -92,12 +117,12 @@ export function toTypeDefinitions(pkg: Package, options: TypeShimOptions = {}): 
     const decls = pkg.modules.flatMap((m) => m.declarations).filter((d) => d.tagName);
 
     const interfaces = decls.map(declarationInterface);
-    const tagMap = decls.map((d) => `    '${d.tagName}': ${interfaceName(d)};`).join('\n');
+    const tagMap = decls.map((d) => `    ${JSON.stringify(d.tagName)}: ${interfaceName(d)};`).join('\n');
 
     const globalBlocks = [`  interface HTMLElementTagNameMap {\n${tagMap}\n  }`];
     if (options.jsx) {
         const jsxMap = decls
-            .map((d) => `      '${d.tagName}': Partial<${interfaceName(d)}> & { [attr: string]: unknown };`)
+            .map((d) => `      ${JSON.stringify(d.tagName)}: Partial<${interfaceName(d)}> & { [attr: string]: unknown };`)
             .join('\n');
         globalBlocks.push(`  namespace JSX {\n    interface IntrinsicElements {\n${jsxMap}\n    }\n  }`);
     }

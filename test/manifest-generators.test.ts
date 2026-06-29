@@ -144,7 +144,7 @@ describe('toTypeDefinitions', () => {
         assert.match(dts, /readonly summary: string;/);
         assert.match(dts, /setRating\(star: number, animate\?: boolean\): number;/);
         assert.match(dts, /interface HTMLElementTagNameMap/);
-        assert.match(dts, /'rating-widget': RatingWidgetElement;/);
+        assert.match(dts, /"rating-widget": RatingWidgetElement;/);
         assert.doesNotMatch(dts, /namespace JSX/);
     });
 

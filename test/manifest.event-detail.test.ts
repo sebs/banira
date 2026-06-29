@@ -62,7 +62,7 @@ describe('ManifestGenerator — event detail/payload type (issue #16)', () => {
 
     it('emits typed addEventListener overloads in the generated .d.ts', () => {
         const dts = toTypeDefinitions(manifestFor('detail-event-element.ts'));
-        assert.match(dts, /addEventListener\(type: 'change', listener: \(this: \w+, ev: CustomEvent<\{ value: number \}>\)/);
-        assert.match(dts, /removeEventListener\(type: 'change',/);
+        assert.match(dts, /addEventListener\(type: "change", listener: \(this: \w+, ev: CustomEvent<\{ value: number \}>\)/);
+        assert.match(dts, /removeEventListener\(type: "change",/);
     });
 });
