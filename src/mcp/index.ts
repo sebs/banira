@@ -126,7 +126,19 @@ async function getPrompt(registries: Registries, id: JsonRpcId, params: unknown)
   const args: Record<string, string> = {};
   if (p?.arguments && typeof p.arguments === 'object') {
     for (const [key, value] of Object.entries(p.arguments as Record<string, unknown>)) {
-      if (typeof value === 'string') args[key] = value;
+      if (typeof value !== 'string') continue;
+      // Prompt renderers interpolate these values into the returned message
+      // text. Reject control characters (newlines especially) and absurd
+      // lengths so an argument can't inject extra instruction lines into the
+      // prompt the agent receives. See security-findings #10.
+      if (value.length > 1000) {
+        return err(id, INVALID_PARAMS, `Argument "${key}" for prompt "${name}" is too long (max 1000 chars)`);
+      }
+      // eslint-disable-next-line no-control-regex
+      if (/[\u0000-\u001f\u007f]/.test(value)) {
+        return err(id, INVALID_PARAMS, `Argument "${key}" for prompt "${name}" contains control characters`);
+      }
+      args[key] = value;
     }
   }
   for (const argDef of prompt.def.arguments ?? []) {
