@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { resolve, join, dirname, sep } from 'node:path';
+import { resolve, dirname, sep } from 'node:path';
 import { scaffoldComponent, type ScaffoldOptions } from '../../index.js';
 import type { Registries } from '../registry.js';
 import type { McpServerOptions } from '../options.js';
@@ -174,7 +174,12 @@ export function registerAuthoringTools(registries: Registries, opts: McpServerOp
         }
         const written: string[] = [];
         for (const f of files) {
-          const outPath = join(targetDir, f.path);
+          // Defense-in-depth: keep every generated file inside targetDir even if
+          // a scaffold relative path were ever to contain a separator or "..".
+          const outPath = resolve(targetDir, f.path);
+          if (outPath !== targetDir && !outPath.startsWith(targetDir + sep)) {
+            throw new Error(`Refusing to write outside ${targetDir} (suspicious file path "${f.path}").`);
+          }
           if (!args.force && existsSync(outPath)) {
             throw new Error(`Refusing to overwrite ${outPath} (pass force:true to allow).`);
           }
