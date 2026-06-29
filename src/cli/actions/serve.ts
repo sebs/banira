@@ -79,6 +79,40 @@ const HMR_RELOAD = `<script type="module">${HMR_CLIENT_SCRIPT}</script>`;
 // change appears not to take effect.
 const NO_STORE = 'no-store';
 
+const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/** The hostname part of a `Host` header, stripping the port and `[]` IPv6 brackets. */
+function hostnameOf(hostHeader: string): string {
+  const h = hostHeader.trim();
+  if (h.startsWith('[')) {
+    const end = h.indexOf(']');
+    return (end >= 0 ? h.slice(1, end) : h.slice(1)).toLowerCase();
+  }
+  const colon = h.indexOf(':');
+  return (colon >= 0 ? h.slice(0, colon) : h).toLowerCase();
+}
+
+/** True when `host` is a loopback interface (only the local machine can reach the server). */
+function isLoopbackHost(host: string): boolean {
+  return host === '127.0.0.1' || host === '::1' || host === 'localhost';
+}
+
+/**
+ * DNS-rebinding guard for the network-exposed dev server (`--host 0.0.0.0`): a
+ * request is allowed only when its `Host` is loopback or an IP literal, or
+ * matches the configured bind host. A rebinding attack (a malicious page whose
+ * domain re-resolves to the dev box) carries an attacker domain in `Host`, so it
+ * is rejected; direct IP/LAN access — the deliberate, documented exposure — still
+ * works. See security-findings (HMR/Host residual).
+ */
+function isAllowedHost(hostHeader: string | undefined, configuredHost: string): boolean {
+  if (!hostHeader) return false; // HTTP/1.1 requires Host; a missing one is suspect
+  const hostname = hostnameOf(hostHeader);
+  if (isLoopbackHost(hostname)) return true;
+  if (IPV4_RE.test(hostname) || hostname.includes(':')) return true; // IPv4 / IPv6 literal
+  return hostname === configuredHost.toLowerCase();
+}
+
 /** An http.Server that can also push a live-reload to connected browsers. */
 export interface ReloadableServer extends Server {
   /** Push a reload to every connected live-reload client; returns the count. */
@@ -114,9 +148,17 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
     throw new Error(`Invalid port "${options.port}": expected a number between 0 and 65535`);
   }
   const host = options.host ?? '127.0.0.1';
+  // When bound to a non-loopback interface, vet the Host header to blunt DNS
+  // rebinding (loopback binds are only reachable locally, so no check needed).
+  const checkHost = !isLoopbackHost(host);
   const clients = new Set<ServerResponse>();
 
   const server = createServer(async (req, res) => {
+    if (checkHost && !isAllowedHost(req.headers.host, host)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end('Forbidden host');
+      return;
+    }
+
     const url = (req.url ?? '/').split('?')[0]!;
 
     if (url === '/__livereload') {
