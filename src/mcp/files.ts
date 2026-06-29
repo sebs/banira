@@ -1,5 +1,5 @@
 import { resolve, dirname, sep } from 'node:path';
-import { statSync } from 'node:fs';
+import { statSync, realpathSync } from 'node:fs';
 import { ManifestGenerator, findModuleFiles, type Package } from '../index.js';
 import type { McpServerOptions } from './options.js';
 
@@ -27,6 +27,20 @@ function isFile(path: string): boolean {
 }
 
 /**
+ * Resolve a path through symlinks so the confinement check can't be defeated by
+ * a symlink that lives inside the root but points outside it. Falls back to the
+ * lexical path when it doesn't exist yet (a non-existent path can't be a symlink
+ * escape and is caught later by the missing-file check).
+ */
+function realPathOrSelf(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
+/**
  * Resolve a tool's `files`/`dir` arguments to a sorted list of absolute `.ts`
  * paths. Requires at least one of the two; throws {@link InputError} for an
  * empty selection, missing files, or — under `--local-only` — a path that
@@ -47,8 +61,14 @@ export function resolveInputFiles(args: Record<string, unknown>, opts: McpServer
   const unique = [...new Set(out)].sort();
 
   if (opts.localOnly) {
-    const root = resolve(opts.project ? dirname(opts.project) : process.cwd());
-    const escaped = unique.filter((f) => f !== root && !f.startsWith(root + sep));
+    // Compare *real* paths (both sides) so neither a symlinked input that points
+    // outside the root nor a symlinked root (e.g. macOS /tmp -> /private/tmp)
+    // breaks the check. See security-findings #5.
+    const root = realPathOrSelf(resolve(opts.project ? dirname(opts.project) : process.cwd()));
+    const escaped = unique.filter((f) => {
+      const real = realPathOrSelf(f);
+      return real !== root && !real.startsWith(root + sep);
+    });
     if (escaped.length > 0) {
       throw new InputError(`--local-only: refusing to read path(s) outside ${root}: ${escaped.join(', ')}`);
     }
