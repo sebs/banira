@@ -12,6 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { page, subpage } from './shell.mjs';
 import { guides } from './docs.mjs';
+import { lintRules, lintRuleBody } from './lint-rules.mjs';
 import { commands } from './cli.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -60,7 +61,9 @@ write('docs/index.html', subpage({
   sidebar: docsSidebar(null),
   body: `<div class="next-grid">` + guides.map(g =>
     `<a class="next-card" href="/docs/${g.slug}/"><span class="k">guide</span><div class="t">${g.label}</div><div class="d">${g.sub}</div></a>`
-  ).join('') + `</div>`,
+  ).join('') +
+    `<a class="next-card" href="/docs/lint-rules/"><span class="k">reference</span><div class="t">Lint rules</div><div class="d">Every <code>banira lint</code> rule, with a flagged and a good example.</div></a>` +
+    `</div>`,
 }));
 
 // ── docs guides ──
@@ -74,6 +77,43 @@ for (const g of guides) {
     sub: g.sub,
     sidebar: docsSidebar(g.slug),
     body: g.body,
+  }));
+}
+
+// ── lint rules (one deterministic URL per rule id) ──
+const lintSidebar = current => `<aside class="sidebar"><div class="group"><h4>Lint rules</h4>` +
+  `<a href="/docs/lint-rules/"${current === null ? ' aria-current="page"' : ''}>overview</a>` +
+  lintRules.map(r => `<a href="/docs/lint-rules/${r.id}/"${r.id === current ? ' aria-current="page"' : ''}>${r.id}</a>`).join('') +
+  `</div></aside>`;
+
+write('docs/lint-rules/index.html', subpage({
+  title: 'Lint rules — banira.js',
+  description: 'Every banira lint rule, with a flagged and a good example.',
+  active: 'docs',
+  breadcrumb: [{ label: 'banira.js', href: '/' }, { label: 'Docs', href: '/docs/' }, { label: 'Lint rules' }],
+  heading: 'Lint rules',
+  sub: 'Each <code>banira lint</code> rule has its own page — why it matters, plus a flagged vs. good example. Run a subset with <code>--rules &lt;id&gt;</code>.',
+  sidebar: lintSidebar(null),
+  body: `<div class="next-grid">` + lintRules.map(r =>
+    `<a class="next-card" href="/docs/lint-rules/${r.id}/"><span class="k">rule</span><div class="t">${r.id}</div><div class="d">${r.description}.</div></a>`
+  ).join('') + `</div>`,
+}));
+
+for (const r of lintRules) {
+  write(`docs/lint-rules/${r.id}/index.html`, subpage({
+    title: `${r.id} — lint rules — banira.js`,
+    description: `${r.description}.`,
+    active: 'docs',
+    breadcrumb: [
+      { label: 'banira.js', href: '/' },
+      { label: 'Docs', href: '/docs/' },
+      { label: 'Lint rules', href: '/docs/lint-rules/' },
+      { label: r.id },
+    ],
+    heading: r.id,
+    sub: r.label,
+    sidebar: lintSidebar(r.id),
+    body: lintRuleBody(r),
   }));
 }
 
@@ -172,5 +212,5 @@ ${(await import('./docs.mjs')).code('try it locally', ['npx banira init my-butto
 `,
 }));
 
-const pages = 1 + 1 + guides.length + 1 + commands.length + 1;
+const pages = 1 + 1 + guides.length + 1 + lintRules.length + 1 + commands.length + 1;
 console.log(`✓ built ${pages} pages → ${out}`);

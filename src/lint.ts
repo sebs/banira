@@ -31,6 +31,18 @@ export const LINT_RULES: { id: string; description: string }[] = [
     { id: 'undocumented-slot', description: 'rendered <slot>s are documented with @slot (content model)' },
 ];
 
+/** Base URL of the published lint-rule documentation — one page per rule id. */
+export const LINT_DOCS_BASE = 'https://sebs.github.io/banira/docs/lint-rules';
+
+/**
+ * The canonical documentation URL for a lint rule, derived deterministically
+ * from its id so the path ends with the id: `${LINT_DOCS_BASE}/<id>`. Every id
+ * in {@link LINT_RULES} has a page there with a flagged and a good example.
+ */
+export function ruleDocsUrl(id: string): string {
+    return `${LINT_DOCS_BASE}/${id}`;
+}
+
 export interface LintOptions {
     compilerOptions?: CompilerOptions;
     readyTimeout?: number;

@@ -265,7 +265,9 @@ export const commands = [
     notes: `<p>Each element is mounted in JSDOM and checked by independent, id'd rules: <code>reflection</code>,
       <code>host-overridable</code>, and the documentation-coverage rules <code>undocumented-event</code> /
       <code>-attribute</code> / <code>-part</code> / <code>-slot</code>. Findings are advisory warnings by default (exit 0);
-      <code>--strict</code> makes them fail the build.</p>`,
+      <code>--strict</code> makes them fail the build.</p>
+      <p>Every rule has its own reference page — what it checks, why it matters, and a flagged vs. good example — under
+      <a href="/docs/lint-rules/">Lint rules</a> (one URL per rule id, e.g. <a href="/docs/lint-rules/reflection/"><code>/docs/lint-rules/reflection</code></a>).</p>`,
   },
   {
     name: 'stories',
