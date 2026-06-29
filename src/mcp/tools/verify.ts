@@ -61,6 +61,15 @@ function resolveCompilerOptions(
 
 const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
+/** Upper bound for `readyTimeout` (ms); an unclamped value lets a call hang ~forever. */
+const MAX_READY_TIMEOUT = 60_000;
+
+/** Clamp a caller-supplied ms timeout into [0, MAX_READY_TIMEOUT]. See finding #8. */
+function clampReadyTimeout(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return Math.min(Math.max(value, 0), MAX_READY_TIMEOUT);
+}
+
 interface SingleResult {
   ok: boolean;
   queryResults?: Array<{ selector: string; matched: number }>;
@@ -161,7 +170,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
           engine: { enum: ['jsdom', 'browser', 'auto'], description: 'Default jsdom; browser/auto use Playwright when present.' },
           reflection: { type: 'boolean', description: 'Also run the attribute↔property reflection check (advisory).' },
           slots: { type: 'boolean', description: 'Also check declared @slots project (advisory).' },
-          readyTimeout: { type: 'number', description: 'JSDOM mode only: max ms to wait for the element to register (default 1000).' },
+          readyTimeout: { type: 'number', minimum: 0, maximum: MAX_READY_TIMEOUT, description: `JSDOM mode only: max ms to wait for the element to register (default 1000, capped at ${MAX_READY_TIMEOUT}).` },
           query: { type: 'array', items: { type: 'string' }, description: 'JSDOM single-component mode only: shadow-piercing selectors to probe.' },
           a11y: { type: 'boolean', description: 'Browser mode: run an axe-core accessibility scan (requires Playwright + axe-core).' },
           a11yOptions: { type: 'object', description: 'axe.run options forwarded to checkAccessibility.' },
@@ -186,7 +195,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
     },
     async (args) => {
       const engine = typeof args.engine === 'string' ? args.engine : 'jsdom';
-      const readyTimeout = typeof args.readyTimeout === 'number' ? args.readyTimeout : undefined;
+      const readyTimeout = clampReadyTimeout(args.readyTimeout);
 
       // Mounting executes the component's code. Under --local-only, a real
       // browser (Playwright) has unrestricted network access we cannot strip, so
