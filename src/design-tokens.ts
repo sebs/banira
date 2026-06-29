@@ -136,6 +136,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 const MAX_TOKEN_DEPTH = 100;
 
 /**
+ * Upper bound on a single resolved token value's length. The chain-depth cap
+ * alone doesn't stop *multiplicative* alias fan-out (a value embedding the next
+ * token twice — `{t}{t}` — doubles the output per level at linear depth), which
+ * blows past V8's max string length / OOMs from a tiny document. Capping each
+ * resolved value throws early, well before the blow-up. See security-findings #21.
+ */
+const MAX_TOKEN_VALUE_LENGTH = 100_000;
+
+/**
  * Walks a DTCG document collecting every token (a node carrying `$value`),
  * tracking the dotted path and the `$type` inherited from ancestor groups.
  */
@@ -205,6 +214,11 @@ function resolveTokenValue(
         value = renderRawValue(rv);
     }
     stack.delete(pathStr);
+    if (value !== undefined && value.length > MAX_TOKEN_VALUE_LENGTH) {
+        throw new Error(
+            `token "${pathStr}" resolves to an oversized value (> ${MAX_TOKEN_VALUE_LENGTH} chars); aliases may be expanding exponentially`
+        );
+    }
     memo.set(pathStr, value);
     return value;
 }
