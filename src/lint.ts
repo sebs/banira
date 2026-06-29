@@ -52,13 +52,23 @@ interface DomShadowRoot {
     adoptedStyleSheets?: ArrayLike<{ cssRules: ArrayLike<DomStyleRule> }>;
 }
 
-/** Collects `:host` selectors that use `!important` from raw CSS text (block-by-block). */
+/**
+ * Collects `:host` selectors that use `!important` from raw CSS text
+ * (block-by-block). Scans for `{ … }` pairs with `indexOf` rather than a
+ * `/([^{}]+)\{([^{}]*)\}/g` regex, whose `[^{}]+` backtracks quadratically on a
+ * long brace-free run (a `<style>` DoS). See security-findings #25.
+ */
 function findHostImportant(cssText: string, out: string[]): void {
-    const ruleRe = /([^{}]+)\{([^{}]*)\}/g;
-    let match: RegExpExecArray | null;
-    while ((match = ruleRe.exec(cssText)) !== null) {
-        const selector = match[1]!.trim();
-        if (selector.includes(':host') && /!\s*important/i.test(match[2]!)) out.push(selector);
+    let from = 0;
+    for (;;) {
+        const open = cssText.indexOf('{', from);
+        if (open === -1) break;
+        const close = cssText.indexOf('}', open + 1);
+        if (close === -1) break;
+        const selector = cssText.slice(from, open).trim();
+        const body = cssText.slice(open + 1, close);
+        if (selector.includes(':host') && /!\s*important/i.test(body)) out.push(selector);
+        from = close + 1;
     }
 }
 
