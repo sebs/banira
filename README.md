@@ -500,6 +500,27 @@ it interactively with the
 npx @modelcontextprotocol/inspector npx banira mcp
 ```
 
+#### Security model
+
+The server operates on the files it is pointed at, and the introspection tools
+surface component-authored text (`@summary`, descriptions, `@demo` code)
+straight back to the agent. Treat that text as **untrusted data, not
+instructions** — a malicious component's JSDoc is a prompt-injection channel.
+Two more things to keep in mind when pointing the server at code you don't
+control:
+
+- `test_component` **executes** the component's code to mount it. Under
+  `--local-only` the JSDOM engine runs with the script-reachable network APIs
+  (`XMLHttpRequest`/`WebSocket`/`fetch`) removed and the real-browser engine
+  refused; without `--local-only`, mounted code can reach the network.
+- `generate_docs` returns an HTML page that you then open in a browser. It
+  renders `@demo` previews inside a sandboxed (script-disabled) iframe, but the
+  page is still derived from the component source.
+
+For untrusted or third-party workspaces, run with **`--read-only --local-only`**
+(read-only is safe to leave always-on). `--local-only` also confines every file
+read to the project root and forces local/offline doc output.
+
 ### Eleventy plugin
 
 `createEleventyPlugin({ files })` wires that renderer into an
