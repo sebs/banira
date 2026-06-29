@@ -3,6 +3,8 @@
 **Review date:** 2026-06-29
 **Primary focus:** the MCP server (`src/mcp/`), added in commit `86cde3d` (`feat(mcp): add the banira mcp Model Context Protocol server`) — the newest and least-reviewed feature. A lighter pass was planned over the other toolchain features.
 
+> **Status: remediated.** All actionable findings (#1–#16) were fixed, one commit per finding, on `main` (see the [Resolution](#resolution) table). The full test suite (373 tests) passes after every commit. #17–#19 are scope/by-design/already-mitigated items, addressed as noted.
+
 > **Scope note / methodology.** This review was run as a multi-agent fan-out (one finder per attack surface, each finding adversarially verified). The agent run **stalled ~1 minute into the analysis phase**, before the dedicated "other features" finders finished and before the automated verify/synthesis phases ran. The findings below were therefore consolidated by hand from (a) a full manual read of every `src/mcp/` file, (b) the finders' partial conclusions, and (c) **direct empirical confirmation** of the highest-impact items (SSRF, the HTML-injection lines). The MCP surface is covered thoroughly; the **non-MCP feature pass is incomplete** (see #17). Prior in-code references to `security-findings #N` point to an earlier review whose file is no longer in the tree — this is a fresh document and renumbers from 1.
 
 ## Threat model
@@ -26,6 +28,32 @@ The server itself advertises two security boundaries, so breaking either is a re
 | **Total** | **19** | |
 
 ✅ **Confirmed correct (not findings):** `--read-only` does correctly omit every mutating tool (`scaffold_component`, `compile_component`); `resolveInputFiles` confines explicit `files`/`dir` under `--local-only`; `generate_docs` correctly escapes `scriptSrc`, page title, component summaries/descriptions, and all API-table cells; `generate_docs`/`stylesheetPath`/`href` reads are confined under `--local-only`; `findModuleFiles` does **not** descend into symlinked directories (no symlink-loop recursion).
+
+## Resolution
+
+Each finding was fixed in its own commit (validated by the pre-commit hook: lint + 373 tests).
+
+| # | Severity | Fix | Commit |
+| --- | --- | --- | --- |
+| 1 | High | Strip XHR/WebSocket/fetch from the JSDOM mount and refuse the browser engine under `--local-only` | `61c04b6` |
+| 2 | High | Confine the `project`/tsconfig read to the root under `--local-only` | `9fdf853` |
+| 3 | High | Render `@demo` previews in a sandboxed (no-scripts) iframe for `generate_docs` (`safeDemos`) | `81f9d8a` |
+| 4 | Medium | Validate `tagName` against the custom-element naming rule before page interpolation | `1c70565` |
+| 5 | Medium | `realpath` both sides before the `--local-only` prefix check | `5474df7` |
+| 6 | Medium | Bound the manifest cache (LRU, 64 entries) | `bcae552` |
+| 7 | Medium | Cap files fed into a `ts.Program` (2000) for `dir` scans and the components resource | `010fed0` |
+| 8 | Medium | Clamp `readyTimeout` to `[0, 60000]` ms | `06afbc1` |
+| 9 | Medium | Document the untrusted-content / prompt-injection model (README + server instructions) | `5a96790` |
+| 10 | Medium | Reject control chars / over-long values in `prompts/get` arguments | `bac1f4e` |
+| 11 | Medium | Redirect stray `process.stdout` writes to stderr; frames-only stdout | `1798ac6` |
+| 12 | Medium | Bound stdin frame size (1 MB) to cap memory | `b3bc694` |
+| 13 | Low | Redact the home directory from returned error messages | `9536b9a` |
+| 14 | Low | Whitelist `a11yOptions` keys forwarded to `axe.run` | `12b9189` |
+| 15 | Low | Drop `String()` coercion of ajv-validated arguments | `4c9586c` |
+| 16 | Low | Containment guard on `scaffold_component` write paths | `26cf5ca` |
+| 17 | Info | **Open** — non-MCP feature pass still incomplete (re-run the review to close) | — |
+| 18 | Info | Recommended posture (`--read-only --local-only`) now documented (#9 / `5a96790`); flipping the *default* to confined is a behavior change left to the maintainer | — |
+| 19 | Info | Already mitigated (`--no-source-map` / `sourceMap:false`); no change | — |
 
 ---
 
