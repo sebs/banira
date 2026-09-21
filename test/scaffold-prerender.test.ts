@@ -43,7 +43,7 @@ describe('scaffoldComponent (Tier 5)', () => {
         }
         const results = await smokeTestManifest([resolve(dir, 'round-trip.ts')]);
         assert.strictEqual(results.length, 1);
-        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
     });
 
     it('scaffolds a form-associated element with ElementInternals wiring (issue #12)', () => {
@@ -69,7 +69,7 @@ describe('scaffoldComponent (Tier 5)', () => {
         }
         const results = await smokeTestManifest([resolve(dir, 'fa-widget.ts')]);
         assert.strictEqual(results.length, 1);
-        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
     });
 
     it('scaffolds an ARIA-reflecting element via ElementInternals (issue #51)', () => {
@@ -96,7 +96,7 @@ describe('scaffoldComponent (Tier 5)', () => {
         }
         const results = await smokeTestManifest([resolve(dir, 'aria-widget.ts')]);
         assert.strictEqual(results.length, 1);
-        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
     });
 
     it('records the @role tag from the ARIA scaffold in the manifest', () => {
@@ -155,7 +155,7 @@ describe('scaffoldTheme (issue #50)', () => {
         }
         const results = await smokeTestManifest([resolve(dir, 'theme-toggle.ts')]);
         assert.strictEqual(results.length, 1);
-        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
     });
 });
 
@@ -178,7 +178,7 @@ describe('scaffoldComponent hydrate variant (issue #32)', () => {
         }
         const results = await smokeTestManifest([resolve(dir, 'hy-widget.ts')]);
         assert.strictEqual(results.length, 1);
-        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
     });
 
     it('prerenders to DSD that the component can later adopt', async () => {

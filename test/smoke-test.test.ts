@@ -12,7 +12,7 @@ describe('smokeTestManifest (Tier 4)', () => {
         const results = await smokeTestManifest([circle]);
         assert.strictEqual(results.length, 1);
         assert.strictEqual(results[0]!.tagName, 'my-circle');
-        assert.strictEqual(results[0]!.ok, true, results[0]!.error);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
     });
 
     it('formats a passing report', async () => {
