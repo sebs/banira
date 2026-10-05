@@ -2,12 +2,24 @@ import type { ClassMember, CustomElementDeclaration, Package } from './manifest.
 
 export type ChangeKind = 'added' | 'removed' | 'changed';
 export type ReleaseType = 'major' | 'minor' | 'patch';
+/** The collection a member-level change belongs to. */
+export type ChangeGroup = 'attributes' | 'events' | 'members';
 
 export interface Change {
     kind: ChangeKind;
     /** Dotted path to the changed entity, e.g. `my-button.attributes.disabled`. */
     path: string;
     detail: string;
+    /** Tag name (or class name) of the element the change belongs to. */
+    element: string;
+    /** Collection of a member-level change; absent when the element itself was added/removed. */
+    group?: ChangeGroup;
+    /** Name of the attribute/event/member; absent for element-level changes. */
+    name?: string;
+    /** Previous type signature of a `changed` entry. */
+    from?: string;
+    /** New type signature of a `changed` entry. */
+    to?: string;
 }
 
 export interface ManifestDiff {
@@ -42,7 +54,7 @@ function memberSignature(member: ClassMember): string {
 /** Compares one named collection (attributes/events/members) between two declarations. */
 function diffCollection<T extends { name: string }>(
     tag: string,
-    group: string,
+    group: ChangeGroup,
     before: T[] | undefined,
     after: T[] | undefined,
     signatureOf: (item: T) => string,
@@ -52,7 +64,14 @@ function diffCollection<T extends { name: string }>(
     const newItems = indexBy(after);
     for (const [name, item] of newItems) {
         if (!oldItems.has(name)) {
-            changes.push({ kind: 'added', path: `${tag}.${group}.${name}`, detail: `added ${group} "${name}"` });
+            changes.push({
+                kind: 'added',
+                path: `${tag}.${group}.${name}`,
+                detail: `added ${group} "${name}"`,
+                element: tag,
+                group,
+                name,
+            });
         } else {
             const oldSig = signatureOf(oldItems.get(name)!);
             const newSig = signatureOf(item);
@@ -61,13 +80,25 @@ function diffCollection<T extends { name: string }>(
                     kind: 'changed',
                     path: `${tag}.${group}.${name}`,
                     detail: `${group} "${name}" type changed: ${oldSig} → ${newSig}`,
+                    element: tag,
+                    group,
+                    name,
+                    from: oldSig,
+                    to: newSig,
                 });
             }
         }
     }
     for (const [name] of oldItems) {
         if (!newItems.has(name)) {
-            changes.push({ kind: 'removed', path: `${tag}.${group}.${name}`, detail: `removed ${group} "${name}"` });
+            changes.push({
+                kind: 'removed',
+                path: `${tag}.${group}.${name}`,
+                detail: `removed ${group} "${name}"`,
+                element: tag,
+                group,
+                name,
+            });
         }
     }
 }
@@ -89,7 +120,7 @@ export function diffManifests(before: Package, after: Package): ManifestDiff {
 
     for (const [key, decl] of newDecls) {
         if (!oldDecls.has(key)) {
-            changes.push({ kind: 'added', path: key, detail: `added element "${key}"` });
+            changes.push({ kind: 'added', path: key, detail: `added element "${key}"`, element: key });
             continue;
         }
         const prev = oldDecls.get(key)!;
@@ -98,7 +129,9 @@ export function diffManifests(before: Package, after: Package): ManifestDiff {
         diffCollection(key, 'members', prev.members, decl.members, memberSignature, changes);
     }
     for (const [key] of oldDecls) {
-        if (!newDecls.has(key)) changes.push({ kind: 'removed', path: key, detail: `removed element "${key}"` });
+        if (!newDecls.has(key)) {
+            changes.push({ kind: 'removed', path: key, detail: `removed element "${key}"`, element: key });
+        }
     }
 
     let release: ReleaseType = 'patch';
@@ -114,4 +147,54 @@ export function formatManifestDiff(diff: ManifestDiff): string {
     const symbols: Record<ChangeKind, string> = { added: '+', removed: '-', changed: '~' };
     const lines = diff.changes.map((c) => `${symbols[c.kind]} ${c.detail}`);
     return `${lines.join('\n')}\n\nSuggested release: ${diff.release}`;
+}
+
+export interface ChangelogOptions {
+    /** Text of the `##` release heading (default `Unreleased`); the suggested bump is appended. */
+    heading?: string;
+}
+
+const CHANGELOG_SECTIONS: [ChangeKind, string][] = [
+    ['added', 'Added'],
+    ['changed', 'Changed'],
+    ['removed', 'Removed'],
+];
+
+const CHANGELOG_GROUPS: [ChangeGroup | undefined, string][] = [
+    [undefined, 'Elements'],
+    ['attributes', 'Attributes'],
+    ['events', 'Events'],
+    ['members', 'Properties & methods'],
+];
+
+/** Renders an element key as `<tag>` when it is a custom-element name, else as the bare class name. */
+function elementLabel(key: string): string {
+    return key.includes('-') ? `\`<${key}>\`` : `\`${key}\``;
+}
+
+function changelogEntry(change: Change): string {
+    if (!change.group) return `- ${elementLabel(change.element)}`;
+    const entry = `- ${elementLabel(change.element)} \`${change.name}\``;
+    return change.kind === 'changed' ? `${entry}: \`${change.from}\` → \`${change.to}\`` : entry;
+}
+
+/**
+ * Renders a diff as a paste-ready Markdown changelog block: a release heading
+ * carrying the suggested semver bump, then `### Added / Changed / Removed`
+ * sections grouped by elements, attributes, events and properties/methods.
+ */
+export function formatChangelog(diff: ManifestDiff, options: ChangelogOptions = {}): string {
+    const blocks = [`## ${options.heading ?? 'Unreleased'} (${diff.release})`];
+    if (diff.changes.length === 0) blocks.push('No API changes.');
+
+    for (const [kind, title] of CHANGELOG_SECTIONS) {
+        const ofKind = diff.changes.filter((c) => c.kind === kind);
+        if (ofKind.length === 0) continue;
+        blocks.push(`### ${title}`);
+        for (const [group, groupTitle] of CHANGELOG_GROUPS) {
+            const entries = ofKind.filter((c) => c.group === group).map(changelogEntry);
+            if (entries.length > 0) blocks.push(`#### ${groupTitle}`, entries.join('\n'));
+        }
+    }
+    return `${blocks.join('\n\n')}\n`;
 }

@@ -12,6 +12,7 @@ import {
     toWebTypes,
     toTypeDefinitions,
     diffManifests,
+    formatChangelog,
 } from '../src/index.js';
 import type { Package } from '../src/index.js';
 
@@ -184,6 +185,35 @@ describe('diffManifests', () => {
         withExtra.modules[0]!.declarations[0]!.members!.push({ kind: 'field', name: 'extra', privacy: 'public' });
         assert.strictEqual(diffManifests(base, withExtra).release, 'minor');
         assert.strictEqual(diffManifests(withExtra, base).release, 'major');
+    });
+});
+
+describe('formatChangelog (issue #27)', () => {
+    const clone = (pkg: Package): Package => JSON.parse(JSON.stringify(pkg));
+
+    it('groups additions, changes and removals by elements/attributes/events', () => {
+        const before = clone(rich());
+        const after = clone(rich());
+        const decl = after.modules[0]!.declarations[0]!;
+        decl.attributes!.push({ name: 'size', type: { text: 'string' } });
+        decl.attributes![0]!.type = { text: 'boolean' };
+        decl.events = [];
+        after.modules[0]!.declarations.push({ kind: 'class', name: 'NewThing', tagName: 'new-thing', customElement: true });
+
+        const md = formatChangelog(diffManifests(before, after));
+        assert.match(md, /^## Unreleased \(major\)\n/);
+        const added = md.slice(md.indexOf('### Added'), md.indexOf('### Changed'));
+        assert.match(added, /#### Elements\n\n- `<new-thing>`/);
+        assert.match(added, /#### Attributes\n\n- `<rating-widget>` `size`/);
+        const changed = md.slice(md.indexOf('### Changed'), md.indexOf('### Removed'));
+        assert.match(changed, /- `<rating-widget>` `value`: `\S+` → `boolean`/);
+        const removed = md.slice(md.indexOf('### Removed'));
+        assert.match(removed, /#### Events\n\n- `<rating-widget>` `rating-change`/);
+    });
+
+    it('honours a custom heading and reports an empty diff', () => {
+        const md = formatChangelog(diffManifests(rich(), rich()), { heading: 'v1.2.3' });
+        assert.strictEqual(md, '## v1.2.3 (patch)\n\nNo API changes.\n');
     });
 });
 

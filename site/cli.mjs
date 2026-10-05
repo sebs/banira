@@ -207,12 +207,16 @@ export const commands = [
     ],
     options: [
       { flag: '--json', desc: 'Emit the diff as JSON.' },
+      { flag: '--changelog [path]', desc: 'Render a paste-ready Markdown CHANGELOG block (Added / Changed / Removed); optional output path.' },
+      { flag: '--heading <text>', desc: 'Release heading for --changelog, e.g. a version.', default: 'Unreleased' },
     ],
     examples: [
       { label: 'compare two manifests', cmd: 'banira diff old/custom-elements.json custom-elements.json' },
+      { label: 'release notes for 1.4.0', cmd: 'banira diff old/custom-elements.json custom-elements.json --changelog --heading 1.4.0' },
     ],
     notes: `<p>Removals / type changes suggest <code>major</code>, additions suggest <code>minor</code>, otherwise
-      <code>patch</code>. See <a href="/docs/ci-and-release/">CI &amp; release</a> for wiring it into a release gate.</p>`,
+      <code>patch</code>. <code>--changelog</code> groups the same change set under <code>### Added / Changed / Removed</code>
+      with elements, attributes, events and properties/methods sub-headings. See <a href="/docs/ci-and-release/">CI &amp; release</a> for wiring it into a release gate.</p>`,
   },
   {
     name: 'test',

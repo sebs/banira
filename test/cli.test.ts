@@ -51,6 +51,18 @@ describe("banira CLI", { concurrency: true }, () => {
         assert.doesNotMatch(result.stdout, /<link rel="stylesheet"/);
     });
 
+    it("diff --changelog renders a Markdown changelog block", async () => {
+        const out = 'dist/.cli-test-diff';
+        const before = `${out}/before.json`;
+        const after = `${out}/after.json`;
+        await runCommand(['manifest', 'examples/my-circle/my-circle.ts', '-o', before]);
+        await runCommand(['manifest', 'examples/my-circle/my-circle.ts', 'test/fixtures/rich-element.ts', '-o', after]);
+        const result = await runCommand(['diff', before, after, '--changelog', '--heading', '2.0.0']);
+        assert.strictEqual(result.exitCode, 0, result.stderr);
+        assert.match(result.stdout, /^## 2\.0\.0 \(minor\)\n\n### Added\n\n#### Elements\n\n- `<rating-widget>`/);
+        await rm(out, { recursive: true, force: true });
+    });
+
     it("should generate a custom elements manifest", async () => {
         const result = await runCommand([
             'manifest',

@@ -64,8 +64,8 @@ export { toVsCodeHtmlData, toVsCodeCssData, toWebTypes } from './editor-data.js'
 export type { VsCodeHtmlData, VsCodeCssData, WebTypes, WebTypesOptions } from './editor-data.js';
 export { toTypeDefinitions } from './type-shims.js';
 export type { TypeShimOptions } from './type-shims.js';
-export { diffManifests, formatManifestDiff } from './manifest-diff.js';
-export type { ManifestDiff, Change, ChangeKind, ReleaseType } from './manifest-diff.js';
+export { diffManifests, formatManifestDiff, formatChangelog } from './manifest-diff.js';
+export type { ManifestDiff, Change, ChangeKind, ChangeGroup, ReleaseType, ChangelogOptions } from './manifest-diff.js';
 export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
 export type { SmokeResult, SmokeOptions, ReflectionIssue, SlotIssue } from './smoke-test.js';
 export { checkReflection, checkSlots } from './smoke-checks.js';

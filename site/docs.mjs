@@ -250,7 +250,8 @@ committed baseline. <a href="/cli/diff/"><code>banira diff</code></a> classifies
   <li>Otherwise → <strong>patch</strong></li>
 </ul>
 ${code('release gate', ['banira diff baseline/custom-elements.json custom-elements.json'])}
-<div class="callout">Add <code>--json</code> to consume the diff programmatically in a release script.</div>
+<div class="callout">Add <code>--json</code> to consume the diff programmatically in a release script, or
+<code>--changelog CHANGES.md --heading 1.4.0</code> for a paste-ready release-notes block.</div>
 
 <h2 id="docs">Publish the docs</h2>
 <p>This very site is built and deployed by GitHub Actions: the static pages plus a freshly generated

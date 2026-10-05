@@ -64,6 +64,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | checkReflection / checkSlots | Smoke-test add-ons: attribute↔property reflection round-trip and `@slot` contract assertions |
 | lintManifest | Audit components against the Gold Standard Checklist + documentation coverage (`banira lint`) |
 | diffManifests | Diffs two manifests and suggests a semver release type |
+| formatChangelog | Renders a manifest diff as a Markdown changelog block |
 | createPrerenderer / declarativeShadowDom | SSR primitive: register components once, then `renderToString(tag, { attributes, children })` to Declarative Shadow DOM |
 | createEleventyPlugin | Eleventy plugin that prerenders matching component tags to DSD at build time |
 | hydrateShadow | Client hydration helper: adopt a prerendered DSD shadow root (no flash) or render + adopt styles |
@@ -246,9 +247,12 @@ otherwise `patch`). Useful as a release gate.
 | Option | Description |
 |---|---|
 | `--json` | Emit the diff as JSON |
+| `--changelog [path]` | Render a Markdown CHANGELOG block (`### Added / Changed / Removed` by elements, attributes, events, properties & methods); optional output path |
+| `--heading <text>` | Release heading for `--changelog`, e.g. a version (default `Unreleased`) |
 
 ```bash
 banira diff old/custom-elements.json custom-elements.json
+banira diff old/custom-elements.json custom-elements.json --changelog --heading 1.4.0
 ```
 
 ### `banira watch <files...>`

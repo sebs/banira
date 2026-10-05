@@ -130,7 +130,11 @@ program
   .argument('<baseline>', 'Baseline custom-elements.json')
   .argument('<current>', 'Current custom-elements.json')
   .option('--json', 'Emit the diff as JSON')
-  .action((baseline, current, options) => diff(baseline, current, { json: options.json }));
+  .option('--changelog [path]', 'Render a Markdown CHANGELOG block (Added/Changed/Removed); optional output path')
+  .option('--heading <text>', 'Release heading for --changelog, e.g. a version (default: Unreleased)')
+  .action((baseline, current, options) =>
+    diff(baseline, current, { json: options.json, changelog: options.changelog, heading: options.heading })
+  );
 
 program
   .command('watch')
