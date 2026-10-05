@@ -71,6 +71,15 @@ export type { ManifestDiff, Change, ChangeKind, ChangeGroup, ReleaseType, Change
 export { smokeTestManifest, formatSmokeResults } from './smoke-test.js';
 export type { SmokeResult, SmokeOptions, ReflectionIssue, SlotIssue } from './smoke-test.js';
 export { checkReflection, checkSlots } from './smoke-checks.js';
+export { measureComponents, toBudgetBaseline, checkBudget, formatCosts } from './budget.js';
+export type {
+    ComponentCost,
+    MeasureOptions,
+    BudgetBaseline,
+    BudgetMetric,
+    BudgetViolation,
+    BudgetOptions,
+} from './budget.js';
 export { lintManifest, formatLintResults, LINT_RULES, LINT_DOCS_BASE, ruleDocsUrl } from './lint.js';
 export type { LintIssue, LintResult, LintOptions, LintSeverity } from './lint.js';
 export { scaffoldComponent, scaffoldTheme } from './scaffold.js';

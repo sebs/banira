@@ -233,15 +233,24 @@ export const commands = [
     options: [
       { flag: '--reflection', desc: 'Also round-trip each observed attribute ↔ its backing property and warn on either direction that doesn’t reflect.' },
       { flag: '--slots', desc: 'Also inject sample slotted content and warn on declared @slots with no matching <slot> (and shadow <slot>s with no @slot).' },
+      { flag: '--size', desc: 'Also report each element’s emitted size (raw + gzip) and a rough first-render time.' },
+      { flag: '--budget <file>', desc: 'Compare size/render time against a baseline JSON and exit 1 on regression (implies --size).' },
+      { flag: '--update-budget', desc: 'With --budget: write the current measurement as the baseline instead of comparing.' },
+      { flag: '--threshold <percent>', desc: 'Allowed growth over the baseline.', default: '10' },
     ],
     examples: [
       { label: 'smoke-test every element', cmd: 'banira test src/*.ts' },
       { label: 'also check reflection + slots', cmd: 'banira test src/*.ts --reflection --slots' },
+      { label: 'gate on a size/render budget', cmd: 'banira test src/*.ts --budget budget.json' },
     ],
     notes: `<p>Catches the most common breakages — a component that throws on construction, or never calls
       <code>customElements.define</code> — with no per-component test code. Exits non-zero if any element fails, so it
       drops straight into CI. <code>--reflection</code> and <code>--slots</code> add advisory warnings (they don’t fail
-      the command), since not every attribute is meant to reflect.</p>`,
+      the command), since not every attribute is meant to reflect.</p>
+      <p>The size is the emitted JavaScript of the element’s module and its local import graph (lowered CSS/HTML included,
+      bare npm imports excluded); the render time is the median construct-and-connect time of a fresh instance in JSDOM —
+      rough, so render regressions under 1&nbsp;ms are ignored. Create or refresh the baseline with
+      <code>--update-budget</code>.</p>`,
   },
   {
     name: 'prerender',

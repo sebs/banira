@@ -242,6 +242,11 @@ the composable <em>scaffold → check → test → docs</em> flow that makes MCP
 registers and upgrades to an <code>HTMLElement</code>. It exits non-zero on the first failure, so it's a one-line CI gate:</p>
 ${code('.github/workflows/ci.yml', ['banira test src/*.ts'])}
 
+<h2 id="budget">A size &amp; render budget</h2>
+<p>Commit a baseline of each element's emitted size (raw + gzip) and first-render time, then fail CI when a change grows
+any of them beyond a threshold (default 10%):</p>
+${code('budget', ['# create / refresh the baseline', 'banira test src/*.ts --budget budget.json --update-budget', '# CI gate', 'banira test src/*.ts --budget budget.json'])}
+
 <h2 id="semver">Diff for a semver bump</h2>
 <p>Commit the generated <code>custom-elements.json</code>, then on each change compare the new manifest against the
 committed baseline. <a href="/cli/diff/"><code>banira diff</code></a> classifies the change:</p>

@@ -213,7 +213,20 @@ program
   .argument('<files...>', 'Component source files to test')
   .option('--reflection', 'Also check attribute↔property reflection round-trip (advisory warnings)')
   .option('--slots', 'Also assert declared @slots project and flag undeclared shadow slots (advisory)')
-  .action((files, options) => test(files, { reflection: options.reflection, slots: options.slots }));
+  .option('--size', "Also report each element's emitted size (raw + gzip) and first-render time")
+  .option('--budget <file>', 'Compare size/render time against a baseline JSON; exit 1 on regression (implies --size)')
+  .option('--update-budget', 'With --budget: write the current measurement as the baseline instead of comparing')
+  .option('--threshold <percent>', 'Allowed growth over the budget baseline, in percent', '10')
+  .action((files, options) =>
+    test(files, {
+      reflection: options.reflection,
+      slots: options.slots,
+      size: options.size,
+      budget: options.budget,
+      updateBudget: options.updateBudget,
+      threshold: options.threshold,
+    })
+  );
 
 program
   .command('init')

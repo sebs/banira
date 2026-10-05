@@ -63,6 +63,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | linkManifestField | Point a package.json's `customElements` field at a generated manifest |
 | checkReflection / checkSlots | Smoke-test add-ons: attribute↔property reflection round-trip and `@slot` contract assertions |
 | lintManifest | Audit components against the Gold Standard Checklist + documentation coverage (`banira lint`) |
+| measureComponents / checkBudget | Measure each element's emitted size (raw + gzip) and first-render time, and compare against a budget baseline (`banira test --budget`) |
 | diffManifests | Diffs two manifests and suggests a semver release type |
 | formatChangelog | Renders a manifest diff as a Markdown changelog block |
 | createPrerenderer / declarativeShadowDom | SSR primitive: register components once, then `renderToString(tag, { attributes, children })` to Declarative Shadow DOM |
@@ -369,14 +370,29 @@ with no per-component test code. Exits non-zero if any element fails.
 |---|---|
 | `--reflection` | Also round-trip each observed attribute ↔ its backing property and warn on either direction that doesn't reflect |
 | `--slots` | Also inject sample slotted content and warn on declared `@slot`s with no matching `<slot>` (and shadow `<slot>`s with no `@slot`) |
+| `--size` | Also report each element's emitted size (raw + gzip) and a rough first-render time |
+| `--budget <file>` | Compare size/render time against a baseline JSON and exit 1 on regression (implies `--size`) |
+| `--update-budget` | With `--budget`: write the current measurement as the baseline instead of comparing |
+| `--threshold <percent>` | Allowed growth over the baseline (default `10`) |
 
 `--reflection` and `--slots` are **advisory**: their findings print as warnings
 and do not fail the command (registration failures still do), since not every
 attribute is meant to reflect.
 
+The size is the emitted JavaScript of the element's module plus its local
+import graph, with lowered CSS/HTML imports included (bare npm imports are
+external and not counted). The render time is the median construct-and-connect
+time of a fresh instance in JSDOM: rough, and synchronous work only. Render
+regressions under 1 ms are ignored because timings that small are noisy.
+Commit the baseline and refresh it with `--update-budget` when growth is
+intended.
+
 ```bash
 banira test src/*.ts
 banira test src/*.ts --reflection --slots
+# create/refresh the baseline, then gate CI on it
+banira test src/*.ts --budget budget.json --update-budget
+banira test src/*.ts --budget budget.json --threshold 5
 ```
 
 ### `banira init <tag-name> [dir]`

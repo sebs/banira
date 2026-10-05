@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import { spawn } from "child_process";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { readFile, rm } from "fs/promises";
+import { readFile, rm, writeFile } from "fs/promises";
 import assert from "node:assert";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,6 +60,28 @@ describe("banira CLI", { concurrency: true }, () => {
         const result = await runCommand(['diff', before, after, '--changelog', '--heading', '2.0.0']);
         assert.strictEqual(result.exitCode, 0, result.stderr);
         assert.match(result.stdout, /^## 2\.0\.0 \(minor\)\n\n### Added\n\n#### Elements\n\n- `<rating-widget>`/);
+        await rm(out, { recursive: true, force: true });
+    });
+
+    it("test --budget writes a baseline, passes against it, and fails on regression", async () => {
+        const out = 'dist/.cli-test-budget';
+        const budget = `${out}/budget.json`;
+        const component = 'examples/my-circle/my-circle.ts';
+        const written = await runCommand(['test', component, '--budget', budget, '--update-budget']);
+        assert.strictEqual(written.exitCode, 0, written.stderr);
+        assert.match(written.stdout, /SIZE <my-circle> {2}\d+ B raw · \d+ B gzip · first render [\d.]+ ms/);
+        const baseline = JSON.parse(await readFile(budget, 'utf8'));
+        assert.ok(baseline.components['my-circle'].gzip > 0);
+
+        const pass = await runCommand(['test', component, '--budget', budget, '--threshold', '1000']);
+        assert.strictEqual(pass.exitCode, 0, pass.stderr);
+        assert.match(pass.stdout, /Within budget \(threshold 1000%\)/);
+
+        baseline.components['my-circle'].gzip = Math.floor(baseline.components['my-circle'].gzip / 2);
+        await writeFile(budget, JSON.stringify(baseline));
+        const fail = await runCommand(['test', component, '--budget', budget]);
+        assert.strictEqual(fail.exitCode, 1);
+        assert.match(fail.stdout, /Budget exceeded \(threshold 10%\):\n {2}FAIL <my-circle> gzip/);
         await rm(out, { recursive: true, force: true });
     });
 
