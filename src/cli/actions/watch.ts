@@ -1,11 +1,14 @@
 import { watch as fsWatch, watchFile, unwatchFile } from 'fs';
 import { resolve, dirname } from 'path';
 import { compileFiles, formatErrors, type CompileOptions } from './compile.js';
+import { toOverlayDiagnostics, type OverlayDiagnostic } from '../../error-overlay.js';
 
 /** Outcome handed to a {@link watch} caller after each (re)compile. */
 export interface WatchResult {
   ok: boolean;
   outputs: string[];
+  /** Structured compile errors (empty when `ok`), e.g. for the browser error overlay. */
+  diagnostics: OverlayDiagnostic[];
 }
 
 /**
@@ -38,10 +41,11 @@ export const watch = (
       } else {
         console.log(`[${stamp}] Compiled ${outputs.length} file(s)`);
       }
-      onResult?.({ ok, outputs });
+      onResult?.({ ok, outputs, diagnostics: toOverlayDiagnostics(errors) });
     } catch (error) {
-      console.error(`[${stamp}] ${error instanceof Error ? error.message : error}`);
-      onResult?.({ ok: false, outputs: [] });
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[${stamp}] ${message}`);
+      onResult?.({ ok: false, outputs: [], diagnostics: [{ message }] });
     }
   };
 

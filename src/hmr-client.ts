@@ -1,3 +1,5 @@
+import { ERROR_OVERLAY_SCRIPT } from './error-overlay.js';
+
 /**
  * Client-side HMR runtime for custom elements (#8).
  *
@@ -96,17 +98,26 @@ export function installHmr(win: {
     return api;
 }
 
-/** EventSource snippet (browser) that applies `hmr:<url>` updates and falls back to reload. */
-const HMR_SSE = `
+/**
+ * EventSource snippet (browser) that applies `hmr:<url>` updates (clearing the
+ * error overlay, since an update means a successful compile), shows `error:<json>`
+ * compile errors in the overlay (#46), and falls back to reload.
+ */
+const HMR_SSE = `{
+${ERROR_OVERLAY_SCRIPT}
 new EventSource('/__livereload').onmessage = (e) => {
   const data = String(e.data || '');
-  if (data.indexOf('hmr:') === 0) {
+  if (data.indexOf('error:') === 0) {
+    __baniraOverlay.show(JSON.parse(data.slice(6)));
+  } else if (data.indexOf('hmr:') === 0) {
+    __baniraOverlay.clear();
     const url = data.slice(4);
     import(url + (url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now()).catch(() => location.reload());
   } else {
     location.reload();
   }
 };
+}
 `;
 
 /**

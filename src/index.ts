@@ -95,6 +95,8 @@ export {
 } from './scoped-registry.js';
 export type { RegistryLike, RegistryScope, ScopedShadowHost } from './scoped-registry.js';
 export { installHmr, HMR_CLIENT_SCRIPT, hmrMessage } from './hmr-client.js';
+export { installErrorOverlay, toOverlayDiagnostics, errorOverlayMessage, ERROR_OVERLAY_SCRIPT } from './error-overlay.js';
+export type { OverlayDiagnostic, ErrorOverlay } from './error-overlay.js';
 export { prerenderManifest, declarativeShadowDom, createPrerenderer } from './prerender.js';
 export type {
     PrerenderResult,

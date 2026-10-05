@@ -39,8 +39,9 @@ export interface DevHandle {
 /**
  * `banira dev <files...>` — the one-command dev loop: compile-on-change
  * (`watch`) and a live-reload static server (`serve`) running together, so a
- * source edit recompiles and the browser refreshes. The served root defaults to
- * the output directory.
+ * source edit recompiles and the browser refreshes. Compile errors are shown in
+ * an in-page overlay until the next successful compile. The served root
+ * defaults to the output directory.
  *
  * @returns A handle with the running server and a `stop()` that tears both down
  *   (used by tests).
@@ -64,7 +65,14 @@ export const dev = (files: string[], options: DevOptions = {}): DevHandle => {
   // far more reliable than hoping serve's directory watcher notices the freshly
   // written output, and the log makes it visible that an update was sent.
   const stopWatch = watch(files, compileOptions, (result) => {
-    if (!result.ok) return;
+    // A failed compile shows its errors in the in-page overlay (#46); the next
+    // successful one clears them (the reload/hot-update below dismisses it).
+    if (!result.ok) {
+      const n = server.showErrors(result.diagnostics);
+      if (n > 0) console.log(`  ⚠ sent ${result.diagnostics.length} error(s) to ${n} browser tab(s)`);
+      return;
+    }
+    server.clearErrors();
     // In HMR mode, push a module update per emitted .js (hot-swap in place);
     // any output that maps outside the served root falls back to a full reload.
     const modules = options.hmr

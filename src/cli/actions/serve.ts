@@ -4,6 +4,7 @@ import { readFile, stat, realpath } from 'fs/promises';
 import { resolve, join, extname, normalize, sep } from 'path';
 import { transpileToEsm } from '../../transpile-module.js';
 import { HMR_CLIENT_SCRIPT, hmrMessage } from '../../hmr-client.js';
+import { ERROR_OVERLAY_SCRIPT, errorOverlayMessage, type OverlayDiagnostic } from '../../error-overlay.js';
 import { buildImportMap, findModuleFiles, importMapScript, readPackageJson } from '../../import-map.js';
 
 export interface ServeOptions {
@@ -65,9 +66,16 @@ const MIME: Record<string, string> = {
   '.map': 'application/json; charset=utf-8',
 };
 
-const LIVE_RELOAD = `<script>
-new EventSource('/__livereload').onmessage = () => location.reload();
-</script>`;
+// Reload on any message, except `error:<json>` compile errors, which are shown
+// in the in-page overlay instead (#46).
+const LIVE_RELOAD = `<script>{
+${ERROR_OVERLAY_SCRIPT}
+new EventSource('/__livereload').onmessage = (e) => {
+  const data = String(e.data || '');
+  if (data.indexOf('error:') === 0) __baniraOverlay.show(JSON.parse(data.slice(6)));
+  else location.reload();
+};
+}</script>`;
 
 // HMR variant: installs the custom-element hot-swap runtime, which itself opens
 // the EventSource and applies `hmr:<url>` updates (falling back to full reload).
@@ -123,6 +131,16 @@ export interface ReloadableServer extends Server {
    * component in place; with `hmr` off this is equivalent to a full {@link reload}.
    */
   hmrUpdate(moduleUrl: string): number;
+  /**
+   * Push compile errors to connected clients, which render them in the in-page
+   * error overlay (#46); returns the count. The errors are also remembered and
+   * replayed to every tab that connects until {@link clearErrors} — so the
+   * overlay survives the page reload the file watcher triggers when the errored
+   * build still writes output.
+   */
+  showErrors(diagnostics: OverlayDiagnostic[]): number;
+  /** Forget the remembered compile errors (call on the next successful compile). */
+  clearErrors(): void;
 }
 
 /**
@@ -152,6 +170,8 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
   // rebinding (loopback binds are only reachable locally, so no check needed).
   const checkHost = !isLoopbackHost(host);
   const clients = new Set<ServerResponse>();
+  // The last failed compile's `error:` payload, replayed to newly connected tabs.
+  let pendingError: string | undefined;
 
   const server = createServer(async (req, res) => {
     if (checkHost && !isAllowedHost(req.headers.host, host)) {
@@ -168,6 +188,7 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
         Connection: 'keep-alive',
       });
       res.write('\n');
+      if (pendingError) res.write(`data: ${pendingError}\n\n`);
       clients.add(res);
       req.on('close', () => clients.delete(res));
       return;
@@ -259,6 +280,16 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
     return clients.size;
   };
 
+  const showErrors = (diagnostics: OverlayDiagnostic[]): number => {
+    pendingError = errorOverlayMessage(diagnostics);
+    for (const client of clients) client.write(`data: ${pendingError}\n\n`);
+    return clients.size;
+  };
+
+  const clearErrors = (): void => {
+    pendingError = undefined;
+  };
+
   // Debounced reload when the served tree changes on disk. This still covers
   // plain `serve` (no compiler) and any out-of-band edits under the root.
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -300,5 +331,7 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
   const reloadable = server as ReloadableServer;
   reloadable.reload = reload;
   reloadable.hmrUpdate = hmrUpdate;
+  reloadable.showErrors = showErrors;
+  reloadable.clearErrors = clearErrors;
   return reloadable;
 };

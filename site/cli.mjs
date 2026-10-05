@@ -46,7 +46,10 @@ export const commands = [
     examples: [
       { label: 'watch + serve a demo', cmd: 'banira dev src/my-button.ts -o demo/dist -r demo' },
     ],
-    notes: `<p>The served root defaults to the output directory. With <code>--ts</code>, a <code>.ts</code> request is
+    notes: `<p>Compile errors are pushed over the live-reload channel and shown as a full-screen overlay in the page
+      (file, line, column and message); it clears on the next successful compile, and tabs that connect while the
+      build is broken get the current errors on connect.</p>
+      <p>The served root defaults to the output directory. With <code>--ts</code>, a <code>.ts</code> request is
       served as an ES module and a request for <code>foo.js</code> falls back to a sibling <code>foo.ts</code> when no
       compiled <code>foo.js</code> exists — so you can point a page at <code>./my-button.js</code> and skip the build
       during development.</p>`,

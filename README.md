@@ -71,6 +71,7 @@ const dts = toTypeDefinitions(manifest);        // typed HTMLElementTagNameMap
 | parseDesignTokens / designTokensToCss | Parse a W3C Design Tokens (DTCG) document and emit `:root` CSS custom properties (aliases resolved) |
 | tokensToCssProperties / enrichManifestCssProperties | Map imported tokens to manifest `cssProperties`, or backfill missing defaults/descriptions on matching component tokens |
 | scaffoldTheme | Generate a light/dark theme contract (`theme.css`), a `<theme-toggle>` component, and a demo page |
+| installErrorOverlay / toOverlayDiagnostics | The dev-loop browser error overlay runtime, and TypeScript diagnostics → its `{ file, line, column, message }` shape |
 | buildImportMap / generateImportMap | Scan components' bare imports and build an import map pinning each package to esm.sh (`compile --import-map`, `serve --import-map`) |
 
 ## CLI
@@ -311,6 +312,11 @@ banira serve demo
 The one-command dev loop: `watch` and `serve` together, so a source edit
 recompiles and the browser refreshes. The served root defaults to the output
 directory.
+
+Compile errors are also pushed over the live-reload channel and shown as a
+full-screen overlay in the page (file, line, column and message), which clears
+on the next successful compile (Esc or × dismisses it). Tabs that connect while
+the build is broken get the current errors on connect.
 
 | Option | Description |
 |---|---|
