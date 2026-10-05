@@ -93,6 +93,7 @@ function projectApi(d: CustomElementDeclaration): Record<string, unknown> {
     slots: (d.slots ?? []).map((s) => ({ name: s.name || '(default)', description: s.description })),
     cssParts: (d.cssParts ?? []).map((s) => ({ name: s.name, description: s.description })),
     cssProperties: (d.cssProperties ?? []).map((c) => ({ name: c.name, default: c.default, description: c.description })),
+    cssStates: (d.cssStates ?? []).map((s) => ({ name: s.name, description: s.description })),
   };
 }
 
@@ -204,6 +205,7 @@ export function registerIntrospectionTools(registries: Registries, opts: McpServ
             slots: (d.slots ?? []).length,
             cssParts: (d.cssParts ?? []).length,
             cssProperties: (d.cssProperties ?? []).length,
+            cssStates: (d.cssStates ?? []).length,
           },
         }))
       );

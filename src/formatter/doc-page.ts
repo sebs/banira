@@ -234,6 +234,12 @@ export class FormatterDocPage {
         return this.renderTable('css-parts', 'CSS Parts', ['Part', 'Description'], rows);
     }
 
+    /** CSS custom states (`:state(name)`) table from the manifest. */
+    private renderCssStates(): string {
+        const rows = (this.declaration?.cssStates ?? []).map(s => [this.code(s.name), descriptionHtml(s.description ?? '')]);
+        return this.renderTable('css-states', 'CSS States', ['State', 'Description'], rows);
+    }
+
     /** CSS custom properties table from the manifest. */
     private renderCssProperties(): string {
         const rows = (this.declaration?.cssProperties ?? []).map(p => [
@@ -277,6 +283,7 @@ export class FormatterDocPage {
             this.renderSlots(),
             this.renderCssParts(),
             this.renderCssProperties(),
+            this.renderCssStates(),
         ].filter(Boolean).join('\n        ');
     }
 

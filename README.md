@@ -164,7 +164,8 @@ Attributes are read from `observedAttributes`, properties/methods from public
 class members, events from `new CustomEvent(...)`, and slots / CSS parts / CSS
 custom properties from class jsdoc tags (`@slot`, `@csspart`, `@cssprop`, `@fires`).
 A class-level `@role` tag records the element's default ARIA role (typically set
-via `ElementInternals.role`). Members marked `@deprecated` carry the note
+via `ElementInternals.role`), and `@cssstate name - description` records a custom
+state matched by `:state(name)` in the manifest's `cssStates`. Members marked `@deprecated` carry the note
 through; `@internal` / `@ignore` members are omitted.
 
 | Option | Description |
@@ -386,6 +387,7 @@ unless `--force` is given.
 | `--form-associated` | Scaffold a form-associated element (`static formAssociated = true` + `ElementInternals` form/validation wiring) |
 | `--aria` | Scaffold an ARIA role/state-reflecting element (`ElementInternals.role`/`ariaChecked`, keyboard support; records the default role in the manifest via `@role`) |
 | `--hydrate` | Scaffold a component that hydrates a prerendered Declarative Shadow DOM root (adopt-or-render; no flash) |
+| `--states` | Scaffold an element exposing custom states to `:state()` selectors via `ElementInternals.states` (a `setState(name, on)` helper; records `@cssstate` in the manifest's `cssStates`) |
 
 ```bash
 banira init my-button src
@@ -393,6 +395,8 @@ banira init my-button src
 banira init my-toggle src --aria
 # a component that adopts its prerendered DSD root instead of re-rendering
 banira init my-card src --hydrate
+# style internal state with my-chip:state(active), no attribute leaked
+banira init my-chip src --states
 ```
 
 ### `banira tokens-css <tokens.json>`

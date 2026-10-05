@@ -29,6 +29,14 @@ export interface ScaffoldOptions {
      * way. Distinct from `formAssociated`/`aria`; pass one.
      */
     hydrate?: boolean;
+    /**
+     * Scaffold a component that exposes internal state to CSS through custom
+     * states (`ElementInternals.states` / `CustomStateSet`), so authors style it
+     * with `my-el:state(active)` instead of the component leaking state into host
+     * attributes. Includes a `setState(name, on)` helper and an `@cssstate` tag
+     * recorded in the manifest's `cssStates`. A distinct starter; pass one.
+     */
+    states?: boolean;
 }
 
 /** A valid custom-element tag name: lowercase, starts with a letter, contains a hyphen. */
@@ -371,7 +379,77 @@ customElements.define('${tagName}', ${className});
 `;
 }
 
-function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'aria' | 'hydrate'): string {
+function statesSource(tagName: string, className: string): string {
+    return `/**
+ * ${className} — a vanilla web component that exposes its internal state to CSS
+ * through custom states (\`ElementInternals.states\`), so it can be styled with
+ * \`${tagName}:state(active)\` without leaking that state into host attributes.
+ *
+ * Caveat: \`CustomStateSet\` with the \`:state()\` pseudo-class is Baseline 2024
+ * (Chrome/Edge 125, Safari 17.4, Firefox 126). Chromium 90–124 only accepted the
+ * legacy dashed-ident form (\`states.add('--active')\`, matched by \`:--active\`)
+ * and throws on a bare name — \`setState\` falls back to it. Where
+ * \`internals.states\` is missing entirely, \`setState\` is a no-op.
+ *
+ * @summary Describe what ${tagName} does.
+ * @cssstate active - Present while the component is active (toggled by click).
+ * @csspart label - The label element.
+ * @cssprop [--${tagName}-color=currentColor] - Text colour.
+ * @fires ${tagName}-change - Fired when the active state changes, with \`detail: { active }\`.
+ */
+class ${className} extends HTMLElement {
+    private readonly _internals: ElementInternals;
+    private _active: boolean = false;
+
+    constructor() {
+        super();
+        this._internals = this.attachInternals();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot!.innerHTML = \`
+            <style>
+                :host { display: inline-block; cursor: pointer; color: var(--${tagName}-color, currentColor); }
+                :host(:state(active)) [part="label"] { font-weight: bold; }
+            </style>
+            <span part="label"><slot></slot></span>
+        \`;
+        this.addEventListener('click', () => {
+            this.active = !this._active;
+        });
+    }
+
+    /** Whether the component is active; exposed to CSS as \`:state(active)\`, not as an attribute. */
+    get active(): boolean {
+        return this._active;
+    }
+
+    set active(next: boolean) {
+        if (next === this._active) return;
+        this._active = next;
+        this.setState('active', next);
+        this.dispatchEvent(new CustomEvent('${tagName}-change', { detail: { active: next } }));
+    }
+
+    /** Adds or removes a custom state, matched in CSS by \`:state(<name>)\`. */
+    private setState(name: string, on: boolean): void {
+        const states = this._internals.states;
+        if (!states) return; // no CustomStateSet support
+        try {
+            if (on) states.add(name);
+            else states.delete(name);
+        } catch {
+            // Chromium < 125 only accepts the legacy dashed-ident form (\`:--name\`).
+            if (on) states.add(\`--\${name}\`);
+            else states.delete(\`--\${name}\`);
+        }
+    }
+}
+
+customElements.define('${tagName}', ${className});
+`;
+}
+
+function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'aria' | 'hydrate' | 'states'): string {
+    let head = '';
     let body: string;
     if (variant === 'form-associated') {
         body = `    <form>
@@ -381,6 +459,10 @@ function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'ari
     </form>`;
     } else if (variant === 'aria') {
         body = `    <${tagName}>Accept the terms</${tagName}>`;
+    } else if (variant === 'states') {
+        // Page CSS reacts to the element's internal state without any host attribute.
+        head = `\n    <style>\n        ${tagName}:state(active) { outline: 2px solid currentColor; }\n    </style>`;
+        body = `    <${tagName}>Click to toggle</${tagName}>`;
     } else {
         body = `    <${tagName} value="Hello">world</${tagName}>`;
     }
@@ -390,7 +472,7 @@ function demoSource(tagName: string, variant: 'plain' | 'form-associated' | 'ari
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${tagName} demo</title>
-    <script type="module" src="./dist/${tagName}.js"></script>
+    <script type="module" src="./dist/${tagName}.js"></script>${head}
 </head>
 <body>
 ${body}
@@ -407,8 +489,9 @@ ${body}
  * `{ formAssociated: true }` it scaffolds a form-associated element instead
  * (`static formAssociated = true` + `ElementInternals` form/validation wiring),
  * and `{ aria: true }` scaffolds an ARIA role/state-reflecting element
- * (`ElementInternals.role`/`ariaChecked` wiring). `formAssociated` and `aria`
- * are distinct starters; pass one or the other.
+ * (`ElementInternals.role`/`ariaChecked` wiring). `{ states: true }`
+ * scaffolds an element exposing custom states (`:state(active)`) via
+ * `ElementInternals.states`. The variants are distinct starters; pass one.
  *
  * @throws Error if `tagName` is not a valid custom element name.
  */
@@ -418,7 +501,7 @@ export function scaffoldComponent(tagName: string, options: ScaffoldOptions = {}
     }
     const className = classNameFor(tagName);
     let source: string;
-    let variant: 'plain' | 'form-associated' | 'aria' | 'hydrate';
+    let variant: 'plain' | 'form-associated' | 'aria' | 'hydrate' | 'states';
     if (options.formAssociated) {
         source = formAssociatedSource(tagName, className);
         variant = 'form-associated';
@@ -428,6 +511,9 @@ export function scaffoldComponent(tagName: string, options: ScaffoldOptions = {}
     } else if (options.hydrate) {
         source = hydrateSource(tagName, className);
         variant = 'hydrate';
+    } else if (options.states) {
+        source = statesSource(tagName, className);
+        variant = 'states';
     } else {
         source = componentSource(tagName, className);
         variant = 'plain';

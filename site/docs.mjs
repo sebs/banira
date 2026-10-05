@@ -127,6 +127,7 @@ jsdoc tags:</p>
     <tr><td class="k">@slot</td><td>A named (or default) slot the component projects into.</td></tr>
     <tr><td class="k">@csspart</td><td>A <code>::part()</code> exposed for external styling.</td></tr>
     <tr><td class="k">@cssprop</td><td>A CSS custom property the component reads.</td></tr>
+    <tr><td class="k">@cssstate</td><td>A custom state matched by <code>:state(name)</code>, set via <code>ElementInternals.states</code>.</td></tr>
     <tr><td class="k">@fires</td><td>An event the component dispatches.</td></tr>
   </tbody>
 </table></div>

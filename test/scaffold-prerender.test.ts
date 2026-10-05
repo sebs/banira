@@ -13,7 +13,10 @@ import {
     createPrerenderer,
     declarativeShadowDom,
     ManifestGenerator,
+    manifestToMarkdown,
+    validateManifest,
 } from '../src/index.js';
+import { compileFiles } from '../src/cli/actions/compile.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const circle = resolve(__dirname, '../examples/my-circle/my-circle.ts');
@@ -106,6 +109,52 @@ describe('scaffoldComponent (Tier 5)', () => {
         const pkg = new ManifestGenerator([resolve(dir, 'role-widget.ts')]).generate();
         const decl = pkg.modules[0]!.declarations[0]!;
         assert.strictEqual((decl as { role?: string }).role, 'checkbox');
+    });
+});
+
+describe('scaffoldComponent states variant (issue #29)', () => {
+    it('wires ElementInternals.states with a setState helper and documents the caveat', () => {
+        const files = scaffoldComponent('state-chip', { states: true });
+        const component = files.find((f) => f.path === 'state-chip.ts')!.content;
+        assert.match(component, /this\._internals = this\.attachInternals\(\)/);
+        assert.match(component, /private setState\(name: string, on: boolean\): void/);
+        assert.match(component, /states\.add\(name\)/);
+        assert.match(component, /states\.delete\(name\)/);
+        // legacy Chromium dashed-ident fallback + the availability caveat
+        assert.match(component, /states\.add\(`--\$\{name\}`\)/);
+        assert.match(component, /CustomStateSet/);
+        assert.match(component, /:host\(:state\(active\)\)/);
+        assert.match(component, /@cssstate active - /);
+        // the state is not leaked into a host attribute
+        assert.doesNotMatch(component, /observedAttributes|setAttribute/);
+        const demo = files.find((f) => f.path === 'index.html')!.content;
+        assert.match(demo, /state-chip:state\(active\) \{/);
+        assert.match(demo, /<state-chip>/);
+    });
+
+    it('states scaffold compiles and passes its own smoke test', async () => {
+        const dir = mkdtempSync(resolve(tmpdir(), 'banira-scaffold-states-'));
+        for (const file of scaffoldComponent('state-widget', { states: true })) {
+            writeFileSync(resolve(dir, file.path), file.content, 'utf8');
+        }
+        const { ok, errors } = compileFiles([resolve(dir, 'state-widget.ts')], { outDir: resolve(dir, 'dist') });
+        assert.strictEqual(ok, true, errors.map((e) => e.messageText).join('\n'));
+        const results = await smokeTestManifest([resolve(dir, 'state-widget.ts')]);
+        assert.strictEqual(results.length, 1);
+        assert.strictEqual(results[0]!.ok, true, results[0]!.error ?? 'smoke test failed');
+    });
+
+    it('records @cssstate in the manifest cssStates and renders it in Markdown docs', () => {
+        const dir = mkdtempSync(resolve(tmpdir(), 'banira-scaffold-cssstate-'));
+        const file = scaffoldComponent('state-doc', { states: true }).find((f) => f.path === 'state-doc.ts')!;
+        writeFileSync(resolve(dir, file.path), file.content, 'utf8');
+        const pkg = new ManifestGenerator([resolve(dir, 'state-doc.ts')]).generate();
+        const decl = pkg.modules[0]!.declarations[0]!;
+        assert.deepStrictEqual(decl.cssStates, [
+            { name: 'active', description: 'Present while the component is active (toggled by click).' },
+        ]);
+        assert.match(manifestToMarkdown(pkg), /### CSS States\n\n\| State \| Description \|\n\| --- \| --- \|\n\| `active` \|/);
+        assert.deepStrictEqual(validateManifest(pkg).filter((i) => i.severity === 'error'), []);
     });
 });
 

@@ -224,12 +224,14 @@ program
   .option('--form-associated', 'Scaffold a form-associated element (ElementInternals)')
   .option('--aria', 'Scaffold an ARIA role/state-reflecting element (ElementInternals)')
   .option('--hydrate', 'Scaffold a component that hydrates a prerendered Declarative Shadow DOM root')
+  .option('--states', 'Scaffold an element exposing custom states (:state()) via ElementInternals.states')
   .action((tagName, dir, options) =>
     init(tagName, dir, {
       force: options.force,
       formAssociated: options.formAssociated,
       aria: options.aria,
       hydrate: options.hydrate,
+      states: options.states,
     })
   );
 

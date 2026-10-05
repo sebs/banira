@@ -13,12 +13,13 @@ export const init = action(
   async (
     tagName: string,
     dir: string = '.',
-    options: { force?: boolean; formAssociated?: boolean; aria?: boolean; hydrate?: boolean } = {}
+    options: { force?: boolean; formAssociated?: boolean; aria?: boolean; hydrate?: boolean; states?: boolean } = {}
   ) => {
     const files = scaffoldComponent(tagName, {
       formAssociated: Boolean(options.formAssociated),
       aria: Boolean(options.aria),
       hydrate: Boolean(options.hydrate),
+      states: Boolean(options.states),
     });
     const targetDir = resolve(dir);
     await mkdir(targetDir, { recursive: true });

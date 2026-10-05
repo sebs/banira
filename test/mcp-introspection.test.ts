@@ -95,6 +95,7 @@ describe('mcp introspection tools (milestone 1)', () => {
             slots: 1,
             cssParts: 1,
             cssProperties: 1,
+            cssStates: 0,
         });
     });
 

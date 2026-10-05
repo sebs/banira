@@ -15,6 +15,7 @@ export const commands = [
       { flag: '--form-associated', desc: 'Scaffold a form-associated element (static formAssociated = true + ElementInternals form/validation wiring).' },
       { flag: '--aria', desc: 'Scaffold an ARIA role/state-reflecting element (ElementInternals.role/ariaChecked, keyboard support, @role in the manifest).' },
       { flag: '--hydrate', desc: 'Scaffold a component that hydrates a prerendered Declarative Shadow DOM root (adopt-or-render, no flash).' },
+      { flag: '--states', desc: 'Scaffold an element exposing custom states to :state() selectors via ElementInternals.states (setState helper, @cssstate in the manifest).' },
     ],
     examples: [
       { label: 'scaffold into src/', cmd: 'banira init my-button src' },
@@ -25,7 +26,8 @@ export const commands = [
       banira's manifest and doc tooling read. Existing files are left untouched unless <code>--force</code> is given.</p>
       <p>The variant flags scaffold a different starter: <code>--form-associated</code> (a <code>&lt;form&gt;</code>-participating
       control), <code>--aria</code> (an accessible toggle whose role/state is exposed via <code>ElementInternals</code>), or
-      <code>--hydrate</code> (a component that adopts its prerendered DSD root on the client). Pass one.</p>`,
+      <code>--hydrate</code> (a component that adopts its prerendered DSD root on the client), or <code>--states</code>
+      (an element styled from outside with <code>my-el:state(active)</code>, with no state leaked into attributes). Pass one.</p>`,
   },
   {
     name: 'dev',
@@ -121,7 +123,7 @@ export const commands = [
     ],
     notes: `<p>Attributes are read from <code>observedAttributes</code>, properties/methods from public class members,
       events from <code>new CustomEvent(...)</code>, and slots / CSS parts / CSS custom properties from class jsdoc tags
-      (<code>@slot</code>, <code>@csspart</code>, <code>@cssprop</code>, <code>@fires</code>). Members marked
+      (<code>@slot</code>, <code>@csspart</code>, <code>@cssprop</code>, <code>@cssstate</code>, <code>@fires</code>). Members marked
       <code>@deprecated</code> carry the note through; <code>@internal</code> / <code>@ignore</code> members are omitted.
       An attribute backed by a string-literal union (<code>'sm' | 'md' | 'lg'</code>) captures its allowed values, which
       flow through to the <code>.d.ts</code> union, editor autocomplete and Storybook <code>select</code> options.

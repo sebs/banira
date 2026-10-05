@@ -129,6 +129,7 @@ function declarationToMarkdown(decl: CustomElementDeclaration, headingPrefix: st
         namedTable('Slots', 'Slot', decl.slots ?? []),
         namedTable('CSS Parts', 'Part', decl.cssParts ?? []),
         cssPropertiesTable(decl.cssProperties ?? []),
+        namedTable('CSS States', 'State', decl.cssStates ?? []),
     ]) {
         if (block) parts.push(block);
     }

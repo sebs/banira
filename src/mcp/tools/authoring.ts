@@ -14,7 +14,7 @@ import { invalidateManifest } from '../files.js';
  * contract — not invented prose.
  */
 
-const VARIANTS = ['plain', 'form-associated', 'aria', 'hydrate'] as const;
+const VARIANTS = ['plain', 'form-associated', 'aria', 'hydrate', 'states'] as const;
 type Variant = (typeof VARIANTS)[number];
 
 /** The class-level JSDoc tags `ManifestGenerator` reads (src/manifest.ts). */
@@ -23,6 +23,7 @@ const TAGS = [
   { tag: '@slot', level: 'class', syntax: "@slot name - description  ('@slot - description' for the default slot)", semantics: 'Declares a <slot>; surfaces in manifest `slots`.' },
   { tag: '@csspart', level: 'class', syntax: '@csspart name - description', semantics: 'Declares a ::part() styling hook; manifest `cssParts`.' },
   { tag: '@cssprop', level: 'class', syntax: '@cssprop [--name=default] - description  (alias @cssproperty)', semantics: 'Declares a CSS custom property; manifest `cssProperties`.' },
+  { tag: '@cssstate', level: 'class', syntax: '@cssstate name - description', semantics: 'Declares a custom state matched by :state(name) (set via ElementInternals.states); manifest `cssStates`.' },
   { tag: '@fires', level: 'class', syntax: '@fires {DetailType} name - description  (alias @event)', semantics: 'Declares a CustomEvent and its detail type; manifest `events`.' },
   { tag: '@role', level: 'class', syntax: '@role <aria-role>', semantics: "Records the element's implicit ARIA role (set via ElementInternals.role)." },
   { tag: '@deprecated', level: 'class or member', syntax: '@deprecated [reason]', semantics: 'Marks the class/member deprecated; the text is the note.' },
@@ -51,6 +52,8 @@ function variantOptions(variant: Variant): ScaffoldOptions {
       return { aria: true };
     case 'hydrate':
       return { hydrate: true };
+    case 'states':
+      return { states: true };
     default:
       return {};
   }
@@ -61,6 +64,7 @@ const camelKey: Record<Variant, string> = {
   'form-associated': 'formAssociated',
   aria: 'aria',
   hydrate: 'hydrate',
+  states: 'states',
 };
 
 /** The starter component source for a variant (the generated `.ts` file). */
@@ -116,11 +120,11 @@ export function registerAuthoringTools(registries: Registries, opts: McpServerOp
       name: 'get_authoring_guidelines',
       title: 'Get authoring guidelines',
       description:
-        "Return banira's conventions: the JSDoc tags the manifest reads (@summary/@slot/@csspart/@cssprop/@fires/@role/@deprecated/@demo), the observedAttributes pattern, the tag-naming rule, the no-bundler/web-standards philosophy, and per-variant starter components. Use this so generated components are banira-shaped.",
+        "Return banira's conventions: the JSDoc tags the manifest reads (@summary/@slot/@csspart/@cssprop/@cssstate/@fires/@role/@deprecated/@demo), the observedAttributes pattern, the tag-naming rule, the no-bundler/web-standards philosophy, and per-variant starter components. Use this so generated components are banira-shaped.",
       inputSchema: {
         type: 'object',
         properties: {
-          variant: { enum: [...VARIANTS], description: 'Limit the worked example to one variant (default: all four).' },
+          variant: { enum: [...VARIANTS], description: 'Limit the worked example to one variant (default: all of them).' },
         },
         additionalProperties: false,
       },
@@ -143,7 +147,7 @@ export function registerAuthoringTools(registries: Registries, opts: McpServerOp
         type: 'object',
         properties: {
           tagName: { type: 'string', description: 'Custom element tag name (lowercase, must contain a hyphen).' },
-          variant: { enum: [...VARIANTS], description: 'plain (default), form-associated, aria, or hydrate.' },
+          variant: { enum: [...VARIANTS], description: 'plain (default), form-associated, aria, hydrate, or states.' },
           write: { type: 'boolean', description: 'Write the files to disk (default false — returns them in memory).' },
           dir: { type: 'string', description: 'Target directory when writing (default ".").' },
           force: { type: 'boolean', description: 'Overwrite existing files when writing.' },

@@ -30,7 +30,7 @@ describe('mcp authoring tools + resource (milestone 3)', () => {
         assert.ok(g.tags.some((t: any) => t.tag === '@fires'));
         assert.ok(g.tags.some((t: any) => t.tag === '@demo'));
         assert.match(g.namingRule, /hyphen/);
-        assert.deepStrictEqual(Object.keys(g.examples).sort(), ['aria', 'formAssociated', 'hydrate', 'plain']);
+        assert.deepStrictEqual(Object.keys(g.examples).sort(), ['aria', 'formAssociated', 'hydrate', 'plain', 'states']);
         for (const src of Object.values(g.examples) as string[]) {
             assert.ok(src.includes('HTMLElement'), 'each example should be a real component');
         }

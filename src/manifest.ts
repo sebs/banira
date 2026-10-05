@@ -79,6 +79,8 @@ export interface CustomElementDeclaration {
     slots?: NamedDoc[];
     cssParts?: NamedDoc[];
     cssProperties?: CssCustomProperty[];
+    /** CSS custom states (`:state(name)`, via `ElementInternals.states`), from class-level `@cssstate` tags. */
+    cssStates?: NamedDoc[];
     /**
      * The element's default ARIA role, from a class-level `@role` jsdoc tag.
      * Typically set on the element via `ElementInternals.role`; recorded here so
@@ -458,9 +460,10 @@ export class ManifestGenerator {
 
         decl.superclass = { name: this.superclassNameOf(node) };
 
-        // Class-level jsdoc tags: @slot, @csspart, @cssprop/@cssproperty, @fires/@event, @summary.
+        // Class-level jsdoc tags: @slot, @csspart, @cssprop/@cssproperty, @cssstate, @fires/@event, @summary.
         const slots: NamedDoc[] = [];
         const cssParts: NamedDoc[] = [];
+        const cssStates: NamedDoc[] = [];
         const cssProperties: CssCustomProperty[] = [];
         const taggedEvents: CemEvent[] = [];
         for (const tag of getJSDocTags(node)) {
@@ -468,6 +471,7 @@ export class ManifestGenerator {
             const comment = getTextOfJSDocComment(tag.comment) ?? '';
             if (tagName === 'slot') slots.push(parseNameDescription(comment));
             else if (tagName === 'csspart') cssParts.push(parseNameDescription(comment));
+            else if (tagName === 'cssstate') cssStates.push(parseNameDescription(comment));
             else if (tagName === 'cssprop' || tagName === 'cssproperty') cssProperties.push(parseCssProperty(comment));
             else if (tagName === 'fires' || tagName === 'event') taggedEvents.push(parseEventTag(comment));
             else if (tagName === 'summary') {
@@ -489,6 +493,7 @@ export class ManifestGenerator {
         if (slots.length) decl.slots = slots;
         if (cssParts.length) decl.cssParts = cssParts;
         if (cssProperties.length) decl.cssProperties = cssProperties;
+        if (cssStates.length) decl.cssStates = cssStates;
 
         return decl;
     }
