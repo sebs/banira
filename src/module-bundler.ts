@@ -4,16 +4,20 @@
  *
  * jsdom can execute classic scripts but not ES-module imports, and a one-file
  * compile can't see a component's imports. This compiles the entry + everything
- * it imports (the TS Program already follows the import graph) to CommonJS, then
- * concatenates the modules behind a tiny registry + `require` shim and runs the
- * entry — so {@link TestHelper} can mount components that import other modules.
+ * it imports (the TS Program already follows the import graph) to ES modules
+ * with the same CSS/HTML import lowering as `Compiler`, converts each module to
+ * CommonJS, then concatenates them behind a tiny registry + `require` shim and
+ * runs the entry — so {@link TestHelper} can mount components that import other
+ * modules, stylesheets and templates.
  *
  * Only the local graph is bundled. Bare/external (npm) imports are left as
  * `require('pkg')` and throw a clear error at runtime if reached.
  */
-import { createProgram, ModuleKind, ModuleResolutionKind, type CompilerOptions } from 'typescript';
+import { createProgram, transpileModule, ModuleKind, ModuleResolutionKind, type CompilerOptions } from 'typescript';
 import { resolve, sep } from 'path';
-import { realpathSync } from 'fs';
+import { realpathSync, readFileSync } from 'fs';
+import { lowerCssImports } from './css-transformer.js';
+import { lowerHtmlImports } from './html-transformer.js';
 
 /** Normalize a filesystem path to a stable, forward-slash module id. */
 function toId(p: string): string {
@@ -27,6 +31,11 @@ function realPathOrSelf(p: string): string {
     } catch {
         return p;
     }
+}
+
+/** True when `p` (already real) is `root` or inside it. */
+function isInside(p: string, root: string): boolean {
+    return p === root || p.startsWith(root + sep);
 }
 
 /** Options controlling how {@link bundleModule} resolves the module graph. */
@@ -59,37 +68,61 @@ export function bundleModule(
     // Drop outDir so emitted paths mirror the source tree (keeps relative
     // `require` specifiers aligned with our module ids).
     const { outDir: _outDir, ...rest } = compilerOptions;
+    // Emit ES modules first so the CSS/HTML import lowering (an `after`
+    // transformer) sees `import` declarations, exactly as in `Compiler`; each
+    // module is converted to CommonJS below. (Lowering during a CommonJS emit
+    // can't work: TS would still rewrite references to the removed import.)
     const options: CompilerOptions = {
         ...rest,
-        module: ModuleKind.CommonJS,
+        module: ModuleKind.ESNext,
         moduleResolution: ModuleResolutionKind.Bundler,
         declaration: false,
         sourceMap: false,
         inlineSourceMap: false,
         importHelpers: false, // inline helpers per-module → no tslib require
     };
+    const cjsOptions: CompilerOptions = { ...options, module: ModuleKind.CommonJS };
 
     const program = createProgram([entry], options);
 
     // Hold the bundled graph to a root: every non-declaration source the program
     // pulled in (the entry plus its local imports) must stay inside it, so a
     // relative import can't drag out-of-tree source into the bundle.
-    if (bundleOptions.confineToRoot) {
-        const root = realPathOrSelf(resolve(bundleOptions.confineToRoot));
+    const root = bundleOptions.confineToRoot ? realPathOrSelf(resolve(bundleOptions.confineToRoot)) : undefined;
+    if (root) {
         for (const sf of program.getSourceFiles()) {
             if (sf.isDeclarationFile) continue; // skip lib + .d.ts
-            const real = realPathOrSelf(sf.fileName);
-            if (real !== root && !real.startsWith(root + sep)) {
+            if (!isInside(realPathOrSelf(sf.fileName), root)) {
                 throw new Error(`bundleModule: refusing to bundle "${sf.fileName}" outside ${root} (--local-only).`);
             }
         }
     }
 
+    // Inlined stylesheets/templates are held to the same root.
+    const readAsset = (absolutePath: string): string | undefined => {
+        if (root && !isInside(realPathOrSelf(absolutePath), root)) {
+            throw new Error(`bundleModule: refusing to bundle "${absolutePath}" outside ${root} (--local-only).`);
+        }
+        try {
+            return readFileSync(absolutePath, 'utf8');
+        } catch {
+            return undefined;
+        }
+    };
+
     const modules = new Map<string, string>();
     // Custom writeFile captures emitted JS in memory — nothing touches disk.
-    program.emit(undefined, (outPath, data) => {
-        if (outPath.endsWith('.js')) modules.set(toId(outPath), data);
-    });
+    program.emit(
+        undefined,
+        (outPath, data) => {
+            if (!outPath.endsWith('.js')) return;
+            const cjs = transpileModule(data, { compilerOptions: cjsOptions, fileName: outPath }).outputText;
+            modules.set(toId(outPath), cjs);
+        },
+        undefined,
+        false,
+        { after: [lowerCssImports({ readCss: readAsset }), lowerHtmlImports({ readHtml: readAsset })] }
+    );
 
     const entryOut = entry.replace(/\.tsx?$/i, '.js');
     if (!modules.has(entryOut)) {

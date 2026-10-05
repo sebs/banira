@@ -1,5 +1,5 @@
 import { createServer, type Server, type ServerResponse } from 'http';
-import { watch as fsWatch, realpathSync } from 'fs';
+import { watch as fsWatch, realpathSync, readFileSync } from 'fs';
 import { readFile, stat, realpath } from 'fs/promises';
 import { resolve, join, extname, normalize, sep } from 'path';
 import { transpileToEsm } from '../../transpile-module.js';
@@ -170,6 +170,19 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
   // rebinding (loopback binds are only reachable locally, so no check needed).
   const checkHost = !isLoopbackHost(host);
   const clients = new Set<ServerResponse>();
+
+  // `--ts` inlines a module's CSS/HTML imports; hold those reads to the served
+  // root (same realpath check as a request) so a served module can't inline
+  // out-of-tree files. Anything else leaves the import untouched.
+  const readServedAsset = (absolutePath: string): string | undefined => {
+    try {
+      const real = realpathSync(absolutePath);
+      if (real !== realRootDir && !real.startsWith(realRootDir + sep)) return undefined;
+      return readFileSync(real, 'utf8');
+    } catch {
+      return undefined;
+    }
+  };
   // The last failed compile's `error:` payload, replayed to newly connected tabs.
   let pendingError: string | undefined;
 
@@ -244,7 +257,7 @@ export const serve = (root: string = '.', options: ServeOptions = {}): Reloadabl
 
       if (transform) {
         const source = await readFile(realFilePath, 'utf8');
-        const js = transpileToEsm(source, realFilePath);
+        const js = transpileToEsm(source, realFilePath, undefined, readServedAsset);
         res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': NO_STORE }).end(js);
         return;
       }

@@ -101,8 +101,8 @@ banira compile src/my-button.ts -o dist --import-map
 `--optimize-css` needs the optional `lightningcss` dependency (`npm i -D lightningcss`),
 loaded lazily — a clear error is shown if it's requested but not installed.
 
-Relative asset imports are lowered at compile time, so components need no
-bundler for them. `import styles from './styles.css'` becomes a shared
+Relative asset imports are lowered at compile time (and likewise by `banira
+test`, `TestHelper` and `serve --ts`), so components need no bundler for them. `import styles from './styles.css'` becomes a shared
 constructable stylesheet (`root.adoptedStyleSheets = [styles]`), and
 `import tpl from './card.html'` becomes a module-level `<template>` parsed once
 — clone it per instance with `root.appendChild(tpl.content.cloneNode(true))`.

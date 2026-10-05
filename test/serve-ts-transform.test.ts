@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import type { Server } from 'http';
-import { mkdtempSync, writeFileSync, rmSync } from 'fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { resolve } from 'path';
 import { transpileToEsm } from '../src/index.js';
@@ -27,6 +27,19 @@ describe('transpileToEsm', () => {
             'inlineSources should embed the original TypeScript'
         );
     });
+
+    it('lowers CSS and HTML imports like Compiler does (issue #52)', () => {
+        const files: Record<string, string> = { '/x/box.css': '.a{color:red}', '/x/card.html': '<p>hi</p>' };
+        const js = transpileToEsm(
+            `import styles from './box.css';\nimport tpl from './card.html';\nexport { styles, tpl };\n`,
+            '/x/comp.ts',
+            undefined,
+            (path) => files[path]
+        );
+        assert.match(js, /const styles = __baniraAdoptStyles\("\.a\{color:red\}"\)/);
+        assert.match(js, /t\.innerHTML = "<p>hi<\/p>"/);
+        assert.doesNotMatch(js, /box\.css|card\.html/);
+    });
 });
 
 describe('serve --ts (on-the-fly TypeScript)', () => {
@@ -36,7 +49,14 @@ describe('serve --ts (on-the-fly TypeScript)', () => {
     let dir: string;
 
     before(async () => {
-        dir = mkdtempSync(resolve(tmpdir(), 'banira-serve-ts-'));
+        // <tmp>/root is served; <tmp>/outside.css sits beside it, out of the root.
+        const parent = mkdtempSync(resolve(tmpdir(), 'banira-serve-ts-'));
+        dir = resolve(parent, 'root');
+        mkdirSync(dir);
+        writeFileSync(resolve(parent, 'outside.css'), '.secret{}', 'utf8');
+        writeFileSync(resolve(dir, 'box.css'), '.box{color:red}', 'utf8');
+        writeFileSync(resolve(dir, 'styled.ts'), `import styles from './box.css';\nexport { styles };\n`, 'utf8');
+        writeFileSync(resolve(dir, 'leaky.ts'), `import s from '../outside.css';\nexport { s };\n`, 'utf8');
         writeFileSync(resolve(dir, 'dep.ts'), `export const dep: number = 1;\n`, 'utf8');
         writeFileSync(
             resolve(dir, 'widget.ts'),
@@ -49,7 +69,7 @@ describe('serve --ts (on-the-fly TypeScript)', () => {
 
     after(async () => {
         await new Promise<void>((r) => server.close(() => r()));
-        rmSync(dir, { recursive: true, force: true });
+        rmSync(resolve(dir, '..'), { recursive: true, force: true });
     });
 
     it('serves a .ts request as transpiled ES module', async () => {
@@ -59,6 +79,18 @@ describe('serve --ts (on-the-fly TypeScript)', () => {
         const body = await res.text();
         assert.match(body, /from ['"]\.\/dep\.js['"]/);
         assert.doesNotMatch(body, /: number/);
+    });
+
+    it('inlines CSS imports from inside the served root (issue #52)', async () => {
+        const body = await (await fetch(`${base}/styled.ts`)).text();
+        assert.match(body, /__baniraAdoptStyles\("\.box\{color:red\}"\)/);
+        assert.doesNotMatch(body, /box\.css/);
+    });
+
+    it('does not inline a CSS import from outside the served root', async () => {
+        const body = await (await fetch(`${base}/leaky.ts`)).text();
+        assert.doesNotMatch(body, /\.secret/);
+        assert.match(body, /from ['"]\.\.\/outside\.css['"]/);
     });
 
     it('maps a .js request to a sibling .ts when no compiled .js exists', async () => {
