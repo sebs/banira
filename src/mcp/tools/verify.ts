@@ -5,6 +5,7 @@ import {
   Compiler,
   ResultAnalyzer,
   isCssModuleNotFoundDiagnostic,
+  isHtmlModuleNotFoundDiagnostic,
   TestHelper,
   smokeTestManifest,
   formatSmokeResults,
@@ -129,7 +130,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
       name: 'check_component',
       title: 'Check component (type-check, no write)',
       description:
-        'Type-check the given component file(s) WITHOUT writing any output (in-memory compile). Returns hasErrors plus structured diagnostics so an agent can self-correct after generating code. CSS-module import errors (the `import "./x.css"` lowering pattern) are filtered out as expected, not failures.',
+        'Type-check the given component file(s) WITHOUT writing any output (in-memory compile). Returns hasErrors plus structured diagnostics so an agent can self-correct after generating code. CSS/HTML-module import errors (the `import "./x.css"` / `import tpl from "./x.html"` lowering patterns) are filtered out as expected, not failures.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -163,7 +164,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
       // memfs volume — nothing is written to the working tree.
       const compiler = await Compiler.withVirtualFs(files, compilerOptions);
       const diag = new ResultAnalyzer(compiler.emit()).diag();
-      const errors = diag.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d));
+      const errors = diag.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d) && !isHtmlModuleNotFoundDiagnostic(d));
       return {
         ok: errors.length === 0,
         errorCount: errors.length,
@@ -382,7 +383,7 @@ export function registerVerifyTools(registries: Registries, opts: McpServerOptio
       );
       const analyzer = new ResultAnalyzer(compiler.emit());
       const diag = analyzer.diag();
-      const errors = diag.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d));
+      const errors = diag.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d) && !isHtmlModuleNotFoundDiagnostic(d));
       // The emit changed the working tree — drop any cached manifest for these inputs.
       invalidateManifest(files);
       return {

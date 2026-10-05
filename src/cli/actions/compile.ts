@@ -1,4 +1,11 @@
-import { Compiler, ResultAnalyzer, isCssModuleNotFoundDiagnostic, buildImportMap, isBareSpecifier } from '../../index.js';
+import {
+  Compiler,
+  ResultAnalyzer,
+  isCssModuleNotFoundDiagnostic,
+  isHtmlModuleNotFoundDiagnostic,
+  buildImportMap,
+  isBareSpecifier,
+} from '../../index.js';
 import * as ts from 'typescript';
 import { readFileSync, existsSync } from 'fs';
 import { writeFile, mkdir } from 'fs/promises';
@@ -83,9 +90,9 @@ export function compileFiles(files: string[], options: CompileOptions): CompileO
   const compiler = new Compiler(files, compilerOptions, undefined, options.optimizeCss ? { optimizeCss: true } : undefined);
   const analyzer = new ResultAnalyzer(compiler.emit());
   const diagnostics = analyzer.diag();
-  // CSS imports are lowered to constructable stylesheets at emit; the
-  // "Cannot find module './x.css'" type error they raise is expected, not a failure.
-  const errors = diagnostics.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d));
+  // CSS/HTML imports are lowered to constructable stylesheets / templates at emit;
+  // the "Cannot find module './x.css'" type error they raise is expected, not a failure.
+  const errors = diagnostics.errors.filter((d) => !isCssModuleNotFoundDiagnostic(d) && !isHtmlModuleNotFoundDiagnostic(d));
   return { ok: errors.length === 0, errors, outputs: analyzer.outputFiles };
 }
 

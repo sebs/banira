@@ -44,9 +44,10 @@ function appendJsToImports(context: ts.TransformationContext): ts.Transformer<ts
         specifier.startsWith('.') &&
         !specifier.startsWith('@') &&
         !specifier.endsWith('.js') &&
-        // Asset imports (e.g. `.css`) are handled by their own lowering; never
+        // Asset imports (`.css`, `.html`) are handled by their own lowering; never
         // rewrite `./styles.css` to `./styles.css.js`.
-        !specifier.endsWith('.css');
+        !specifier.endsWith('.css') &&
+        !specifier.endsWith('.html');
 
     /**
      * Returns true for the `import(...)` form of a call expression

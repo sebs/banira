@@ -99,6 +99,14 @@ banira compile src/my-button.ts -o dist --import-map
 `--optimize-css` needs the optional `lightningcss` dependency (`npm i -D lightningcss`),
 loaded lazily — a clear error is shown if it's requested but not installed.
 
+Relative asset imports are lowered at compile time, so components need no
+bundler for them. `import styles from './styles.css'` becomes a shared
+constructable stylesheet (`root.adoptedStyleSheets = [styles]`), and
+`import tpl from './card.html'` becomes a module-level `<template>` parsed once
+— clone it per instance with `root.appendChild(tpl.content.cloneNode(true))`.
+The "Cannot find module" type errors these imports raise are expected and
+don't fail the build.
+
 Compilation emits a `.js.map` source map next to each `.js`, with the original
 TypeScript embedded, so breakpoints in devtools land on the `.ts` even when the
 source isn't served alongside the output. Because the map embeds your source,

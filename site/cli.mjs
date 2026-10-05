@@ -99,7 +99,10 @@ export const commands = [
     notes: `<p>Uses <code>Compiler.DEFAULT_COMPILER_OPTIONS</code> unless you pass your own via <code>--project</code>.
       The underlying <code>Compiler</code> is also available as a library export. Each <code>.js</code> ships a
       <code>.js.map</code> (original TypeScript embedded) by default — pass <code>--no-source-map</code> for production builds.
-      With <code>--import-map</code>, bare imports resolve in the browser from <a href="https://esm.sh/">esm.sh</a> with no bundler.</p>`,
+      With <code>--import-map</code>, bare imports resolve in the browser from <a href="https://esm.sh/">esm.sh</a> with no bundler.</p>
+      <p>Relative asset imports are lowered at compile time: <code>import styles from './styles.css'</code> becomes a shared
+      constructable stylesheet, and <code>import tpl from './card.html'</code> becomes a module-level
+      <code>&lt;template&gt;</code> parsed once — clone it per instance with <code>tpl.content.cloneNode(true)</code>.</p>`,
   },
   {
     name: 'manifest',

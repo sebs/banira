@@ -182,11 +182,11 @@ describe("Compiler", () => {
             );
         });
 
-        it("should have the CSS-lowering and js-extension transformers", () => {
+        it("should have the CSS/HTML-lowering and js-extension transformers", () => {
             assert.strictEqual(
                 compiler.defaultTransformers.after?.length,
-                2,
-                "Should have two after transformers (CSS lowering + .js extension)"
+                3,
+                "Should have three after transformers (CSS lowering + HTML lowering + .js extension)"
             );
         });
     });
